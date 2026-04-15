@@ -19,6 +19,18 @@ type Body = {
   selectedStages: string[];
 };
 
+function parseOpenRouterErrorBody(bodyText: string): string {
+  try {
+    const j = JSON.parse(bodyText) as {
+      error?: { message?: string; code?: number };
+      message?: string;
+    };
+    return j.error?.message ?? j.message ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function buildUserPayload(b: Body): string {
   const stagesList = b.selectedStages.map((s, i) => `${i + 1}. ${s}`).join("\n");
   return [
@@ -50,12 +62,18 @@ function buildUserPayload(b: Body): string {
 }
 
 export async function POST(req: Request) {
-  const key = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
+  const key = process.env.OPENROUTER_API_KEY?.trim();
+  const modelRaw = process.env.OPENROUTER_MODEL?.trim();
+  const model =
+    modelRaw && modelRaw.length > 0 ? modelRaw : "openai/gpt-4o-mini";
 
   if (!key) {
     return NextResponse.json(
-      { error: "OPENROUTER_API_KEY не задан. Скопируйте .env.example в .env и укажите ключ." },
+      {
+        error: "OPENROUTER_API_KEY не задан на сервере.",
+        detail:
+          "Локально: скопируйте .env.example в .env и задайте ключ. На Render: Settings → Environment → добавьте OPENROUTER_API_KEY (без кавычек и без пробелов в начале/конце).",
+      },
       { status: 500 },
     );
   }
@@ -98,41 +116,82 @@ export async function POST(req: Request) {
     Authorization: `Bearer ${key}`,
     "Content-Type": "application/json",
   };
-  const referer = process.env.OPENROUTER_HTTP_REFERER;
-  const title = process.env.OPENROUTER_APP_TITLE;
+  const referer = process.env.OPENROUTER_HTTP_REFERER?.trim();
+  const title = process.env.OPENROUTER_APP_TITLE?.trim();
   if (referer) headers["HTTP-Referer"] = referer;
   if (title) headers["X-Title"] = title;
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: body.systemPrompt },
-        { role: "user", content: userContent },
-      ],
-      temperature: 0.4,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
+  let res: Response;
+  try {
+    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: body.systemPrompt },
+          { role: "user", content: userContent },
+        ],
+        temperature: 0.4,
+      }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: `OpenRouter: ${res.status}`, detail: errText.slice(0, 2000) },
+      {
+        error:
+          "Не удалось подключиться к OpenRouter (сеть или DNS). Если это Render — проверьте, что исходящие HTTPS разрешены; локально — интернет и прокси.",
+        detail: msg.slice(0, 500),
+      },
       { status: 502 },
     );
   }
 
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
+  if (!res.ok) {
+    const errText = await res.text();
+    const fromApi = parseOpenRouterErrorBody(errText);
+    const detail = (fromApi || errText).slice(0, 2000);
+
+    let error = `Ошибка OpenRouter (${res.status})`;
+    if (res.status === 401) {
+      error =
+        "Ключ OpenRouter отклонён (401). Проверьте, что OPENROUTER_API_KEY скопирован полностью, без лишних пробелов и кавычек; на https://openrouter.ai/keys создайте новый ключ при необходимости.";
+    } else if (res.status === 402) {
+      error =
+        "OpenRouter: недостаточно средств или нужна оплата (402). Пополните баланс на openrouter.ai.";
+    } else if (res.status === 403) {
+      error =
+        "Доступ запрещён (403). Проверьте ключ и доступ к выбранной модели на OpenRouter.";
+    } else if (res.status === 429) {
+      error = "Слишком много запросов к OpenRouter (429). Подождите и повторите.";
+    }
+
+    return NextResponse.json({ error, detail }, { status: 502 });
+  }
+
+  let data: { choices?: Array<{ message?: { content?: string } }> };
+  try {
+    data = (await res.json()) as typeof data;
+  } catch {
+    return NextResponse.json(
+      { error: "Некорректный JSON от OpenRouter", detail: "Ответ не удалось разобрать." },
+      { status: 502 },
+    );
+  }
+
   const raw = data.choices?.[0]?.message?.content?.trim();
   if (!raw) {
     return NextResponse.json({ error: "Пустой ответ модели" }, { status: 502 });
   }
 
-  const html = await aiResponseToHtml(raw);
-
-  return NextResponse.json({ html, raw });
+  try {
+    const html = await aiResponseToHtml(raw);
+    return NextResponse.json({ html, raw });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      { error: "Ошибка при разборе ответа модели", detail: msg.slice(0, 500) },
+      { status: 502 },
+    );
+  }
 }
