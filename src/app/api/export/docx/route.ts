@@ -45,7 +45,10 @@ export async function POST(req: Request) {
       ? buffer
       : Buffer.from(new Uint8Array(buffer as ArrayBuffer));
 
-    return new NextResponse(arr, {
+    // Buffer не входит в тип BodyInit в DOM-типах TS — копируем в Uint8Array
+    const body = Uint8Array.from(arr);
+
+    return new NextResponse(body, {
       status: 200,
       headers: {
         "Content-Type":
