@@ -1,24 +1,27 @@
 "use client";
 
-import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
-import Subscript from "@tiptap/extension-subscript";
-import Superscript from "@tiptap/extension-superscript";
-import { Table } from "@tiptap/extension-table";
-import { TableCell } from "@tiptap/extension-table-cell";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TableRow } from "@tiptap/extension-table-row";
-import TextAlign from "@tiptap/extension-text-align";
-import Underline from "@tiptap/extension-underline";
-import { CharacterCount } from "@tiptap/extension-character-count";
-import type { Editor } from "@tiptap/core";
+import { generateJSON } from "@tiptap/html";
+import type { Editor, JSONContent } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import {
+  approxPlainTextLengthFromHtml,
+  buildParagraphsFromPlainText,
+  plainTextFromHtmlForFallback,
+} from "@/lib/htmlPlainText";
+import { createPlanEditorExtensions } from "@/lib/planEditorExtensions";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 const MAX_DEFAULT = 100_000;
+
+/** Результат загрузки внешнего HTML (после генерации и т.п.). */
+export type PlanEditorLoadInfo = {
+  contentKey: number;
+  textLength: number;
+  approxPlainFromHtml: number;
+  usedFallback: boolean;
+  usedJsonParse: boolean;
+};
 
 function ToolbarDivider() {
   return <span className="mx-1 h-6 w-px shrink-0 self-center bg-slate-300" aria-hidden />;
@@ -97,6 +100,8 @@ export type PlanEditorProps = {
   content: string;
   contentKey: number;
   onHtmlChange: (html: string) => void;
+  /** Вызывается после применения внешнего HTML по смене contentKey (генерация и т.д.). */
+  onExternalLoad?: (info: PlanEditorLoadInfo) => void;
   placeholder?: string;
   disabled?: boolean;
 };
@@ -105,42 +110,29 @@ export function PlanEditor({
   content,
   contentKey,
   onHtmlChange,
+  onExternalLoad,
   placeholder = "Здесь появится план урока. Можно редактировать текст, таблицы и вставлять изображения.",
   disabled = false,
 }: PlanEditorProps) {
   const maxChars = Number(process.env.NEXT_PUBLIC_PLAN_CONTENT_MAX_CHARS) || MAX_DEFAULT;
   const [, setToolbarTick] = useState(0);
-  /** Не пробрасывать в родителя getHTML() сразу после программной загрузки — иначе пустой документ перезапишет ответ API. */
-  const ignoreParentSyncUntil = useRef(0);
+  /** Пока true — не пробрасывать onHtmlChange (программная загрузка). */
+  const applyingExternalRef = useRef(false);
+  /** Не синхронизировать повторно тот же contentKey (в т.ч. Strict Mode). */
+  const lastSyncedContentKeyRef = useRef<number | null>(null);
+  const onHtmlChangeRef = useRef(onHtmlChange);
+  const onExternalLoadRef = useRef(onExternalLoad);
+  onHtmlChangeRef.current = onHtmlChange;
+  onExternalLoadRef.current = onExternalLoad;
+
+  const extensions = useMemo(
+    () => createPlanEditorExtensions({ placeholder, maxChars }),
+    [placeholder, maxChars],
+  );
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4] },
-        bulletList: { keepMarks: true },
-        orderedList: { keepMarks: true },
-      }),
-      Underline,
-      Subscript,
-      Superscript,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-        linkOnPaste: true,
-      }),
-      Image.configure({ allowBase64: true }),
-      Table.configure({
-        resizable: true,
-        HTMLAttributes: { class: "tiptap-table" },
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Placeholder.configure({ placeholder }),
-      CharacterCount.configure({ limit: maxChars }),
-    ],
+    extensions,
     content: prepareLessonPlanHtmlForEditor(content),
     editable: !disabled,
     editorProps: {
@@ -150,7 +142,7 @@ export function PlanEditor({
       },
     },
     onUpdate: ({ editor: ed }) => {
-      if (Date.now() < ignoreParentSyncUntil.current) return;
+      if (applyingExternalRef.current) return;
       onHtmlChange(ed.getHTML());
     },
     onTransaction: () => setToolbarTick((n) => n + 1),
@@ -163,12 +155,62 @@ export function PlanEditor({
 
   useEffect(() => {
     if (!editor) return;
+    if (lastSyncedContentKeyRef.current === contentKey) return;
+    lastSyncedContentKeyRef.current = contentKey;
+
     const prepared = prepareLessonPlanHtmlForEditor(content);
-    const current = editor.getHTML();
-    if (current === prepared) return;
-    ignoreParentSyncUntil.current = Date.now() + 400;
-    editor.commands.setContent(prepared, false);
-  }, [editor, content, contentKey]);
+    const approxPlain = approxPlainTextLengthFromHtml(prepared);
+
+    applyingExternalRef.current = true;
+
+    let usedJsonParse = false;
+    let json: JSONContent | null = null;
+    try {
+      json = generateJSON(prepared, extensions) as JSONContent;
+      usedJsonParse = true;
+    } catch {
+      json = null;
+    }
+
+    if (json) {
+      editor.commands.setContent(json, false);
+    } else {
+      editor.commands.setContent(prepared, false);
+    }
+
+    const finalize = () => {
+      let textLen = editor.getText().trim().length;
+      let usedFallback = false;
+
+      if (textLen === 0 && approxPlain > 0) {
+        const plain = plainTextFromHtmlForFallback(prepared);
+        const fb = buildParagraphsFromPlainText(plain);
+        if (fb !== "<p></p>" && plain.length > 0) {
+          editor.commands.setContent(fb, false);
+          usedFallback = true;
+          textLen = editor.getText().trim().length;
+        }
+      }
+
+      const finalHtml = editor.getHTML();
+      onHtmlChangeRef.current(finalHtml);
+      onExternalLoadRef.current?.({
+        contentKey,
+        textLength: textLen,
+        approxPlainFromHtml: approxPlain,
+        usedFallback,
+        usedJsonParse: usedJsonParse && json !== null,
+      });
+
+      queueMicrotask(() => {
+        applyingExternalRef.current = false;
+      });
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(finalize);
+    });
+  }, [editor, content, contentKey, extensions]);
 
   if (!editor) {
     return (
@@ -204,7 +246,12 @@ export function PlanEditor({
       return;
     }
     const next = html.split(q).join(repl);
+    applyingExternalRef.current = true;
     editor.commands.setContent(next);
+    queueMicrotask(() => {
+      applyingExternalRef.current = false;
+      onHtmlChangeRef.current(editor.getHTML());
+    });
   };
 
   const cc = editor.storage.characterCount as { characters?: () => number } | undefined;

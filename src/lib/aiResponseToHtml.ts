@@ -1,11 +1,11 @@
 import { marked } from "marked";
-import { sanitizeLessonHtml } from "./sanitizeHtml";
-import { unwrapSemanticWrapperTags } from "./unwrapLessonHtml";
+import { prepareLessonPlanHtmlForEditor } from "./prepareEditorHtml";
 
 marked.setOptions({ gfm: true, breaks: true });
 
 /**
  * Model may return HTML or Markdown; normalize to sanitized HTML for TipTap.
+ * Один пайплайн с клиентом: [`prepareLessonPlanHtmlForEditor`](./prepareEditorHtml.ts).
  */
 export async function aiResponseToHtml(raw: string): Promise<string> {
   const trimmed = raw.trim();
@@ -17,6 +17,5 @@ export async function aiResponseToHtml(raw: string): Promise<string> {
 
   const parsed = await marked.parse(trimmed);
   const html = looksLikeHtml ? trimmed : String(parsed);
-  const clean = sanitizeLessonHtml(html);
-  return unwrapSemanticWrapperTags(clean);
+  return prepareLessonPlanHtmlForEditor(html);
 }

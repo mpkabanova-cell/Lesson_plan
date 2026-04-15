@@ -10,7 +10,7 @@ import {
 import { extractTimingFromHtml, type StageTiming } from "@/lib/parseTiming";
 import { DURATION_OPTIONS, GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
-import { PlanEditor } from "./PlanEditor";
+import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
 
 function buildExportTitle(subject: string, grade: string, topic: string): string {
   const t = topic.trim() || "План урока";
@@ -127,6 +127,8 @@ export default function LessonPlanWorkspace() {
   const [generateStep, setGenerateStep] = useState<string | null>(null);
   /** Итог успешной генерации (после loading). */
   const [generateSuccessInfo, setGenerateSuccessInfo] = useState<string | null>(null);
+  /** Сверка: длина текста в строке HTML vs в TipTap (после onExternalLoad). */
+  const [editorDiagnosticsLine, setEditorDiagnosticsLine] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   const stages = LESSON_STAGES[lessonType];
@@ -158,9 +160,37 @@ export default function LessonPlanWorkspace() {
 
   const resetSystemPrompt = () => setSystemPrompt(DEFAULT_SYSTEM_PROMPT);
 
+  const handlePlanEditorLoad = useCallback((info: PlanEditorLoadInfo) => {
+    if (info.contentKey === 0 && info.approxPlainFromHtml === 0 && info.textLength === 0) {
+      return;
+    }
+
+    setEditorDiagnosticsLine(
+      `Исходный текст после очистки HTML ≈ ${info.approxPlainFromHtml.toLocaleString("ru-RU")} симв. · в редакторе ${info.textLength.toLocaleString("ru-RU")} · вставка: ${info.usedJsonParse ? "JSON (TipTap)" : "HTML"}${info.usedFallback ? " · фолбэк: простой текст" : ""}`,
+    );
+
+    if (info.approxPlainFromHtml > 0 && info.textLength === 0) {
+      setError(
+        `Текст от модели есть (~${info.approxPlainFromHtml.toLocaleString("ru-RU")} симв.), но редактор не отобразил содержимое даже в упрощённом виде. Попробуйте другую модель или упростите системный промпт (абзацы, списки, без сложной вёрстки).`,
+      );
+      setGenerateSuccessInfo(null);
+      return;
+    }
+
+    if (info.textLength > 0) {
+      setError(null);
+      setGenerateSuccessInfo(
+        `Успешно: в редакторе ${info.textLength.toLocaleString("ru-RU")} симв.${info.usedFallback ? " Показан упрощённый текст (без части форматирования)." : ""}`,
+      );
+    } else if (info.contentKey > 0) {
+      setGenerateSuccessInfo(null);
+    }
+  }, []);
+
   const handleGenerate = async () => {
     setError(null);
     setGenerateSuccessInfo(null);
+    setEditorDiagnosticsLine(null);
     const selectedStages = stages.filter((_, i) => effectiveStageFlags[i]);
     if (selectedStages.length === 0) {
       setError("Отметьте хотя бы один этап в структуре урока.");
@@ -201,9 +231,7 @@ export default function LessonPlanWorkspace() {
         setGenerateSuccessInfo(null);
       } else {
         setError(null);
-        setGenerateSuccessInfo(
-          `Успешно: план загружен в редактор (${textOnly.length.toLocaleString("ru-RU")} симв. текста).`,
-        );
+        setGenerateSuccessInfo(null);
       }
       setPlanHtml(prepared);
       setContentKey((k) => k + 1);
@@ -444,6 +472,13 @@ export default function LessonPlanWorkspace() {
               </div>
             ) : null}
 
+            {editorDiagnosticsLine ? (
+              <p className="rounded-md border border-slate-200 bg-slate-50 px-2 py-2 text-[11px] text-slate-700">
+                <span className="font-medium">Сверка: </span>
+                {editorDiagnosticsLine}
+              </p>
+            ) : null}
+
             {homework.trim() ? (
               <p className="rounded-md bg-amber-50 px-2 py-2 text-[11px] text-amber-900">
                 Указано домашнее задание учителя — модель должна встроить его дословно в этап «Информация о
@@ -508,7 +543,10 @@ export default function LessonPlanWorkspace() {
                   </button>
                 </div>
               </div>
-              {(generateStep || (generateSuccessInfo && !loading) || error) ? (
+              {(generateStep ||
+                (generateSuccessInfo && !loading) ||
+                error ||
+                editorDiagnosticsLine) ? (
                 <div className="border-t border-slate-100 bg-slate-50/80 px-3 py-2 text-[11px] leading-snug text-slate-700">
                   {generateStep ? (
                     <p className="text-sky-900">
@@ -528,6 +566,12 @@ export default function LessonPlanWorkspace() {
                       {generateSuccessInfo}
                     </p>
                   ) : null}
+                  {editorDiagnosticsLine ? (
+                    <p className="mt-1 text-slate-600">
+                      <span className="font-medium">Сверка: </span>
+                      {editorDiagnosticsLine}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -536,6 +580,7 @@ export default function LessonPlanWorkspace() {
               content={planHtml}
               contentKey={contentKey}
               onHtmlChange={onHtmlChange}
+              onExternalLoad={handlePlanEditorLoad}
               disabled={loading}
             />
           </section>
