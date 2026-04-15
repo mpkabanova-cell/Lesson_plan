@@ -83,7 +83,7 @@ export default function LessonPlanWorkspace() {
   const timing: StageTiming[] = useMemo(() => {
     if (!planHtml || planHtml === "<p></p>") return [];
     return extractTimingFromHtml(planHtml);
-  }, [planHtml, contentKey]);
+  }, [planHtml]);
 
   const totalMinutes = useMemo(
     () => timing.reduce((s, x) => s + x.minutes, 0),

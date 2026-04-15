@@ -41,7 +41,9 @@ export async function POST(req: Request) {
       pageNumber: false,
     });
 
-    const arr = buffer instanceof Buffer ? buffer : Buffer.from(buffer);
+    const arr = Buffer.isBuffer(buffer)
+      ? buffer
+      : Buffer.from(new Uint8Array(buffer as ArrayBuffer));
 
     return new NextResponse(arr, {
       status: 200,
