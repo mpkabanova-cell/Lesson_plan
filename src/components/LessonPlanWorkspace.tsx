@@ -76,7 +76,7 @@ export default function LessonPlanWorkspace() {
   const [contentKey, setContentKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [exporting, setExporting] = useState<null | "docx" | "pdf">(null);
+  const [exporting, setExporting] = useState(false);
 
   const stages = LESSON_STAGES[lessonType];
 
@@ -121,7 +121,7 @@ export default function LessonPlanWorkspace() {
 
   const handleExportDocx = async () => {
     setError(null);
-    setExporting("docx");
+    setExporting(true);
     try {
       await downloadBlob(
         "/api/export/docx",
@@ -131,23 +131,7 @@ export default function LessonPlanWorkspace() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка экспорта Word");
     } finally {
-      setExporting(null);
-    }
-  };
-
-  const handleExportPdf = async () => {
-    setError(null);
-    setExporting("pdf");
-    try {
-      await downloadBlob(
-        "/api/export/pdf",
-        { html: planHtml, title: exportTitle },
-        "plan.pdf",
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка экспорта PDF");
-    } finally {
-      setExporting(null);
+      setExporting(false);
     }
   };
 
@@ -162,7 +146,7 @@ export default function LessonPlanWorkspace() {
       <header className="border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
         <h1 className="text-lg font-semibold text-slate-900">Конструктор плана урока</h1>
         <p className="text-xs text-slate-600">
-          Один экран: параметры, структура по типу урока, редактируемый план и экспорт.
+          Один экран: параметры, структура по типу урока, редактируемый план и экспорт в Word.
         </p>
       </header>
 
@@ -366,19 +350,11 @@ export default function LessonPlanWorkspace() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={!hasPlan || exporting !== null}
+                  disabled={!hasPlan || exporting}
                   onClick={handleExportDocx}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
                 >
-                  {exporting === "docx" ? "Word…" : "Скачать Word"}
-                </button>
-                <button
-                  type="button"
-                  disabled={!hasPlan || exporting !== null}
-                  onClick={handleExportPdf}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
-                >
-                  {exporting === "pdf" ? "PDF…" : "Скачать PDF"}
+                  {exporting ? "Word…" : "Скачать Word"}
                 </button>
               </div>
             </div>
