@@ -16,26 +16,69 @@ function buildExportTitle(subject: string, grade: string, topic: string): string
   return `${subject} — ${grade} класс — ${t}`.slice(0, 180);
 }
 
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let msg = res.statusText;
-    try {
-      const j = (await res.json()) as { error?: string; detail?: string };
-      const parts = [j.error, j.detail].filter(
-        (s): s is string => typeof s === "string" && s.length > 0,
+/** Запрос с таймаутом; тело всегда читается как текст, затем JSON — так видны не-JSON и пустые ответы. */
+async function postJson<T>(url: string, body: unknown, timeoutMs = 130_000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    const aborted =
+      (e instanceof DOMException && e.name === "AbortError") ||
+      (e instanceof Error && e.name === "AbortError");
+    if (aborted) {
+      throw new Error(
+        `Превышено время ожидания (${Math.round(timeoutMs / 1000)} с). Сервер или OpenRouter не ответили вовремя. На Render на бесплатном плане запросы иногда обрываются — повторите или сократите системный промпт.`,
       );
-      msg = parts.length > 0 ? parts.join(" — ") : msg;
-    } catch {
-      /* ignore */
+    }
+    const m = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `Сеть: запрос не выполнен (${m}). Проверьте соединение, что открыта та же страница (без блокировки mixed content) и что деплой живой.`,
+    );
+  }
+  clearTimeout(timer);
+
+  const text = await res.text();
+  const snippet = (s: string, n: number) => (s.length <= n ? s : `${s.slice(0, n)}…`);
+
+  if (!res.ok) {
+    let msg = `HTTP ${res.status} ${res.statusText || ""}`.trim();
+    if (text.trim()) {
+      try {
+        const j = JSON.parse(text) as { error?: string; detail?: string };
+        const parts = [j.error, j.detail].filter(
+          (x): x is string => typeof x === "string" && x.length > 0,
+        );
+        if (parts.length > 0) msg = parts.join(" — ");
+        else msg += ` — ${snippet(text, 800)}`;
+      } catch {
+        msg += ` — ${snippet(text, 800)}`;
+      }
     }
     throw new Error(msg);
   }
-  return res.json() as Promise<T>;
+
+  if (!text.trim()) {
+    throw new Error(
+      "Сервер вернул пустой ответ (200 без тела). Смотрите логи деплоя: возможно, упал обработчик /api/generate.",
+    );
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch (e) {
+    const hint = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `Ответ сервера не JSON (${hint}). Начало ответа: ${snippet(text, 400)}`,
+    );
+  }
 }
 
 async function downloadBlob(path: string, body: unknown, filename: string) {
@@ -79,6 +122,10 @@ export default function LessonPlanWorkspace() {
   const [contentKey, setContentKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Текущий этап длинного запроса (пока loading). */
+  const [generateStep, setGenerateStep] = useState<string | null>(null);
+  /** Итог успешной генерации (после loading). */
+  const [generateSuccessInfo, setGenerateSuccessInfo] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   const stages = LESSON_STAGES[lessonType];
@@ -112,14 +159,18 @@ export default function LessonPlanWorkspace() {
 
   const handleGenerate = async () => {
     setError(null);
+    setGenerateSuccessInfo(null);
     const selectedStages = stages.filter((_, i) => effectiveStageFlags[i]);
     if (selectedStages.length === 0) {
       setError("Отметьте хотя бы один этап в структуре урока.");
+      setGenerateStep(null);
       return;
     }
     setLoading(true);
+    setGenerateStep("Отправка запроса на сервер…");
     try {
-      const data = await postJson<{ html: string; raw?: string }>("/api/generate", {
+      setGenerateStep("Ожидание ответа от OpenRouter (обычно 20–90 с, максимум ~2 мин)…");
+      const data = await postJson<{ html?: string; raw?: string }>("/api/generate", {
         systemPrompt,
         subject,
         grade,
@@ -130,21 +181,40 @@ export default function LessonPlanWorkspace() {
         homework: homework.trim() || undefined,
         selectedStages,
       });
-      const textOnly = data.html.replace(/<[^>]+>/g, "").trim();
+
+      setGenerateStep("Обработка ответа и загрузка в редактор…");
+
+      if (data == null || typeof data !== "object") {
+        throw new Error("Сервер вернул не объект в JSON. Проверьте версию API /api/generate.");
+      }
+      const html = typeof data.html === "string" ? data.html : "";
+      const textOnly = html.replace(/<[^>]+>/g, "").trim();
       if (!textOnly) {
         const hint = data.raw?.trim()
-          ? ` Фрагмент ответа: ${data.raw.slice(0, 400)}${data.raw.length > 400 ? "…" : ""}`
+          ? ` Фрагмент сырого ответа: ${data.raw.slice(0, 400)}${data.raw.length > 400 ? "…" : ""}`
           : "";
         setError(
           `После обработки план пустой. Проверьте модель и системный промпт.${hint}`,
         );
+        setGenerateSuccessInfo(null);
+      } else {
+        setError(null);
+        setGenerateSuccessInfo(
+          `Успешно: план загружен в редактор (${textOnly.length.toLocaleString("ru-RU")} симв. текста).`,
+        );
       }
-      setPlanHtml(data.html || "<p></p>");
+      setPlanHtml(html || "<p></p>");
       setContentKey((k) => k + 1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка запроса");
+      const msg =
+        e instanceof Error && e.message.trim().length > 0
+          ? e.message
+          : `Неизвестная ошибка: ${String(e)}`;
+      setError(msg);
+      setGenerateSuccessInfo(null);
     } finally {
       setLoading(false);
+      setGenerateStep(null);
     }
   };
 
@@ -338,10 +408,38 @@ export default function LessonPlanWorkspace() {
               {loading ? "Генерация…" : "Сформировать план"}
             </button>
 
+            {generateStep ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex items-start gap-2 rounded-md border border-sky-200 bg-sky-50 px-2 py-2 text-xs text-sky-950"
+              >
+                <span
+                  className="mt-1 inline-block h-2 w-2 shrink-0 animate-pulse rounded-full bg-sky-600"
+                  aria-hidden
+                />
+                <span>{generateStep}</span>
+              </div>
+            ) : null}
+
             {error ? (
-              <p className="rounded-md border border-red-200 bg-red-50 px-2 py-2 text-xs text-red-800">
-                {error}
-              </p>
+              <div
+                role="alert"
+                className="rounded-md border border-red-200 bg-red-50 px-2 py-2 text-xs text-red-900"
+              >
+                <p className="font-semibold">Ошибка генерации</p>
+                <p className="mt-1 whitespace-pre-wrap break-words">{error}</p>
+              </div>
+            ) : null}
+
+            {generateSuccessInfo && !loading ? (
+              <div
+                role="status"
+                className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-2 text-xs text-emerald-900"
+              >
+                <p className="font-semibold">Итог</p>
+                <p className="mt-1">{generateSuccessInfo}</p>
+              </div>
             ) : null}
 
             {homework.trim() ? (
@@ -394,18 +492,42 @@ export default function LessonPlanWorkspace() {
 
           {/* Column 2: редактор */}
           <section className="order-2 flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-800">План урока (редактор)</h2>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={!hasPlan || exporting}
-                  onClick={handleExportDocx}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
-                >
-                  {exporting ? "Word…" : "Скачать Word"}
-                </button>
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                <h2 className="text-sm font-semibold text-slate-800">План урока (редактор)</h2>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={!hasPlan || exporting}
+                    onClick={handleExportDocx}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {exporting ? "Word…" : "Скачать Word"}
+                  </button>
+                </div>
               </div>
+              {(generateStep || (generateSuccessInfo && !loading) || error) ? (
+                <div className="border-t border-slate-100 bg-slate-50/80 px-3 py-2 text-[11px] leading-snug text-slate-700">
+                  {generateStep ? (
+                    <p className="text-sky-900">
+                      <span className="font-medium">Статус: </span>
+                      {generateStep}
+                    </p>
+                  ) : null}
+                  {error ? (
+                    <p className="mt-1 text-red-800">
+                      <span className="font-medium">Ошибка: </span>
+                      {error}
+                    </p>
+                  ) : null}
+                  {generateSuccessInfo && !loading ? (
+                    <p className="mt-1 text-emerald-900">
+                      <span className="font-medium">Итог: </span>
+                      {generateSuccessInfo}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <PlanEditor
