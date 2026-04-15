@@ -181,8 +181,8 @@ export default function LessonPlanWorkspace() {
         </p>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-3 py-4">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <main className="mx-auto max-w-[1680px] px-3 py-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)]">
           {/* Column 1: параметры + этапы + тайминг */}
           <section className="order-1 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-800">Параметры урока</h2>

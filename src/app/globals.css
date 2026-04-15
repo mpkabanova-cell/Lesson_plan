@@ -30,6 +30,13 @@ body {
   pointer-events: none;
 }
 
+.ProseMirror h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0.85rem 0 0.4rem;
+  line-height: 1.25;
+}
+
 .ProseMirror h2 {
   font-size: 1.125rem;
   font-weight: 700;
@@ -40,6 +47,12 @@ body {
   font-size: 1rem;
   font-weight: 600;
   margin: 0.65rem 0 0.3rem;
+}
+
+.ProseMirror h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.55rem 0 0.25rem;
 }
 
 .ProseMirror ul,

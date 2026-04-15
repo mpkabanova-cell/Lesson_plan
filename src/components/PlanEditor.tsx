@@ -12,32 +12,84 @@ import { TableRow } from "@tiptap/extension-table-row";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import { CharacterCount } from "@tiptap/extension-character-count";
+import type { Editor } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const MAX_DEFAULT = 100_000;
 
-function toolbarBtn(
-  active: boolean,
-  onClick: () => void,
-  label: string,
-  title: string,
-) {
+function ToolbarDivider() {
+  return <span className="mx-1 h-6 w-px shrink-0 self-center bg-slate-300" aria-hidden />;
+}
+
+function IconBtn({
+  active,
+  onClick,
+  title,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <button
       type="button"
       title={title}
       onClick={onClick}
-      className={`rounded px-2 py-1 text-xs font-medium transition ${
+      className={`flex h-8 min-w-[2rem] shrink-0 items-center justify-center rounded-md text-sm transition ${
         active
-          ? "bg-teal-700 text-white"
-          : "bg-slate-100 text-slate-800 hover:bg-slate-200"
+          ? "bg-slate-200 text-slate-900 shadow-inner"
+          : "text-slate-800 hover:bg-slate-100"
       }`}
     >
-      {label}
+      {children}
     </button>
   );
+}
+
+function currentBlock(editor: Editor): string {
+  if (editor.isActive("heading", { level: 1 })) return "h1";
+  if (editor.isActive("heading", { level: 2 })) return "h2";
+  if (editor.isActive("heading", { level: 3 })) return "h3";
+  if (editor.isActive("heading", { level: 4 })) return "h4";
+  if (editor.isActive("blockquote")) return "blockquote";
+  return "paragraph";
+}
+
+function currentAlign(editor: Editor): "left" | "center" | "right" | "justify" {
+  if (editor.isActive({ textAlign: "center" })) return "center";
+  if (editor.isActive({ textAlign: "right" })) return "right";
+  if (editor.isActive({ textAlign: "justify" })) return "justify";
+  return "left";
+}
+
+function applyBlock(editor: Editor, value: string) {
+  const chain = editor.chain().focus();
+  switch (value) {
+    case "paragraph":
+      chain.setParagraph().run();
+      break;
+    case "h1":
+      chain.setHeading({ level: 1 }).run();
+      break;
+    case "h2":
+      chain.setHeading({ level: 2 }).run();
+      break;
+    case "h3":
+      chain.setHeading({ level: 3 }).run();
+      break;
+    case "h4":
+      chain.setHeading({ level: 4 }).run();
+      break;
+    case "blockquote":
+      chain.toggleBlockquote().run();
+      break;
+    default:
+      chain.setParagraph().run();
+  }
 }
 
 export type PlanEditorProps = {
@@ -56,6 +108,7 @@ export function PlanEditor({
   disabled = false,
 }: PlanEditorProps) {
   const maxChars = Number(process.env.NEXT_PUBLIC_PLAN_CONTENT_MAX_CHARS) || MAX_DEFAULT;
+  const [, setToolbarTick] = useState(0);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -89,12 +142,14 @@ export function PlanEditor({
     editable: !disabled,
     editorProps: {
       attributes: {
-        class: "max-w-none focus:outline-none min-h-[280px] px-3 py-2 text-sm text-slate-900",
+        class:
+          "max-w-none focus:outline-none min-h-[min(70vh,520px)] px-4 py-3 text-[15px] leading-relaxed text-slate-900",
       },
     },
     onUpdate: ({ editor: ed }) => {
       onHtmlChange(ed.getHTML());
     },
+    onTransaction: () => setToolbarTick((n) => n + 1),
   });
 
   useEffect(() => {
@@ -112,7 +167,7 @@ export function PlanEditor({
 
   if (!editor) {
     return (
-      <div className="min-h-[280px] animate-pulse rounded-lg border border-slate-200 bg-slate-50" />
+      <div className="min-h-[320px] animate-pulse rounded-lg border border-slate-200/80 bg-slate-50" />
     );
   }
 
@@ -150,115 +205,224 @@ export function PlanEditor({
   const cc = editor.storage.characterCount as { characters?: () => number } | undefined;
   const chars = typeof cc?.characters === "function" ? cc.characters() : editor.getText().length;
 
+  const block = currentBlock(editor);
+  const align = currentAlign(editor);
+
+  const selectBase =
+    "h-8 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-800 shadow-sm outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-300";
+
   return (
-    <div className="flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-wrap gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5">
-        {toolbarBtn(editor.isActive("bold"), () => editor.chain().focus().toggleBold().run(), "Ж", "Жирный")}
-        {toolbarBtn(editor.isActive("italic"), () => editor.chain().focus().toggleItalic().run(), "К", "Курсив")}
-        {toolbarBtn(
-          editor.isActive("underline"),
-          () => editor.chain().focus().toggleUnderline().run(),
-          "Ч",
-          "Подчёркнутый",
-        )}
-        {toolbarBtn(
-          editor.isActive("strike"),
-          () => editor.chain().focus().toggleStrike().run(),
-          "Зч",
-          "Зачёркнутый",
-        )}
-        {toolbarBtn(
-          editor.isActive("subscript"),
-          () => editor.chain().focus().toggleSubscript().run(),
-          "x₂",
-          "Подстрочный",
-        )}
-        {toolbarBtn(
-          editor.isActive("superscript"),
-          () => editor.chain().focus().toggleSuperscript().run(),
-          "x²",
-          "Надстрочный",
-        )}
-        <span className="mx-1 w-px self-stretch bg-slate-200" />
-        {toolbarBtn(
-          editor.isActive("heading", { level: 1 }),
-          () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-          "H1",
-          "Заголовок 1",
-        )}
-        {toolbarBtn(
-          editor.isActive("heading", { level: 2 }),
-          () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-          "H2",
-          "Заголовок 2",
-        )}
-        {toolbarBtn(
-          editor.isActive("heading", { level: 3 }),
-          () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-          "H3",
-          "Подзаголовок",
-        )}
-        {toolbarBtn(
-          editor.isActive("blockquote"),
-          () => editor.chain().focus().toggleBlockquote().run(),
-          "„",
-          "Цитата",
-        )}
-        {toolbarBtn(
-          editor.isActive("codeBlock"),
-          () => editor.chain().focus().toggleCodeBlock().run(),
-          "</>",
-          "Код",
-        )}
-        <span className="mx-1 w-px self-stretch bg-slate-200" />
-        {toolbarBtn(
-          editor.isActive("bulletList"),
-          () => editor.chain().focus().toggleBulletList().run(),
-          "•",
-          "Маркированный список",
-        )}
-        {toolbarBtn(
-          editor.isActive("orderedList"),
-          () => editor.chain().focus().toggleOrderedList().run(),
-          "1.",
-          "Нумерованный список",
-        )}
-        {toolbarBtn(false, () => editor.chain().focus().liftListItem("listItem").run(), "←", "Уменьшить отступ")}
-        {toolbarBtn(false, () => editor.chain().focus().sinkListItem("listItem").run(), "→", "Увеличить отступ")}
-        <span className="mx-1 w-px self-stretch bg-slate-200" />
-        {toolbarBtn(false, () => editor.chain().focus().setTextAlign("left").run(), "◧", "Влево")}
-        {toolbarBtn(false, () => editor.chain().focus().setTextAlign("center").run(), "▣", "Центр")}
-        {toolbarBtn(false, () => editor.chain().focus().setTextAlign("right").run(), "◨", "Вправо")}
-        {toolbarBtn(false, () => editor.chain().focus().setTextAlign("justify").run(), "≋", "По ширине")}
-        <span className="mx-1 w-px self-stretch bg-slate-200" />
-        {toolbarBtn(false, setLink, "🔗", "Ссылка")}
-        {toolbarBtn(false, addImage, "🖼", "Изображение по URL")}
-        {toolbarBtn(
-          false,
-          () =>
-            editor
-              .chain()
-              .focus()
-              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-              .run(),
-          "⊞",
-          "Таблица 3×3",
-        )}
-        {toolbarBtn(false, () => editor.chain().focus().addColumnBefore().run(), "+⌜", "Колонка слева")}
-        {toolbarBtn(false, () => editor.chain().focus().addColumnAfter().run(), "+⌝", "Колонка справа")}
-        {toolbarBtn(false, () => editor.chain().focus().deleteColumn().run(), "−⌞", "Удалить колонку")}
-        {toolbarBtn(false, () => editor.chain().focus().addRowBefore().run(), "+⌟", "Строка сверху")}
-        {toolbarBtn(false, () => editor.chain().focus().addRowAfter().run(), "↓+", "Строка снизу")}
-        {toolbarBtn(false, () => editor.chain().focus().deleteRow().run(), "−⌟", "Удалить строку")}
-        {toolbarBtn(false, () => editor.chain().focus().mergeCells().run(), "⧉", "Объединить ячейки")}
-        {toolbarBtn(false, () => editor.chain().focus().splitCell().run(), "⧇", "Разделить ячейку")}
-        <span className="mx-1 w-px self-stretch bg-slate-200" />
-        {toolbarBtn(false, () => editor.chain().focus().undo().run(), "↺", "Отменить")}
-        {toolbarBtn(false, () => editor.chain().focus().redo().run(), "↻", "Повторить")}
-        {toolbarBtn(false, findReplace, "Н→З", "Найти и заменить")}
+    <div className="flex flex-col overflow-hidden rounded-lg border border-slate-200/90 bg-white shadow-sm">
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-gradient-to-b from-white to-slate-50 px-2 py-1.5 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
+        <select
+          className={`${selectBase} min-w-[7.5rem] max-w-[11rem]`}
+          value={block}
+          title="Стиль абзаца"
+          onChange={(e) => applyBlock(editor, e.target.value)}
+        >
+          <option value="paragraph">Абзац</option>
+          <option value="h1">Заголовок 1</option>
+          <option value="h2">Заголовок 2</option>
+          <option value="h3">Заголовок 3</option>
+          <option value="h4">Заголовок 4</option>
+          <option value="blockquote">Цитата</option>
+        </select>
+
+        <ToolbarDivider />
+
+        <IconBtn
+          active={editor.isActive("bold")}
+          title="Жирный"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+        >
+          <span className="font-serif text-[15px] font-bold leading-none">Ж</span>
+        </IconBtn>
+        <IconBtn
+          active={editor.isActive("italic")}
+          title="Курсив"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+        >
+          <span className="font-serif text-[15px] italic leading-none">К</span>
+        </IconBtn>
+        <IconBtn
+          active={editor.isActive("underline")}
+          title="Подчёркнутый"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+        >
+          <span className="text-[13px] font-semibold underline decoration-2 underline-offset-2">Ч</span>
+        </IconBtn>
+        <IconBtn
+          active={editor.isActive("strike")}
+          title="Зачёркнутый"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+        >
+          <span className="text-[13px] line-through">Зч</span>
+        </IconBtn>
+
+        <ToolbarDivider />
+
+        <IconBtn
+          active={editor.isActive("code")}
+          title="Код в строке"
+          onClick={() => editor.chain().focus().toggleCode().run()}
+        >
+          <span className="font-mono text-[13px]">{"{}"}</span>
+        </IconBtn>
+        <IconBtn
+          active={editor.isActive("codeBlock")}
+          title="Блок кода"
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        >
+          <span className="font-mono text-[11px] leading-tight">{"</>"}</span>
+        </IconBtn>
+
+        <ToolbarDivider />
+
+        <IconBtn
+          active={editor.isActive("bulletList")}
+          title="Маркированный список"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            <circle cx="2" cy="6" r="1.2" fill="currentColor" stroke="none" />
+            <circle cx="2" cy="12" r="1.2" fill="currentColor" stroke="none" />
+            <circle cx="2" cy="18" r="1.2" fill="currentColor" stroke="none" />
+          </svg>
+        </IconBtn>
+        <IconBtn
+          active={editor.isActive("orderedList")}
+          title="Нумерованный список"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M7 6h14M7 12h14M7 18h14M3 6h.01M3 12h.01M3 18h.01"
+            />
+          </svg>
+        </IconBtn>
+        <IconBtn
+          active={false}
+          title="Уменьшить отступ"
+          onClick={() => editor.chain().focus().liftListItem("listItem").run()}
+        >
+          <span className="text-xs">←</span>
+        </IconBtn>
+        <IconBtn
+          active={false}
+          title="Увеличить отступ"
+          onClick={() => editor.chain().focus().sinkListItem("listItem").run()}
+        >
+          <span className="text-xs">→</span>
+        </IconBtn>
+
+        <ToolbarDivider />
+
+        <IconBtn
+          active={editor.isActive("subscript")}
+          title="Подстрочный"
+          onClick={() => editor.chain().focus().toggleSubscript().run()}
+        >
+          <span className="text-[11px] font-medium leading-none">X₂</span>
+        </IconBtn>
+        <IconBtn
+          active={editor.isActive("superscript")}
+          title="Надстрочный"
+          onClick={() => editor.chain().focus().toggleSuperscript().run()}
+        >
+          <span className="text-[11px] font-medium leading-none">X²</span>
+        </IconBtn>
+
+        <ToolbarDivider />
+
+        <select
+          className={`${selectBase} min-w-[9rem]`}
+          value={align}
+          title="Выравнивание"
+          onChange={(e) => {
+            const v = e.target.value as "left" | "center" | "right" | "justify";
+            editor.chain().focus().setTextAlign(v).run();
+          }}
+        >
+          <option value="left">Слева</option>
+          <option value="center">По центру</option>
+          <option value="right">Справа</option>
+          <option value="justify">По ширине</option>
+        </select>
+
+        <ToolbarDivider />
+
+        <IconBtn active={false} title="Вставить ссылку" onClick={setLink}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+            />
+          </svg>
+        </IconBtn>
+        <IconBtn active={false} title="Изображение по URL" onClick={addImage}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </IconBtn>
+        <IconBtn
+          active={false}
+          title="Таблица 3×3"
+          onClick={() =>
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+          }
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <rect x="3" y="3" width="18" height="18" rx="1" />
+            <line x1="3" y1="9" x2="21" y2="9" />
+            <line x1="3" y1="15" x2="21" y2="15" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+            <line x1="15" y1="3" x2="15" y2="21" />
+          </svg>
+        </IconBtn>
+        <IconBtn
+          active={false}
+          title="Горизонтальная линия"
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" d="M4 12h16" />
+          </svg>
+        </IconBtn>
+
+        <ToolbarDivider />
+
+        <IconBtn active={false} title="Отменить" onClick={() => editor.chain().focus().undo().run()}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          </svg>
+        </IconBtn>
+        <IconBtn active={false} title="Повторить" onClick={() => editor.chain().focus().redo().run()}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+          </svg>
+        </IconBtn>
+
+        <button
+          type="button"
+          title="Найти и заменить"
+          onClick={findReplace}
+          className="ml-1 shrink-0 rounded-md px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        >
+          Найти…
+        </button>
       </div>
-      <EditorContent editor={editor} />
-      <div className="flex justify-end border-t border-slate-100 px-2 py-1 text-[11px] text-slate-500">
+
+      <EditorContent editor={editor} className="plan-editor-content bg-white" />
+
+      <div className="flex justify-end border-t border-slate-100 bg-slate-50/50 px-3 py-1.5 text-[11px] text-slate-500">
         Символов: {chars}
         {maxChars ? ` / ${maxChars}` : ""}
       </div>
