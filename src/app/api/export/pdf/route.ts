@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import puppeteer from "puppeteer";
+import type { Browser } from "puppeteer";
 import { wrapHtmlForPdfExport } from "@/lib/exportHtmlDocument";
 import { sanitizeLessonHtml } from "@/lib/sanitizeHtml";
 
+/** Не импортировать puppeteer статически — при `next build` Next подгружает route и Puppeteer ищет Chromium/CSS (ENOENT). */
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 type Body = {
@@ -28,8 +30,9 @@ export async function POST(req: Request) {
   const title = body.title?.trim() || "План урока";
   const fullHtml = wrapHtmlForPdfExport(title, inner);
 
-  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+  let browser: Browser | null = null;
   try {
+    const puppeteer = (await import("puppeteer")).default;
     browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--font-render-hinting=medium"],
