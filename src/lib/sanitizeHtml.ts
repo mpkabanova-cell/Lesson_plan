@@ -1,4 +1,6 @@
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
+
+/** Без JSDOM / isomorphic-dompurify — иначе `next build` падает (ENOENT default-stylesheet.css на Render). */
 
 const ALLOW_TAGS = [
   "p",
@@ -32,29 +34,57 @@ const ALLOW_TAGS = [
   "span",
   "iframe",
   "hr",
-];
+] as const;
 
-const ALLOW_ATTR = [
-  "href",
-  "title",
-  "target",
-  "rel",
-  "src",
-  "alt",
-  "width",
-  "height",
-  "class",
-  "style",
-  "data-stage",
-  "data-minutes",
-  "colspan",
-  "rowspan",
-];
+const STYLE_VALUE = /^[\s\w#%,.()+\-:/"']+$/i;
+
+const sanitizeOptions: Parameters<typeof sanitizeHtml>[1] = {
+  allowedTags: [...ALLOW_TAGS],
+  allowedAttributes: {
+    "*": ["class", "style", "data-stage", "data-minutes"],
+    a: ["href", "title", "target", "rel"],
+    img: ["src", "alt", "width", "height", "loading"],
+    iframe: [
+      "src",
+      "sandbox",
+      "allow",
+      "allowfullscreen",
+      "referrerpolicy",
+      "loading",
+      "title",
+      "width",
+      "height",
+    ],
+    td: ["colspan", "rowspan"],
+    th: ["colspan", "rowspan"],
+    table: ["class", "style", "width", "border"],
+  },
+  allowedStyles: {
+    "*": {
+      color: [STYLE_VALUE],
+      "background-color": [STYLE_VALUE],
+      border: [STYLE_VALUE],
+      "border-collapse": [STYLE_VALUE],
+      "text-align": [STYLE_VALUE],
+      width: [STYLE_VALUE],
+      height: [STYLE_VALUE],
+      "max-width": [STYLE_VALUE],
+      padding: [STYLE_VALUE],
+      margin: [STYLE_VALUE],
+      "font-size": [STYLE_VALUE],
+      "font-weight": [STYLE_VALUE],
+      "vertical-align": [STYLE_VALUE],
+      display: [STYLE_VALUE],
+      float: [STYLE_VALUE],
+    },
+  },
+  allowedSchemes: ["http", "https", "mailto", "tel"],
+  allowedSchemesByTag: {
+    img: ["http", "https", "data"],
+    iframe: ["http", "https"],
+  },
+};
 
 export function sanitizeLessonHtml(dirty: string): string {
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS: [...ALLOW_TAGS, "iframe"],
-    ALLOWED_ATTR: [...ALLOW_ATTR, "sandbox", "allow", "allowfullscreen", "referrerpolicy", "loading"],
-    ADD_ATTR: ["target"],
-  });
+  return sanitizeHtml(dirty, sanitizeOptions);
 }

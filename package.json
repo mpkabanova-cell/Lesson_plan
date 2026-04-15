@@ -24,11 +24,9 @@
     "@tiptap/pm": "^2.11.5",
     "@tiptap/react": "^2.11.5",
     "@tiptap/starter-kit": "^2.11.5",
-    "dompurify": "^3.2.4",
     "html-to-docx": "^1.8.0",
-    "isomorphic-dompurify": "^2.20.0",
-    "jsdom": "^26.0.0",
     "marked": "^15.0.7",
+    "sanitize-html": "^2.13.1",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
