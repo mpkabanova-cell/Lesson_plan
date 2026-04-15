@@ -19,7 +19,7 @@ body {
 /* TipTap */
 .ProseMirror {
   outline: none;
-  min-height: 280px;
+  min-height: 12rem;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {

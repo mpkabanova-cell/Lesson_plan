@@ -138,7 +138,7 @@ export function PlanEditor({
     editorProps: {
       attributes: {
         class:
-          "max-w-none focus:outline-none min-h-[min(70vh,520px)] px-4 py-3 text-[15px] leading-relaxed text-slate-900",
+          "max-w-none min-h-[12rem] focus:outline-none px-4 py-3 text-[15px] leading-relaxed text-slate-900",
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -214,7 +214,7 @@ export function PlanEditor({
 
   if (!editor) {
     return (
-      <div className="min-h-[320px] animate-pulse rounded-lg border border-slate-200/80 bg-slate-50" />
+      <div className="h-full min-h-[240px] animate-pulse rounded-lg border border-slate-200/80 bg-slate-50" />
     );
   }
 
@@ -264,8 +264,8 @@ export function PlanEditor({
     "h-8 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-800 shadow-sm outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-300";
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg border border-slate-200/90 bg-white shadow-sm">
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-gradient-to-b from-white to-slate-50 px-2 py-1.5 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200/90 bg-white shadow-sm">
+      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-gradient-to-b from-white to-slate-50 px-2 py-1.5 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
         <select
           className={`${selectBase} min-w-[7.5rem] max-w-[11rem]`}
           value={block}
@@ -472,9 +472,11 @@ export function PlanEditor({
         </button>
       </div>
 
-      <EditorContent editor={editor} className="plan-editor-content bg-white" />
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-white">
+        <EditorContent editor={editor} className="plan-editor-content bg-white" />
+      </div>
 
-      <div className="flex justify-end border-t border-slate-100 bg-slate-50/50 px-3 py-1.5 text-[11px] text-slate-500">
+      <div className="flex shrink-0 justify-end border-t border-slate-100 bg-slate-50/50 px-3 py-1.5 text-[11px] text-slate-500">
         Символов: {chars}
         {maxChars ? ` / ${maxChars}` : ""}
       </div>

@@ -273,18 +273,18 @@ export default function LessonPlanWorkspace() {
   const hasPlan = planHtml.replace(/<[^>]+>/g, "").trim().length > 0;
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
+    <div className="flex min-h-screen flex-col xl:h-[100dvh] xl:max-h-[100dvh] xl:overflow-hidden">
+      <header className="shrink-0 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
         <h1 className="text-lg font-semibold text-slate-900">Конструктор плана урока</h1>
         <p className="text-xs text-slate-600">
           Параметры и этапы слева, готовый план справа; экспорт в Word.
         </p>
       </header>
 
-      <main className="mx-auto max-w-[1680px] px-3 py-4">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)]">
-          {/* Column 1: параметры + этапы + тайминг */}
-          <section className="order-1 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <main className="mx-auto flex w-full max-w-[1680px] min-h-0 flex-1 flex-col px-3 py-4 xl:overflow-hidden">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)] xl:items-stretch xl:overflow-hidden">
+          {/* Column 1: параметры + этапы + тайминг — своя прокрутка */}
+          <section className="order-1 flex min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:max-h-full">
             <h2 className="text-sm font-semibold text-slate-800">Параметры урока</h2>
 
             <label className="block text-xs font-medium text-slate-600">
@@ -355,7 +355,7 @@ export default function LessonPlanWorkspace() {
                 По умолчанию включены все этапы. Снимите галочки с тех, что не должны попасть в план — модель
                 учтёт только отмеченные.
               </p>
-              <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto pr-1">
+              <ul className="mt-2 space-y-2 pr-1">
                 {stages.map((label, i) => (
                   <li key={label}>
                     <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-800">
@@ -527,9 +527,9 @@ export default function LessonPlanWorkspace() {
             </div>
           </section>
 
-          {/* Column 2: редактор */}
-          <section className="order-2 flex flex-col gap-3">
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          {/* Column 2: шапка + редактор; прокрутка только у текста в PlanEditor */}
+          <section className="order-2 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden xl:max-h-full">
+            <div className="shrink-0 rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                 <h2 className="text-sm font-semibold text-slate-800">План урока (редактор)</h2>
                 <div className="flex flex-wrap gap-2">
@@ -576,13 +576,15 @@ export default function LessonPlanWorkspace() {
               ) : null}
             </div>
 
-            <PlanEditor
-              content={planHtml}
-              contentKey={contentKey}
-              onHtmlChange={onHtmlChange}
-              onExternalLoad={handlePlanEditorLoad}
-              disabled={loading}
-            />
+            <div className="flex min-h-[240px] flex-1 flex-col overflow-hidden xl:min-h-0">
+              <PlanEditor
+                content={planHtml}
+                contentKey={contentKey}
+                onHtmlChange={onHtmlChange}
+                onExternalLoad={handlePlanEditorLoad}
+                disabled={loading}
+              />
+            </div>
           </section>
         </div>
       </main>
