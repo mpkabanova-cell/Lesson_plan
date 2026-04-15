@@ -15,7 +15,8 @@ import { CharacterCount } from "@tiptap/extension-character-count";
 import type { Editor } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useState, type ReactNode } from "react";
+import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const MAX_DEFAULT = 100_000;
 
@@ -109,6 +110,8 @@ export function PlanEditor({
 }: PlanEditorProps) {
   const maxChars = Number(process.env.NEXT_PUBLIC_PLAN_CONTENT_MAX_CHARS) || MAX_DEFAULT;
   const [, setToolbarTick] = useState(0);
+  /** Не пробрасывать в родителя getHTML() сразу после программной загрузки — иначе пустой документ перезапишет ответ API. */
+  const ignoreParentSyncUntil = useRef(0);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -138,7 +141,7 @@ export function PlanEditor({
       Placeholder.configure({ placeholder }),
       CharacterCount.configure({ limit: maxChars }),
     ],
-    content,
+    content: prepareLessonPlanHtmlForEditor(content),
     editable: !disabled,
     editorProps: {
       attributes: {
@@ -147,6 +150,7 @@ export function PlanEditor({
       },
     },
     onUpdate: ({ editor: ed }) => {
+      if (Date.now() < ignoreParentSyncUntil.current) return;
       onHtmlChange(ed.getHTML());
     },
     onTransaction: () => setToolbarTick((n) => n + 1),
@@ -159,10 +163,11 @@ export function PlanEditor({
 
   useEffect(() => {
     if (!editor) return;
+    const prepared = prepareLessonPlanHtmlForEditor(content);
     const current = editor.getHTML();
-    if (current !== content) {
-      editor.commands.setContent(content, false);
-    }
+    if (current === prepared) return;
+    ignoreParentSyncUntil.current = Date.now() + 400;
+    editor.commands.setContent(prepared, false);
   }, [editor, content, contentKey]);
 
   if (!editor) {

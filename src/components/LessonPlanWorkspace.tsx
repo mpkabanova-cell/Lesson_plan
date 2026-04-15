@@ -9,6 +9,7 @@ import {
 } from "@/lib/lessonTypes";
 import { extractTimingFromHtml, type StageTiming } from "@/lib/parseTiming";
 import { DURATION_OPTIONS, GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
+import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
 import { PlanEditor } from "./PlanEditor";
 
 function buildExportTitle(subject: string, grade: string, topic: string): string {
@@ -188,7 +189,8 @@ export default function LessonPlanWorkspace() {
         throw new Error("Сервер вернул не объект в JSON. Проверьте версию API /api/generate.");
       }
       const html = typeof data.html === "string" ? data.html : "";
-      const textOnly = html.replace(/<[^>]+>/g, "").trim();
+      const prepared = prepareLessonPlanHtmlForEditor(html || "<p></p>");
+      const textOnly = prepared.replace(/<[^>]+>/g, "").trim();
       if (!textOnly) {
         const hint = data.raw?.trim()
           ? ` Фрагмент сырого ответа: ${data.raw.slice(0, 400)}${data.raw.length > 400 ? "…" : ""}`
@@ -203,7 +205,7 @@ export default function LessonPlanWorkspace() {
           `Успешно: план загружен в редактор (${textOnly.length.toLocaleString("ru-RU")} симв. текста).`,
         );
       }
-      setPlanHtml(html || "<p></p>");
+      setPlanHtml(prepared);
       setContentKey((k) => k + 1);
     } catch (e) {
       const msg =
