@@ -106,7 +106,7 @@ export function PlanEditor({
     if (!editor) return;
     const current = editor.getHTML();
     if (current !== content) {
-      editor.commands.setContent(content, { emitUpdate: false });
+      editor.commands.setContent(content, false);
     }
   }, [editor, content, contentKey]);
 
@@ -144,7 +144,7 @@ export function PlanEditor({
       return;
     }
     const next = html.split(q).join(repl);
-    editor.commands.setContent(next, { emitUpdate: true });
+    editor.commands.setContent(next);
   };
 
   const cc = editor.storage.characterCount as { characters?: () => number } | undefined;
