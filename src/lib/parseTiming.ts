@@ -1,12 +1,22 @@
 export type StageTiming = { stage: string; minutes: number };
 
 /**
- * Extract timing from generated HTML: prefers data-minutes on .lesson-stage sections.
+ * Из HTML плана: сначала секции с data-minutes, иначе разбор по блокам h2 + «Время: N мин»
+ * (после unwrap section тегов секций уже нет).
  */
 export function extractTimingFromHtml(html: string): StageTiming[] {
-  if (typeof window === "undefined") {
-    return extractTimingServer(html);
+  const fromSections =
+    typeof window === "undefined"
+      ? extractTimingFromSectionsServer(html)
+      : extractTimingFromSectionsClient(html);
+
+  if (fromSections.length > 0) {
+    return fromSections;
   }
+  return extractTimingFromH2Blocks(html);
+}
+
+function extractTimingFromSectionsClient(html: string): StageTiming[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
   const sections = doc.querySelectorAll("section.lesson-stage");
@@ -25,7 +35,7 @@ export function extractTimingFromHtml(html: string): StageTiming[] {
   return out;
 }
 
-function extractTimingServer(html: string): StageTiming[] {
+function extractTimingFromSectionsServer(html: string): StageTiming[] {
   const out: StageTiming[] = [];
   const chunkRe = /<section([^>]*)>([\s\S]*?)<\/section>/gi;
   let match: RegExpExecArray | null;
@@ -45,6 +55,32 @@ function extractTimingServer(html: string): StageTiming[] {
       }
       continue;
     }
+    if (stage && Number.isFinite(minutes)) {
+      out.push({ stage, minutes });
+    }
+  }
+  return out;
+}
+
+/** После снятия section: этапы по заголовкам h2 и строке «Время: … N мин …». */
+function extractTimingFromH2Blocks(html: string): StageTiming[] {
+  const out: StageTiming[] = [];
+  const re = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+  const matches: Array<{ index: number; stage: string; end: number }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const stage = m[1].replace(/<[^>]+>/g, "").trim();
+    matches.push({ index: m.index, stage, end: m.index + m[0].length });
+  }
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].end;
+    const end = i + 1 < matches.length ? matches[i + 1].index : html.length;
+    const block = html.slice(start, end);
+    const tm =
+      block.match(/Время:[\s\S]*?(\d+)\s*мин/i) ||
+      block.match(/(\d+)\s*мин(?:\s*<\/p>|\s*<br)/i);
+    const minutes = tm ? parseInt(tm[1], 10) : NaN;
+    const stage = matches[i].stage;
     if (stage && Number.isFinite(minutes)) {
       out.push({ stage, minutes });
     }

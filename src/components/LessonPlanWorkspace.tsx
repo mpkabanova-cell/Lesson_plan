@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import {
   LESSON_STAGES,
@@ -26,7 +26,10 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     let msg = res.statusText;
     try {
       const j = (await res.json()) as { error?: string; detail?: string };
-      msg = j.error || j.detail || msg;
+      const parts = [j.error, j.detail].filter(
+        (s): s is string => typeof s === "string" && s.length > 0,
+      );
+      msg = parts.length > 0 ? parts.join(" — ") : msg;
     } catch {
       /* ignore */
     }
@@ -80,6 +83,19 @@ export default function LessonPlanWorkspace() {
 
   const stages = LESSON_STAGES[lessonType];
 
+  const [stageFlags, setStageFlags] = useState<boolean[]>(() =>
+    LESSON_STAGES.new_knowledge.map(() => true),
+  );
+
+  useEffect(() => {
+    setStageFlags(LESSON_STAGES[lessonType].map(() => true));
+  }, [lessonType]);
+
+  const effectiveStageFlags = useMemo(() => {
+    if (stageFlags.length !== stages.length) return stages.map(() => true);
+    return stageFlags;
+  }, [stageFlags, stages]);
+
   const timing: StageTiming[] = useMemo(() => {
     if (!planHtml || planHtml === "<p></p>") return [];
     return extractTimingFromHtml(planHtml);
@@ -96,9 +112,14 @@ export default function LessonPlanWorkspace() {
 
   const handleGenerate = async () => {
     setError(null);
+    const selectedStages = stages.filter((_, i) => effectiveStageFlags[i]);
+    if (selectedStages.length === 0) {
+      setError("Отметьте хотя бы один этап в структуре урока.");
+      return;
+    }
     setLoading(true);
     try {
-      const data = await postJson<{ html: string }>("/api/generate", {
+      const data = await postJson<{ html: string; raw?: string }>("/api/generate", {
         systemPrompt,
         subject,
         grade,
@@ -107,8 +128,18 @@ export default function LessonPlanWorkspace() {
         durationMinutes: duration,
         lessonType,
         homework: homework.trim() || undefined,
+        selectedStages,
       });
-      setPlanHtml(data.html);
+      const textOnly = data.html.replace(/<[^>]+>/g, "").trim();
+      if (!textOnly) {
+        const hint = data.raw?.trim()
+          ? ` Фрагмент ответа: ${data.raw.slice(0, 400)}${data.raw.length > 400 ? "…" : ""}`
+          : "";
+        setError(
+          `После обработки план пустой. Проверьте модель и системный промпт.${hint}`,
+        );
+      }
+      setPlanHtml(data.html || "<p></p>");
       setContentKey((k) => k + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка запроса");
@@ -146,14 +177,14 @@ export default function LessonPlanWorkspace() {
       <header className="border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
         <h1 className="text-lg font-semibold text-slate-900">Конструктор плана урока</h1>
         <p className="text-xs text-slate-600">
-          Один экран: параметры, структура по типу урока, редактируемый план и экспорт в Word.
+          Параметры и этапы слева, готовый план справа; экспорт в Word.
         </p>
       </header>
 
-      <main className="mx-auto max-w-[1600px] px-3 py-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {/* Column 1 */}
-          <section className="order-1 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:order-none">
+      <main className="mx-auto max-w-[1400px] px-3 py-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {/* Column 1: параметры + этапы + тайминг */}
+          <section className="order-1 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-800">Параметры урока</h2>
 
             <label className="block text-xs font-medium text-slate-600">
@@ -215,6 +246,38 @@ export default function LessonPlanWorkspace() {
                 ))}
               </select>
             </label>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50/90 p-3">
+              <h3 className="text-xs font-semibold text-slate-800">
+                Этапы урока ({LESSON_TYPE_LABELS[lessonType]})
+              </h3>
+              <p className="mt-1 text-[11px] text-slate-600">
+                По умолчанию включены все этапы. Снимите галочки с тех, что не должны попасть в план — модель
+                учтёт только отмеченные.
+              </p>
+              <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto pr-1">
+                {stages.map((label, i) => (
+                  <li key={label}>
+                    <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-800">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 shrink-0 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                        checked={effectiveStageFlags[i]}
+                        onChange={() => {
+                          setStageFlags((prev) => {
+                            const base =
+                              prev.length === stages.length ? [...prev] : stages.map(() => true);
+                            base[i] = !base[i];
+                            return base;
+                          });
+                        }}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             <label className="block text-xs font-medium text-slate-600">
               Тема урока
@@ -280,33 +343,19 @@ export default function LessonPlanWorkspace() {
                 {error}
               </p>
             ) : null}
-          </section>
-
-          {/* Column 2 */}
-          <section className="order-2 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:order-none">
-            <h2 className="text-sm font-semibold text-slate-800">Структура урока</h2>
-            <p className="text-xs text-slate-600">
-              Этапы для типа «{LESSON_TYPE_LABELS[lessonType]}» (ожидаемый каркас):
-            </p>
-            <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-800">
-              {stages.map((s) => (
-                <li key={s}>{s}</li>
-              ))}
-            </ol>
 
             {homework.trim() ? (
               <p className="rounded-md bg-amber-50 px-2 py-2 text-[11px] text-amber-900">
                 Указано домашнее задание учителя — модель должна встроить его дословно в этап «Информация о
-                домашнем задании».
+                домашнем задании» (если этот этап включён в чеклист).
               </p>
             ) : null}
 
-            <div className="mt-2 border-t border-slate-100 pt-3">
+            <div className="border-t border-slate-100 pt-3">
               <h3 className="text-xs font-semibold text-slate-700">Тайминг по ответу</h3>
               {timing.length === 0 ? (
                 <p className="mt-1 text-xs text-slate-500">
-                  После генерации здесь появится таблица этап → минуты (нужны атрибуты{" "}
-                  <code className="rounded bg-slate-100 px-1">data-minutes</code> у блоков этапов).
+                  После генерации — этап и минуты из ответа модели.
                 </p>
               ) : (
                 <>
@@ -343,8 +392,8 @@ export default function LessonPlanWorkspace() {
             </div>
           </section>
 
-          {/* Column 3 */}
-          <section className="order-3 flex flex-col gap-3 md:col-span-2 xl:col-span-1 xl:order-none">
+          {/* Column 2: редактор */}
+          <section className="order-2 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <h2 className="text-sm font-semibold text-slate-800">План урока (редактор)</h2>
               <div className="flex flex-wrap gap-2">

@@ -1,5 +1,6 @@
 import { marked } from "marked";
 import { sanitizeLessonHtml } from "./sanitizeHtml";
+import { unwrapSectionTags } from "./unwrapLessonHtml";
 
 marked.setOptions({ gfm: true, breaks: true });
 
@@ -16,5 +17,6 @@ export async function aiResponseToHtml(raw: string): Promise<string> {
 
   const parsed = await marked.parse(trimmed);
   const html = looksLikeHtml ? trimmed : String(parsed);
-  return sanitizeLessonHtml(html);
+  const clean = sanitizeLessonHtml(html);
+  return unwrapSectionTags(clean);
 }

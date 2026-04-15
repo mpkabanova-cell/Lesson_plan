@@ -61,7 +61,7 @@ export function PlanEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3, 4] },
+        heading: { levels: [1, 2, 3, 4] },
         bulletList: { keepMarks: true },
         orderedList: { keepMarks: true },
       }),
@@ -181,10 +181,16 @@ export function PlanEditor({
         )}
         <span className="mx-1 w-px self-stretch bg-slate-200" />
         {toolbarBtn(
+          editor.isActive("heading", { level: 1 }),
+          () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
+          "H1",
+          "Заголовок 1",
+        )}
+        {toolbarBtn(
           editor.isActive("heading", { level: 2 }),
           () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
           "H2",
-          "Заголовок",
+          "Заголовок 2",
         )}
         {toolbarBtn(
           editor.isActive("heading", { level: 3 }),

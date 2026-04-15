@@ -15,9 +15,12 @@ type Body = {
   durationMinutes: number;
   lessonType: LessonTypeId;
   homework?: string;
+  /** Этапы, которые нужно включить в план (порядок сохраняется). */
+  selectedStages: string[];
 };
 
 function buildUserPayload(b: Body): string {
+  const stagesList = b.selectedStages.map((s, i) => `${i + 1}. ${s}`).join("\n");
   return [
     "Входные данные урока (JSON):",
     JSON.stringify(
@@ -29,12 +32,20 @@ function buildUserPayload(b: Body): string {
         durationMinutes: b.durationMinutes,
         lessonType: lessonTypeForPrompt(b.lessonType),
         homework: b.homework?.trim() || null,
+        selectedStages: b.selectedStages,
       },
       null,
       2,
     ),
     "",
-    "Сформируй план урока в HTML по инструкциям из системного сообщения.",
+    "КРИТИЧЕСКИ ВАЖНО:",
+    `Учитель включил в план только следующие этапы (в таком порядке). Разработай сценарий ТОЛЬКО для них — не добавляй пропущенные этапы из полного списка методики для этого типа урока.`,
+    `Распредели все ${b.durationMinutes} минут урока только между этими этапами.`,
+    "",
+    "Включённые этапы:",
+    stagesList,
+    "",
+    "Сформируй план урока в HTML по инструкциям из системного сообщения, соблюдая только перечисленные этапы.",
   ].join("\n");
 }
 
@@ -71,6 +82,12 @@ export async function POST(req: Request) {
   if (!body.lessonType || !Number.isFinite(body.durationMinutes) || body.durationMinutes < 5) {
     return NextResponse.json(
       { error: "Укажите тип урока и длительность (не менее 5 мин)" },
+      { status: 400 },
+    );
+  }
+  if (!Array.isArray(body.selectedStages) || body.selectedStages.length === 0) {
+    return NextResponse.json(
+      { error: "Выберите хотя бы один этап урока" },
       { status: 400 },
     );
   }
