@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --accent: #0f766e;
+  --accent-hover: #0d9488;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* TipTap */
+.ProseMirror {
+  outline: none;
+  min-height: 280px;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0.75rem 0 0.35rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.65rem 0 0.3rem;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.25rem;
+  margin: 0.35rem 0;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+  overflow: hidden;
+  table-layout: fixed;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 8px;
+  vertical-align: top;
+  position: relative;
+  box-sizing: border-box;
+  min-width: 64px;
+}
+
+.ProseMirror th {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+.ProseMirror blockquote {
+  border-left: 4px solid #94a3b8;
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  color: #475569;
+}
+
+.ProseMirror pre {
+  background: #f1f5f9;
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  overflow-x: auto;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}
+
+.ProseMirror section.lesson-stage {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
