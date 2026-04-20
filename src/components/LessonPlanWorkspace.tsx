@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import {
   LESSON_STAGES,
@@ -117,12 +118,17 @@ export default function LessonPlanWorkspace() {
   const [topic, setTopic] = useState("");
   const [goal, setGoal] = useState("");
   const [homework, setHomework] = useState("");
-  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+  /** Системный промпт для генерации плана (POST /api/generate, поле `systemPrompt`). */
+  const [planSystemPrompt, setPlanSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+  /** Системный промпт для кнопки «Предложить цель» (POST /api/generate-goal). */
+  const [goalSystemPrompt, setGoalSystemPrompt] = useState(DEFAULT_GOAL_SYSTEM_PROMPT);
 
   const [planHtml, setPlanHtml] = useState("<p></p>");
   const [contentKey, setContentKey] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [goalSuggesting, setGoalSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [goalError, setGoalError] = useState<string | null>(null);
   /** Текущий этап длинного запроса (пока loading). */
   const [generateStep, setGenerateStep] = useState<string | null>(null);
   /** Итог успешной генерации (после loading). */
@@ -158,7 +164,8 @@ export default function LessonPlanWorkspace() {
   const durationMismatch =
     timing.length > 0 && totalMinutes > 0 && totalMinutes !== duration;
 
-  const resetSystemPrompt = () => setSystemPrompt(DEFAULT_SYSTEM_PROMPT);
+  const resetPlanSystemPrompt = () => setPlanSystemPrompt(DEFAULT_SYSTEM_PROMPT);
+  const resetGoalSystemPrompt = () => setGoalSystemPrompt(DEFAULT_GOAL_SYSTEM_PROMPT);
 
   const handlePlanEditorLoad = useCallback((info: PlanEditorLoadInfo) => {
     if (info.contentKey === 0 && info.approxPlainFromHtml === 0 && info.textLength === 0) {
@@ -171,7 +178,7 @@ export default function LessonPlanWorkspace() {
 
     if (info.approxPlainFromHtml > 0 && info.textLength === 0) {
       setError(
-        `Текст от модели есть (~${info.approxPlainFromHtml.toLocaleString("ru-RU")} симв.), но редактор не отобразил содержимое даже в упрощённом виде. Попробуйте другую модель или упростите системный промпт (абзацы, списки, без сложной вёрстки).`,
+        `Текст от модели есть (~${info.approxPlainFromHtml.toLocaleString("ru-RU")} симв.), но редактор не отобразил содержимое даже в упрощённом виде. Попробуйте другую модель или упростите системный промпт плана (абзацы, списки, без сложной вёрстки).`,
       );
       setGenerateSuccessInfo(null);
       return;
@@ -202,7 +209,7 @@ export default function LessonPlanWorkspace() {
     try {
       setGenerateStep("Ожидание ответа от OpenRouter (обычно 20–90 с, максимум ~2 мин)…");
       const data = await postJson<{ html?: string; raw?: string }>("/api/generate", {
-        systemPrompt,
+        systemPrompt: planSystemPrompt,
         subject,
         grade,
         topic,
@@ -226,7 +233,7 @@ export default function LessonPlanWorkspace() {
           ? ` Фрагмент сырого ответа: ${data.raw.slice(0, 400)}${data.raw.length > 400 ? "…" : ""}`
           : "";
         setError(
-          `После обработки план пустой. Проверьте модель и системный промпт.${hint}`,
+          `После обработки план пустой. Проверьте модель и системный промпт плана.${hint}`,
         );
         setGenerateSuccessInfo(null);
       } else {
@@ -245,6 +252,41 @@ export default function LessonPlanWorkspace() {
     } finally {
       setLoading(false);
       setGenerateStep(null);
+    }
+  };
+
+  const handleSuggestGoal = async () => {
+    setGoalError(null);
+    if (!topic.trim()) {
+      setGoalError("Укажите тему урока.");
+      return;
+    }
+    setGoalSuggesting(true);
+    try {
+      const data = await postJson<{ goal?: string }>(
+        "/api/generate-goal",
+        {
+          systemPrompt: goalSystemPrompt,
+          subject,
+          grade,
+          topic: topic.trim(),
+          lessonType,
+        },
+        70_000,
+      );
+      const g = typeof data.goal === "string" ? data.goal.trim() : "";
+      if (!g) {
+        throw new Error("Сервер не вернул текст цели.");
+      }
+      setGoal(g);
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.message.trim().length > 0
+          ? e.message
+          : `Неизвестная ошибка: ${String(e)}`;
+      setGoalError(msg);
+    } finally {
+      setGoalSuggesting(false);
     }
   };
 
@@ -389,15 +431,33 @@ export default function LessonPlanWorkspace() {
               />
             </label>
 
-            <label className="block text-xs font-medium text-slate-600">
-              Цель / ожидаемый результат
+            <div className="block text-xs font-medium text-slate-600">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <span>Цель / ожидаемый результат</span>
+                <button
+                  type="button"
+                  disabled={!topic.trim() || goalSuggesting}
+                  onClick={handleSuggestGoal}
+                  className="shrink-0 rounded-md border border-teal-600 bg-white px-2.5 py-1 text-[11px] font-medium text-teal-800 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {goalSuggesting ? "Подождите…" : "Предложить цель"}
+                </button>
+              </div>
               <textarea
                 className="mt-1 min-h-[72px] w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
                 placeholder="Сформулируйте результат урока"
               />
-            </label>
+              {goalError ? (
+                <p
+                  role="alert"
+                  className="mt-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-950"
+                >
+                  {goalError}
+                </p>
+              ) : null}
+            </div>
 
             <label className="block text-xs font-medium text-slate-600">
               Домашнее задание (необязательно)
@@ -411,23 +471,49 @@ export default function LessonPlanWorkspace() {
 
             <details className="rounded-lg border border-slate-200 bg-slate-50/80">
               <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-slate-700">
-                Системный промпт
+                Системный промпт: цель
               </summary>
               <div className="border-t border-slate-200 p-2">
                 <p className="mb-2 text-[11px] leading-snug text-slate-600">
-                  К запросу модели на сервере автоматически добавляется методическая база из файла{" "}
+                  К запросу на <code className="rounded bg-slate-100 px-1">/api/generate-goal</code> на сервере
+                  добавляется фрагмент методики KONSTRUKTOR_UROKA — раздел «Целеполагание и результат» из{" "}
+                  <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code>.
+                </p>
+                <textarea
+                  className="h-36 w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-2 font-mono text-[11px] leading-snug"
+                  value={goalSystemPrompt}
+                  onChange={(e) => setGoalSystemPrompt(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={resetGoalSystemPrompt}
+                  className="mt-2 text-xs text-teal-700 underline hover:text-teal-900"
+                >
+                  Сбросить к шаблону
+                </button>
+              </div>
+            </details>
+
+            <details className="rounded-lg border border-slate-200 bg-slate-50/80">
+              <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-slate-700">
+                Системный промпт: план
+              </summary>
+              <div className="border-t border-slate-200 p-2">
+                <p className="mb-2 text-[11px] leading-snug text-slate-600">
+                  К запросу на <code className="rounded bg-slate-100 px-1">/api/generate</code> автоматически
+                  добавляется полная методическая база из{" "}
                   <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code> (KONSTRUKTOR_UROKA).
                   Здесь редактируются роль, формат HTML и требования к плану; полный текст методики в поле не
                   дублируется.
                 </p>
                 <textarea
                   className="h-48 w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-2 font-mono text-[11px] leading-snug"
-                  value={systemPrompt}
-                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  value={planSystemPrompt}
+                  onChange={(e) => setPlanSystemPrompt(e.target.value)}
                 />
                 <button
                   type="button"
-                  onClick={resetSystemPrompt}
+                  onClick={resetPlanSystemPrompt}
                   className="mt-2 text-xs text-teal-700 underline hover:text-teal-900"
                 >
                   Сбросить к шаблону

@@ -42,3 +42,10 @@ npm run extract:knowledge
 
 При необходимости ограничьте размер блока методики переменной **`LESSON_METHODOLOGY_MAX_CHARS`** (см. `.env.example`).
 
+## Генерация: два системных промпта в интерфейсе
+
+- **Системный промпт: план** — уходит в `POST /api/generate` как `systemPrompt`. На сервере к нему добавляется **полный** текст методики из `konstruktorUroka.md` (`buildSystemPromptForGeneration`).
+- **Системный промпт: цель** — используется для кнопки «Предложить цель» и `POST /api/generate-goal`. К нему на сервере добавляется **только раздел** «Целеполагание и результат» из того же файла (`buildGoalSystemPromptForGeneration`).
+
+Тело `POST /api/generate-goal`: `{ "systemPrompt", "subject", "grade", "topic", "lessonType" }`. Ответ: `{ "goal": "..." }`.
+
