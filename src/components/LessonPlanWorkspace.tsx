@@ -1,14 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
+import { LESSON_GOAL_SHORT_EXAMPLES } from "@/lib/lessonGoalExamples";
 import {
   LESSON_STAGES,
   LESSON_TYPE_LABELS,
   type LessonTypeId,
 } from "@/lib/lessonTypes";
-import { extractTimingFromHtml, type StageTiming } from "@/lib/parseTiming";
+import {
+  extractTimingFromHtml,
+  normalizeStageMinutesToTotal,
+  type StageTiming,
+} from "@/lib/parseTiming";
 import { DURATION_OPTIONS, GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
@@ -83,6 +88,10 @@ async function postJson<T>(url: string, body: unknown, timeoutMs = 130_000): Pro
   }
 }
 
+/** Минимальная высота поля цели (px), максимум — после него внутри поля включается прокрутка. */
+const GOAL_TEXTAREA_MIN_HEIGHT_PX = 72;
+const GOAL_TEXTAREA_MAX_HEIGHT_PX = 480;
+
 async function downloadBlob(path: string, body: unknown, filename: string) {
   const res = await fetch(path, {
     method: "POST",
@@ -129,6 +138,17 @@ export default function LessonPlanWorkspace() {
   const [goalSuggesting, setGoalSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [goalError, setGoalError] = useState<string | null>(null);
+  const goalTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = goalTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const scrollH = el.scrollHeight;
+    const clamped = Math.min(Math.max(scrollH, GOAL_TEXTAREA_MIN_HEIGHT_PX), GOAL_TEXTAREA_MAX_HEIGHT_PX);
+    el.style.height = `${clamped}px`;
+    el.style.overflowY = scrollH > GOAL_TEXTAREA_MAX_HEIGHT_PX ? "auto" : "hidden";
+  }, [goal]);
   /** Текущий этап длинного запроса (пока loading). */
   const [generateStep, setGenerateStep] = useState<string | null>(null);
   /** Итог успешной генерации (после loading). */
@@ -152,17 +172,29 @@ export default function LessonPlanWorkspace() {
     return stageFlags;
   }, [stageFlags, stages]);
 
-  const timing: StageTiming[] = useMemo(() => {
+  const timingRaw: StageTiming[] = useMemo(() => {
     if (!planHtml || planHtml === "<p></p>") return [];
     return extractTimingFromHtml(planHtml);
   }, [planHtml]);
+
+  /** Минуты из плана приведены к выбранной длительности урока, сумма всегда = длительность. */
+  const timing: StageTiming[] = useMemo(
+    () => normalizeStageMinutesToTotal(timingRaw, duration),
+    [timingRaw, duration],
+  );
+
+  const timingRawSum = useMemo(
+    () => timingRaw.reduce((s, x) => s + x.minutes, 0),
+    [timingRaw],
+  );
 
   const totalMinutes = useMemo(
     () => timing.reduce((s, x) => s + x.minutes, 0),
     [timing],
   );
-  const durationMismatch =
-    timing.length > 0 && totalMinutes > 0 && totalMinutes !== duration;
+
+  const timingWasRescaled =
+    timingRaw.length > 0 && timingRawSum > 0 && timingRawSum !== duration;
 
   const resetPlanSystemPrompt = () => setPlanSystemPrompt(DEFAULT_SYSTEM_PROMPT);
   const resetGoalSystemPrompt = () => setGoalSystemPrompt(DEFAULT_GOAL_SYSTEM_PROMPT);
@@ -319,8 +351,8 @@ export default function LessonPlanWorkspace() {
       <header className="shrink-0 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
         <h1 className="text-lg font-semibold text-slate-900">Конструктор плана урока</h1>
         <p className="text-xs text-slate-600">
-          Параметры и этапы слева, готовый план справа; экспорт в Word. Ниже темы — кнопка «Предложить цель» и два
-          раскрывающихся блока системных промпта (цель и план).
+          Слева — что за урок и какие этапы взять в сценарий; справа — готовый текст плана и экспорт в Word. Кнопка
+          «Предложить цель» и настройки промптов — ниже поля темы.
         </p>
       </header>
 
@@ -394,9 +426,9 @@ export default function LessonPlanWorkspace() {
               <h3 className="text-xs font-semibold text-slate-800">
                 Этапы урока ({LESSON_TYPE_LABELS[lessonType]})
               </h3>
-              <p className="mt-1 text-[11px] text-slate-600">
-                По умолчанию включены все этапы. Снимите галочки с тех, что не должны попасть в план — модель
-                учтёт только отмеченные.
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+                По умолчанию отмечено всё: сценарий строится по полной линейке этого типа урока. Снимите галочку с этапа,
+                если его не будет на уроке — в план попадут только отмеченные шаги (порядок сохраняется).
               </p>
               <ul className="mt-2 space-y-2 pr-1">
                 {stages.map((label, i) => (
@@ -434,6 +466,10 @@ export default function LessonPlanWorkspace() {
 
             <div className="block text-xs font-medium text-slate-600">
               <span className="block">Цель / ожидаемый результат</span>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+                <span className="font-medium text-slate-700">Ориентир для выбранного типа урока: </span>
+                {LESSON_GOAL_SHORT_EXAMPLES[lessonType]}
+              </p>
               <button
                 type="button"
                 disabled={!topic.trim() || goalSuggesting}
@@ -443,10 +479,12 @@ export default function LessonPlanWorkspace() {
                 {goalSuggesting ? "Запрос цели…" : "Предложить цель"}
               </button>
               <textarea
-                className="mt-2 min-h-[72px] w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                ref={goalTextareaRef}
+                rows={1}
+                className="mt-2 min-h-[72px] w-full resize-none overflow-x-hidden rounded-lg border border-slate-200 px-2 py-2 text-sm leading-snug"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="Сформулируйте результат урока или нажмите кнопку выше"
+                placeholder="Напишите своими словами или воспользуйтесь кнопкой — подставим формулировку под тему и тип урока"
               />
               {goalError ? (
                 <p
@@ -464,7 +502,7 @@ export default function LessonPlanWorkspace() {
                 className="mt-1 min-h-[64px] w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                 value={homework}
                 onChange={(e) => setHomework(e.target.value)}
-                placeholder="Если пусто — модель предложит своё"
+                placeholder="Если оставить пустым — в плане появится предложение от модели; если вставите свой текст — он попадёт в этап про ДЗ дословно"
               />
             </label>
 
@@ -473,10 +511,10 @@ export default function LessonPlanWorkspace() {
                 Системный промпт: цель
               </summary>
               <div className="border-t border-slate-200 p-2">
-                <p className="mb-2 text-[11px] leading-snug text-slate-600">
-                  К запросу на <code className="rounded bg-slate-100 px-1">/api/generate-goal</code> на сервере
-                  добавляется фрагмент методики KONSTRUKTOR_UROKA — раздел «Целеполагание и результат» из{" "}
-                  <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code>.
+                <p className="mb-2 text-[11px] leading-relaxed text-slate-600">
+                  Здесь задаёте тон и требования к формулировке цели. На сервер к этому тексту подмешивается фрагмент
+                  методики (целеполагание) из <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code> —
+                  как опора, не как дублирование всего файла.
                 </p>
                 <textarea
                   className="h-36 w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-2 font-mono text-[11px] leading-snug"
@@ -498,12 +536,10 @@ export default function LessonPlanWorkspace() {
                 Системный промпт: план
               </summary>
               <div className="border-t border-slate-200 p-2">
-                <p className="mb-2 text-[11px] leading-snug text-slate-600">
-                  К запросу на <code className="rounded bg-slate-100 px-1">/api/generate</code> автоматически
-                  добавляется полная методическая база из{" "}
-                  <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code> (KONSTRUKTOR_UROKA).
-                  Здесь редактируются роль, формат HTML и требования к плану; полный текст методики в поле не
-                  дублируется.
+                <p className="mb-2 text-[11px] leading-relaxed text-slate-600">
+                  Здесь — роль модели, структура этапов и то, что должно быть в блоках «цель этапа», «действия учителя» и
+                  т.д. Полный текст методики KONSTRUKTOR_UROKA подставляется на сервере автоматически; в поле ниже его
+                  не нужно копировать.
                 </p>
                 <textarea
                   className="h-48 w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-2 font-mono text-[11px] leading-snug"
@@ -578,10 +614,10 @@ export default function LessonPlanWorkspace() {
             ) : null}
 
             <div className="border-t border-slate-100 pt-3">
-              <h3 className="text-xs font-semibold text-slate-700">Тайминг по ответу</h3>
+              <h3 className="text-xs font-semibold text-slate-700">Минуты по этапам</h3>
               {timing.length === 0 ? (
-                <p className="mt-1 text-xs text-slate-500">
-                  После генерации — этап и минуты из ответа модели.
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Здесь появится сводка по этапам из сгенерированного плана (удобно сверить с выбранной длительностью).
                 </p>
               ) : (
                 <>
@@ -601,16 +637,16 @@ export default function LessonPlanWorkspace() {
                       ))}
                     </tbody>
                   </table>
-                  <p className="mt-2 text-xs text-slate-600">
-                    Итого:{" "}
-                    <span className="font-semibold tabular-nums text-slate-900">{totalMinutes}</span> мин
-                    (урок:{" "}
+                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                    В сумме:{" "}
+                    <span className="font-semibold tabular-nums text-slate-900">{totalMinutes}</span> мин (как в
+                    настройках урока:{" "}
                     <span className="tabular-nums">{duration}</span> мин)
                   </p>
-                  {durationMismatch ? (
-                    <p className="mt-1 text-[11px] font-medium text-amber-800">
-                      Сумма минут не совпадает с длительностью урока — проверьте ответ модели или отредактируйте
-                      план.
+                  {timingWasRescaled ? (
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+                      В черновике плана сумма минут была {timingRawSum} — в таблице ниже она приведена к {duration} мин,
+                      чтобы совпадать с длительностью урока.
                     </p>
                   ) : null}
                 </>

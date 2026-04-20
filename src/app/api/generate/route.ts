@@ -53,7 +53,9 @@ function buildUserPayload(b: Body): string {
     "",
     "КРИТИЧЕСКИ ВАЖНО:",
     `Учитель включил в план только следующие этапы (в таком порядке). Разработай сценарий ТОЛЬКО для них — не добавляй пропущенные этапы из полного списка методики для этого типа урока.`,
-    `Распредели все ${b.durationMinutes} минут урока только между этими этапами.`,
+    `Длительность урока в минутах (единственный ориентир): ${b.durationMinutes}.`,
+    `Распредели ровно ${b.durationMinutes} минут между этими этапами: сумма значений data-minutes по всем section и сумма чисел в строках «Время: … мин» должна быть строго ${b.durationMinutes}, не больше и не меньше.`,
+    `Перед завершением ответа проверь арифметику: сложи минуты всех этапов — должно получиться ${b.durationMinutes}.`,
     "",
     "Включённые этапы:",
     stagesList,
@@ -187,7 +189,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const html = await aiResponseToHtml(raw);
+    const html = await aiResponseToHtml(raw, { durationMinutes: body.durationMinutes });
     return NextResponse.json({ html, raw });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

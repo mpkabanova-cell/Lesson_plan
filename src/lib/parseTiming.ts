@@ -1,6 +1,50 @@
 export type StageTiming = { stage: string; minutes: number };
 
 /**
+ * Пропорционально перераспределяет минуты по этапам так, чтобы сумма равнялась `targetTotal`
+ * (целые минуты; остаток по наибольшим дробным частям).
+ */
+export function normalizeStageMinutesToTotal(
+  rows: StageTiming[],
+  targetTotal: number,
+): StageTiming[] {
+  if (rows.length === 0 || !Number.isFinite(targetTotal) || targetTotal < 1) {
+    return [];
+  }
+
+  const n = rows.length;
+  const sumM = rows.reduce((s, r) => s + r.minutes, 0);
+
+  if (sumM <= 0) {
+    const base = Math.floor(targetTotal / n);
+    let rem = targetTotal - base * n;
+    return rows.map((row, i) => ({
+      ...row,
+      minutes: base + (i < rem ? 1 : 0),
+    }));
+  }
+
+  const exact = rows.map((r) => (r.minutes * targetTotal) / sumM);
+  const floors = exact.map((x) => Math.floor(x));
+  const allocated = floors.reduce((a, b) => a + b, 0);
+  let remainder = targetTotal - allocated;
+
+  const order = exact
+    .map((x, i) => ({ i, frac: x - Math.floor(x) }))
+    .sort((a, b) => b.frac - a.frac);
+
+  const minutes = [...floors];
+  let o = 0;
+  while (remainder > 0 && order.length > 0) {
+    minutes[order[o % order.length].i]++;
+    remainder--;
+    o++;
+  }
+
+  return rows.map((row, i) => ({ ...row, minutes: minutes[i] }));
+}
+
+/**
  * Из HTML плана: сначала секции с data-minutes, иначе разбор по блокам h2 + «Время: N мин»
  * (после unwrap section тегов секций уже нет).
  */
