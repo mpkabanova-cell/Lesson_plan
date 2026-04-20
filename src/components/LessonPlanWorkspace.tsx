@@ -319,7 +319,8 @@ export default function LessonPlanWorkspace() {
       <header className="shrink-0 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
         <h1 className="text-lg font-semibold text-slate-900">Конструктор плана урока</h1>
         <p className="text-xs text-slate-600">
-          Параметры и этапы слева, готовый план справа; экспорт в Word.
+          Параметры и этапы слева, готовый план справа; экспорт в Word. Ниже темы — кнопка «Предложить цель» и два
+          раскрывающихся блока системных промпта (цель и план).
         </p>
       </header>
 
@@ -432,22 +433,20 @@ export default function LessonPlanWorkspace() {
             </label>
 
             <div className="block text-xs font-medium text-slate-600">
-              <div className="flex flex-wrap items-end justify-between gap-2">
-                <span>Цель / ожидаемый результат</span>
-                <button
-                  type="button"
-                  disabled={!topic.trim() || goalSuggesting}
-                  onClick={handleSuggestGoal}
-                  className="shrink-0 rounded-md border border-teal-600 bg-white px-2.5 py-1 text-[11px] font-medium text-teal-800 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {goalSuggesting ? "Подождите…" : "Предложить цель"}
-                </button>
-              </div>
+              <span className="block">Цель / ожидаемый результат</span>
+              <button
+                type="button"
+                disabled={!topic.trim() || goalSuggesting}
+                onClick={handleSuggestGoal}
+                className="mt-2 w-full rounded-lg border border-teal-600 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-900 shadow-sm hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {goalSuggesting ? "Запрос цели…" : "Предложить цель"}
+              </button>
               <textarea
-                className="mt-1 min-h-[72px] w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                className="mt-2 min-h-[72px] w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="Сформулируйте результат урока"
+                placeholder="Сформулируйте результат урока или нажмите кнопку выше"
               />
               {goalError ? (
                 <p
