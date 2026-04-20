@@ -652,7 +652,7 @@ export default function LessonPlanWorkspace() {
                   </p>
                   {timingWasRescaled ? (
                     <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                      В черновике плана сумма минут была {timingRawSum} — в таблице ниже она приведена к {duration} мин,
+                      В черновике плана сумма минут была {timingRawSum} — в сводке ниже она приведена к {duration} мин,
                       чтобы совпадать с длительностью урока.
                     </p>
                   ) : null}

@@ -112,7 +112,7 @@ export function PlanEditor({
   contentKey,
   onHtmlChange,
   onExternalLoad,
-  placeholder = "Здесь появится план урока: таблица этапов, текст, формулы LaTeX (кнопка ∑), изображения.",
+  placeholder = "Здесь появится план урока: текст, этапы, формулы LaTeX (кнопка ∑), изображения — как задано в системном промпте.",
   disabled = false,
 }: PlanEditorProps) {
   const maxChars = Number(process.env.NEXT_PUBLIC_PLAN_CONTENT_MAX_CHARS) || MAX_DEFAULT;
