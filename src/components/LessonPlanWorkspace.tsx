@@ -129,7 +129,7 @@ export default function LessonPlanWorkspace() {
   const [homework, setHomework] = useState("");
   /** Системный промпт для генерации плана (POST /api/generate, поле `systemPrompt`). */
   const [planSystemPrompt, setPlanSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
-  /** Системный промпт для кнопки «Предложить цель» (POST /api/generate-goal). */
+  /** Системный промпт для кнопки генерации образовательных результатов (POST /api/generate-goal). */
   const [goalSystemPrompt, setGoalSystemPrompt] = useState(DEFAULT_GOAL_SYSTEM_PROMPT);
 
   const [planHtml, setPlanHtml] = useState("<p></p>");
@@ -308,7 +308,7 @@ export default function LessonPlanWorkspace() {
       );
       const g = typeof data.goal === "string" ? data.goal.trim() : "";
       if (!g) {
-        throw new Error("Сервер не вернул текст цели.");
+        throw new Error("Сервер не вернул текст.");
       }
       setGoal(g);
     } catch (e) {
@@ -352,7 +352,7 @@ export default function LessonPlanWorkspace() {
         <h1 className="text-lg font-semibold text-slate-900">Конструктор плана урока</h1>
         <p className="text-xs text-slate-600">
           Слева — что за урок и какие этапы взять в сценарий; справа — готовый текст плана и экспорт в Word. Кнопка
-          «Предложить цель» и настройки промптов — ниже поля темы.
+          подсказки по образовательным результатам и настройки промптов — ниже поля темы.
         </p>
       </header>
 
@@ -470,7 +470,7 @@ export default function LessonPlanWorkspace() {
             </details>
 
             <div className="block text-xs font-medium text-slate-600">
-              <span className="block">Цель / ожидаемый результат</span>
+              <span className="block">Образовательные результаты</span>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
                 <span className="font-medium text-slate-700">Ориентир для выбранного типа урока: </span>
                 {LESSON_GOAL_SHORT_EXAMPLES[lessonType]}
@@ -481,7 +481,7 @@ export default function LessonPlanWorkspace() {
                 onClick={handleSuggestGoal}
                 className="mt-2 w-full rounded-lg border border-teal-600 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-900 shadow-sm hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {goalSuggesting ? "Запрос цели…" : "Предложить цель"}
+                {goalSuggesting ? "Запрос…" : "Предложить формулировку"}
               </button>
               <textarea
                 ref={goalTextareaRef}
@@ -489,7 +489,7 @@ export default function LessonPlanWorkspace() {
                 className="mt-2 min-h-[72px] w-full resize-none overflow-x-hidden rounded-lg border border-slate-200 px-2 py-2 text-sm leading-snug"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="Напишите своими словами или воспользуйтесь кнопкой — подставим формулировку под тему и тип урока"
+                placeholder="Опишите ожидаемые результаты своими словами или воспользуйтесь кнопкой — подставим формулировку под тему и тип урока"
               />
               {goalError ? (
                 <p
@@ -513,13 +513,14 @@ export default function LessonPlanWorkspace() {
 
             <details className="rounded-lg border border-slate-200 bg-slate-50/80">
               <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-slate-700">
-                Системный промпт: цель
+                Системный промпт: образовательные результаты
               </summary>
               <div className="border-t border-slate-200 p-2">
                 <p className="mb-2 text-[11px] leading-relaxed text-slate-600">
-                  Здесь задаёте тон и требования к формулировке цели. На сервер к этому тексту подмешивается фрагмент
-                  методики (целеполагание) из <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code> —
-                  как опора, не как дублирование всего файла.
+                  Здесь задаёте тон и требования к формулировке образовательных результатов. На сервер к этому тексту
+                  подмешивается фрагмент методики (целеполагание) из{" "}
+                  <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code> — как опора, не как дублирование
+                  всего файла.
                 </p>
                 <textarea
                   className="h-36 w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-2 font-mono text-[11px] leading-snug"

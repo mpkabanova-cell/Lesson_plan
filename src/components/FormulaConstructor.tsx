@@ -2,7 +2,8 @@
 
 import type { Editor } from "@tiptap/core";
 import katex from "katex";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FORMULA_TEMPLATES } from "@/lib/formulaTemplates";
 
 type Props = {
@@ -11,10 +12,16 @@ type Props = {
 
 export function FormulaConstructor({ editor }: Props) {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [panelPos, setPanelPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [latex, setLatex] = useState("");
   const [previewHtml, setPreviewHtml] = useState("");
   const titleId = useId();
+  const panelButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -26,6 +33,33 @@ export function FormulaConstructor({ editor }: Props) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  /** Тулбар с overflow-x-auto обрезает выпадающий блок; панель рендерим в body с position: fixed. */
+  useLayoutEffect(() => {
+    if (!panelOpen) {
+      setPanelPos(null);
+      return;
+    }
+    const el = panelButtonRef.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      const maxW = Math.min(window.innerWidth - 16, 352);
+      let left = r.left;
+      if (left + maxW > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - maxW - 8);
+      }
+      if (left < 8) left = 8;
+      setPanelPos({ top: r.bottom + 6, left, width: maxW });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [panelOpen]);
 
   useEffect(() => {
     if (!latex.trim()) {
@@ -61,6 +95,7 @@ export function FormulaConstructor({ editor }: Props) {
     <>
       <div className="relative">
         <button
+          ref={panelButtonRef}
           type="button"
           title="Конструктор формул"
           onClick={() => setPanelOpen((o) => !o)}
@@ -74,65 +109,73 @@ export function FormulaConstructor({ editor }: Props) {
             ∑
           </span>
         </button>
+      </div>
 
-        {panelOpen ? (
-          <>
-            <button
-              type="button"
-              className="fixed inset-0 z-[100] cursor-default bg-black/20"
-              aria-label="Закрыть панель"
-              onClick={() => setPanelOpen(false)}
-            />
-            <div
-              className="absolute left-0 top-full z-[110] mt-1 w-[min(calc(100vw-1rem),22rem)] rounded-lg border border-slate-200 bg-white p-3 shadow-xl"
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              <div className="flex items-start gap-2 border-b border-slate-100 pb-2">
-                <span className="font-serif text-xl leading-none text-slate-700">∑</span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Формулы</p>
-                  <p className="text-[11px] text-slate-500">Вставить LaTeX шаблон</p>
-                </div>
-              </div>
-
-              <div className="mt-3 grid max-h-[min(50vh,320px)] grid-cols-4 gap-1.5 overflow-y-auto pr-0.5">
-                {FORMULA_TEMPLATES.map((t) => (
-                  <button
-                    key={`${t.label}-${t.latex}`}
-                    type="button"
-                    title={t.latex}
-                    onClick={() => openDialog(t.latex)}
-                    className="flex min-h-[3.25rem] flex-col items-center justify-center rounded-md border border-slate-200 bg-slate-50/90 px-0.5 py-1.5 text-center transition hover:border-teal-500 hover:bg-teal-50/80"
-                  >
-                    <span className="font-serif text-[15px] font-semibold leading-tight text-slate-900">
-                      {t.symbol}
-                    </span>
-                    <span className="mt-0.5 line-clamp-2 text-[9px] leading-tight text-slate-600">
-                      {t.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
+      {panelOpen && panelPos && typeof document !== "undefined"
+        ? createPortal(
+            <>
               <button
                 type="button"
-                onClick={() => openDialog("x^2+1")}
-                className="mt-2 w-full rounded-md border border-dashed border-slate-300 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
+                className="fixed inset-0 z-[200] cursor-default bg-black/20"
+                aria-label="Закрыть панель"
+                onClick={() => setPanelOpen(false)}
+              />
+              <div
+                className="fixed z-[210] max-h-[min(50vh,360px)] overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-xl"
+                style={{
+                  top: panelPos.top,
+                  left: panelPos.left,
+                  width: panelPos.width,
+                }}
+                onMouseDown={(e) => e.preventDefault()}
               >
-                Свой шаблон (поле LaTeX)…
-              </button>
+                <div className="flex items-start gap-2 border-b border-slate-100 pb-2">
+                  <span className="font-serif text-xl leading-none text-slate-700">∑</span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Формулы</p>
+                    <p className="text-[11px] text-slate-500">Вставить LaTeX шаблон</p>
+                  </div>
+                </div>
 
-              <p className="mt-2 flex flex-wrap items-center gap-1 text-[10px] leading-snug text-slate-500">
-                В тексте можно оформлять как
-                <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-800">
-                  $формула$
-                </code>
-                — в редакторе удобнее пользоваться шаблонами выше; при экспорте в Word формулы остаются читабельными.
-              </p>
-            </div>
-          </>
-        ) : null}
-      </div>
+                <div className="mt-3 grid max-h-[min(40vh,280px)] grid-cols-4 gap-1.5 overflow-y-auto pr-0.5">
+                  {FORMULA_TEMPLATES.map((t) => (
+                    <button
+                      key={`${t.label}-${t.latex}`}
+                      type="button"
+                      title={t.latex}
+                      onClick={() => openDialog(t.latex)}
+                      className="flex min-h-[3.25rem] flex-col items-center justify-center rounded-md border border-slate-200 bg-slate-50/90 px-0.5 py-1.5 text-center transition hover:border-teal-500 hover:bg-teal-50/80"
+                    >
+                      <span className="font-serif text-[15px] font-semibold leading-tight text-slate-900">
+                        {t.symbol}
+                      </span>
+                      <span className="mt-0.5 line-clamp-2 text-[9px] leading-tight text-slate-600">
+                        {t.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => openDialog("x^2+1")}
+                  className="mt-2 w-full rounded-md border border-dashed border-slate-300 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Свой шаблон (поле LaTeX)…
+                </button>
+
+                <p className="mt-2 flex flex-wrap items-center gap-1 text-[10px] leading-snug text-slate-500">
+                  В тексте можно оформлять как
+                  <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-800">
+                    $формула$
+                  </code>
+                  — в редакторе удобнее пользоваться шаблонами выше; при экспорте в Word формулы остаются читабельными.
+                </p>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
 
       {dialogOpen ? (
         <>
