@@ -414,6 +414,12 @@ export default function LessonPlanWorkspace() {
                 Системный промпт
               </summary>
               <div className="border-t border-slate-200 p-2">
+                <p className="mb-2 text-[11px] leading-snug text-slate-600">
+                  К запросу модели на сервере автоматически добавляется методическая база из файла{" "}
+                  <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code> (KONSTRUKTOR_UROKA).
+                  Здесь редактируются роль, формат HTML и требования к плану; полный текст методики в поле не
+                  дублируется.
+                </p>
                 <textarea
                   className="h-48 w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-2 font-mono text-[11px] leading-snug"
                   value={systemPrompt}

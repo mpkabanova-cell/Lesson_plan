@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { aiResponseToHtml } from "@/lib/aiResponseToHtml";
+import { buildSystemPromptForGeneration } from "@/lib/knowledge/lessonMethodology";
 import type { LessonTypeId } from "@/lib/lessonTypes";
 import { lessonTypeForPrompt } from "@/lib/lessonTypes";
 
@@ -111,6 +112,7 @@ export async function POST(req: Request) {
   }
 
   const userContent = buildUserPayload(body);
+  const systemContent = buildSystemPromptForGeneration(body.systemPrompt);
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${key}`,
@@ -129,7 +131,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: body.systemPrompt },
+          { role: "system", content: systemContent },
           { role: "user", content: userContent },
         ],
         temperature: 0.4,

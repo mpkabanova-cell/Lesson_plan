@@ -1,4 +1,7 @@
-/** Default system prompt aligned with методический PDF + machine-readable stage markup. */
+/**
+ * Промпт по умолчанию в интерфейсе (роль, HTML, этапы).
+ * На сервере к нему добавляется методическая база из `konstruktorUroka.md` — см. `buildSystemPromptForGeneration`.
+ */
 export const DEFAULT_SYSTEM_PROMPT = `Ты — опытный методист и учитель-практик.
 Составь подробный план урока, который можно сразу провести в классе.
 
