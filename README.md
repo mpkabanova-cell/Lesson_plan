@@ -29,6 +29,8 @@ npm run dev
 
 При генерации плана к системному промпту из интерфейса **на сервере добавляется** текст из [`src/lib/knowledge/konstruktorUroka.md`](src/lib/knowledge/konstruktorUroka.md). В репозитории лежит заготовка; её можно **заменить полным текстом** из PDF.
 
+**Предметная база (информатика 7–9):** если в параметрах урока выбраны предмет **«Информатика»** и класс **7, 8 или 9**, после блока методики дополнительно подмешивается [`src/lib/knowledge/informatika_7_9.md`](src/lib/knowledge/informatika_7_9.md) (замените содержимое своей рабочей программой). Для классов 10–11 или других предметов этот файл не используется. Имя основного файла методики в репозитории — **`konstruktorUroka.md`** (регистр букв важен на Linux-серверах).
+
 ### Обновить базу из PDF
 
 1. Скопируйте `KONSTRUKTOR_UROKA.pdf` в [`docs/KONSTRUKTOR_UROKA.pdf`](docs/README.md).
@@ -46,8 +48,8 @@ npm run extract:knowledge
 
 ## Генерация: два системных промпта в интерфейсе
 
-- **Системный промпт: план** — уходит в `POST /api/generate` как `systemPrompt`. На сервере к нему добавляется **полный** текст методики из `konstruktorUroka.md` (`buildSystemPromptForGeneration`).
-- **Системный промпт: цель** — используется для кнопки «Предложить цель» и `POST /api/generate-goal`. К нему на сервере добавляется **только раздел** «Целеполагание и результат» из того же файла (`buildGoalSystemPromptForGeneration`).
+- **Системный промпт: план** — уходит в `POST /api/generate` как `systemPrompt`. На сервере к нему добавляется **полный** текст методики из `konstruktorUroka.md` (`buildSystemPromptForGeneration`); при «Информатика» и классе 7–9 — ещё и `informatika_7_9.md`.
+- **Системный промпт: образовательные результаты** — используется для кнопки «Предложить формулировку» и `POST /api/generate-goal`. К нему на сервере добавляется **только раздел** «Целеполагание и результат» из `konstruktorUroka.md` (`buildGoalSystemPromptForGeneration`); при «Информатика» и классе 7–9 — также `informatika_7_9.md`.
 
 Тело `POST /api/generate-goal`: `{ "systemPrompt", "subject", "grade", "topic", "lessonType" }`. Ответ: `{ "goal": "..." }`.
 

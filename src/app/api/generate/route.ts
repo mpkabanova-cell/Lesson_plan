@@ -117,7 +117,10 @@ export async function POST(req: Request) {
   }
 
   const userContent = buildUserPayload(body);
-  const systemContent = buildSystemPromptForGeneration(body.systemPrompt);
+  const systemContent = buildSystemPromptForGeneration(body.systemPrompt, {
+    subject: body.subject,
+    grade: body.grade,
+  });
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${key}`,
