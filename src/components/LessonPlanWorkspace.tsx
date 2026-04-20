@@ -408,6 +408,16 @@ export default function LessonPlanWorkspace() {
             </label>
 
             <label className="block text-xs font-medium text-slate-600">
+              Тема урока
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="Например: Дробные числа"
+              />
+            </label>
+
+            <label className="block text-xs font-medium text-slate-600">
               Тип урока
               <select
                 className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm"
@@ -422,47 +432,42 @@ export default function LessonPlanWorkspace() {
               </select>
             </label>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50/90 p-3">
-              <h3 className="text-xs font-semibold text-slate-800">
-                Этапы урока ({LESSON_TYPE_LABELS[lessonType]})
-              </h3>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                По умолчанию отмечено всё: сценарий строится по полной линейке этого типа урока. Снимите галочку с этапа,
-                если его не будет на уроке — в план попадут только отмеченные шаги (порядок сохраняется).
-              </p>
-              <ul className="mt-2 space-y-2 pr-1">
-                {stages.map((label, i) => (
-                  <li key={label}>
-                    <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-800">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 shrink-0 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
-                        checked={effectiveStageFlags[i]}
-                        onChange={() => {
-                          setStageFlags((prev) => {
-                            const base =
-                              prev.length === stages.length ? [...prev] : stages.map(() => true);
-                            base[i] = !base[i];
-                            return base;
-                          });
-                        }}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <label className="block text-xs font-medium text-slate-600">
-              Тема урока
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="Например: Дробные числа"
-              />
-            </label>
+            <details className="rounded-lg border border-slate-200 bg-slate-50/90">
+              <summary className="cursor-pointer select-none px-3 py-2.5 text-xs font-medium text-slate-800 hover:bg-slate-100/80">
+                Этапы для этого типа урока
+                <span className="mt-0.5 block text-[11px] font-normal text-slate-500">
+                  {LESSON_TYPE_LABELS[lessonType]} — нажмите, чтобы развернуть список и при необходимости снять этапы
+                </span>
+              </summary>
+              <div className="border-t border-slate-200 p-3 pt-2">
+                <p className="text-[11px] leading-relaxed text-slate-600">
+                  По умолчанию отмечено всё: сценарий строится по полной линейке этого типа урока. Снимите галочку с этапа,
+                  если его не будет на уроке — в план попадут только отмеченные шаги (порядок сохраняется).
+                </p>
+                <ul className="mt-2 space-y-2 pr-1">
+                  {stages.map((label, i) => (
+                    <li key={label}>
+                      <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-800">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 shrink-0 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                          checked={effectiveStageFlags[i]}
+                          onChange={() => {
+                            setStageFlags((prev) => {
+                              const base =
+                                prev.length === stages.length ? [...prev] : stages.map(() => true);
+                              base[i] = !base[i];
+                              return base;
+                            });
+                          }}
+                        />
+                        <span>{label}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
 
             <div className="block text-xs font-medium text-slate-600">
               <span className="block">Цель / ожидаемый результат</span>

@@ -1,5 +1,6 @@
 import HTMLtoDOCX from "html-to-docx";
 import { NextResponse } from "next/server";
+import { expandMathSpansForExport } from "@/lib/expandMathSpansForExport";
 import { sanitizeLessonHtml } from "@/lib/sanitizeHtml";
 
 export const runtime = "nodejs";
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Пустой HTML" }, { status: 400 });
   }
 
-  const inner = sanitizeLessonHtml(innerRaw);
+  const inner = expandMathSpansForExport(sanitizeLessonHtml(innerRaw));
   const title = body.title?.trim() || "План урока";
   const fragment = `<h1>${escapeHtml(title)}</h1>${inner}`;
 

@@ -45,10 +45,43 @@ export function normalizeStageMinutesToTotal(
 }
 
 /**
- * Из HTML плана: сначала секции с data-minutes, иначе разбор по блокам h2 + «Время: N мин»
- * (после unwrap section тегов секций уже нет).
+ * Тайминг из таблицы плана (`table.lesson-plan-table`, строки `tr` с data-stage и data-minutes).
+ */
+export function extractTimingFromLessonPlanTable(html: string): StageTiming[] {
+  const out: StageTiming[] = [];
+  const tableMatch = /<table[^>]*class="[^"]*lesson-plan-table[^"]*"[^>]*>([\s\S]*?)<\/table>/i.exec(
+    html,
+  );
+  if (!tableMatch) return [];
+  const tableInner = tableMatch[1];
+  const tbodyMatch = /<tbody[^>]*>([\s\S]*?)<\/tbody>/i.exec(tableInner);
+  const body = tbodyMatch ? tbodyMatch[1] : tableInner;
+  const trRe = /<tr\b([^>]*)>([\s\S]*?)<\/tr>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = trRe.exec(body)) !== null) {
+    const attrs = m[1] || "";
+    if (/lesson-plan-header-row/i.test(attrs)) continue;
+    const ds = /data-stage="([^"]*)"/i.exec(attrs);
+    const dm = /data-minutes="(\d+)"/i.exec(attrs);
+    if (!ds || !dm) continue;
+    const stage = ds[1].replace(/<[^>]+>/g, "").trim();
+    const minutes = parseInt(dm[1], 10);
+    if (stage && Number.isFinite(minutes)) {
+      out.push({ stage, minutes });
+    }
+  }
+  return out;
+}
+
+/**
+ * Из HTML плана: таблица плана → секции с data-minutes → разбор по блокам h2 + «Время: N мин».
  */
 export function extractTimingFromHtml(html: string): StageTiming[] {
+  const fromTable = extractTimingFromLessonPlanTable(html);
+  if (fromTable.length > 0) {
+    return fromTable;
+  }
+
   const fromSections =
     typeof window === "undefined"
       ? extractTimingFromSectionsServer(html)

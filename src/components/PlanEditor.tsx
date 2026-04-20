@@ -8,6 +8,7 @@ import {
   buildParagraphsFromPlainText,
   plainTextFromHtmlForFallback,
 } from "@/lib/htmlPlainText";
+import { FormulaConstructor } from "@/components/FormulaConstructor";
 import { createPlanEditorExtensions } from "@/lib/planEditorExtensions";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -111,7 +112,7 @@ export function PlanEditor({
   contentKey,
   onHtmlChange,
   onExternalLoad,
-  placeholder = "Здесь появится план урока. Можно редактировать текст, таблицы и вставлять изображения.",
+  placeholder = "Здесь появится план урока: таблица этапов, текст, формулы LaTeX (кнопка ∑), изображения.",
   disabled = false,
 }: PlanEditorProps) {
   const maxChars = Number(process.env.NEXT_PUBLIC_PLAN_CONTENT_MAX_CHARS) || MAX_DEFAULT;
@@ -424,6 +425,7 @@ export function PlanEditor({
             />
           </svg>
         </IconBtn>
+        <FormulaConstructor editor={editor} />
         <IconBtn
           active={false}
           title="Таблица 3×3"

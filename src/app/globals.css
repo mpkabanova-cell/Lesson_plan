@@ -1,3 +1,5 @@
+@import "katex/dist/katex.min.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -77,6 +79,24 @@ body {
   position: relative;
   box-sizing: border-box;
   min-width: 64px;
+}
+
+.ProseMirror table.lesson-plan-table {
+  font-size: 14px;
+}
+
+.ProseMirror .katex-math-node,
+.ProseMirror .katex-math-block-node {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+  cursor: default;
+  user-select: none;
+}
+
+.ProseMirror .katex-math-block-node {
+  display: block;
+  margin: 0.35rem 0;
 }
 
 .ProseMirror th {

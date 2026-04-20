@@ -41,7 +41,15 @@ const STYLE_VALUE = /^[\s\w#%,.()+\-:/"']+$/i;
 const sanitizeOptions: Parameters<typeof sanitizeHtml>[1] = {
   allowedTags: [...ALLOW_TAGS],
   allowedAttributes: {
-    "*": ["class", "style", "data-stage", "data-minutes"],
+    "*": [
+      "class",
+      "style",
+      "data-stage",
+      "data-minutes",
+      "data-latex",
+      "data-math-inline",
+      "data-math-block",
+    ],
     a: ["href", "title", "target", "rel"],
     img: ["src", "alt", "width", "height", "loading"],
     iframe: [

@@ -22,10 +22,84 @@ function parseStageTitle(attrs: string, inner: string, fallbackIndex: number): s
   return `Этап ${fallbackIndex + 1}`;
 }
 
+function replaceTimeInLastTableCell(rowInner: string, minutes: number): string {
+  const matches = [...rowInner.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)];
+  if (matches.length === 0) return rowInner;
+  const last = matches[matches.length - 1]!;
+  const full = last[0];
+  const content = last[1] ?? "";
+  const newContent = content.replace(/\d+\s*мин/i, `${minutes} мин`);
+  if (newContent === content) return rowInner;
+  return rowInner.replace(full, full.replace(content, newContent));
+}
+
+function tryNormalizeLessonPlanTable(html: string, durationMinutes: number): string | null {
+  const tableRx =
+    /(<table\b[^>]*class="[^"]*lesson-plan-table[^"]*"[^>]*>\s*<tbody[^>]*>)([\s\S]*?)(<\/tbody>\s*<\/table>)/i;
+  const match = tableRx.exec(html);
+  if (!match) return null;
+
+  const tbodyContent = match[2];
+  const rowMatches: Array<{ attrs: string; inner: string }> = [];
+  const trRe = /<tr\b([^>]*)>([\s\S]*?)<\/tr>/gi;
+  let tm: RegExpExecArray | null;
+  while ((tm = trRe.exec(tbodyContent)) !== null) {
+    const attrs = tm[1] || "";
+    if (/lesson-plan-header-row/i.test(attrs)) continue;
+    if (!/data-stage=/i.test(attrs)) continue;
+    rowMatches.push({ attrs, inner: tm[2] || "" });
+  }
+
+  if (rowMatches.length === 0) return null;
+
+  const rows: StageTiming[] = rowMatches.map((r, i) => ({
+    stage:
+      (/data-stage="([^"]*)"/i.exec(r.attrs)?.[1] ?? "")
+        .trim()
+        .replace(/<[^>]+>/g, "") || `Этап ${i + 1}`,
+    minutes: (() => {
+      const dm = /data-minutes="(\d+)"/i.exec(r.attrs);
+      return dm ? parseInt(dm[1], 10) : 0;
+    })(),
+  }));
+
+  const normalized = normalizeStageMinutesToTotal(rows, durationMinutes);
+  if (normalized.length !== rowMatches.length) return null;
+
+  let idx = 0;
+  const newTbodyInner = tbodyContent.replace(
+    /<tr\b([^>]*)>([\s\S]*?)<\/tr>/gi,
+    (full, attrs: string, inner: string) => {
+      const a = attrs || "";
+      if (/lesson-plan-header-row/i.test(a)) return full;
+      if (!/data-stage=/i.test(a)) return full;
+      const row = normalized[idx];
+      idx += 1;
+      if (!row) return full;
+
+      let newA = a;
+      if (/\bdata-minutes\s*=\s*"/i.test(newA)) {
+        newA = newA.replace(/\bdata-minutes\s*=\s*"\d+"/i, `data-minutes="${row.minutes}"`);
+      } else if (/\bdata-minutes\s*=\s*'/i.test(newA)) {
+        newA = newA.replace(/\bdata-minutes\s*=\s*'\d+'/i, `data-minutes='${row.minutes}'`);
+      } else {
+        newA = `${newA.trimEnd()} data-minutes="${row.minutes}"`;
+      }
+
+      const newInner = replaceTimeInLastTableCell(inner, row.minutes);
+      return `<tr${newA.startsWith(" ") ? newA : ` ${newA}`}>${newInner}</tr>`;
+    },
+  );
+
+  if (idx !== normalized.length) return null;
+
+  const rebuilt = match[0].replace(tbodyContent, newTbodyInner);
+  return html.replace(match[0], rebuilt);
+}
+
 /**
- * После ответа модели: переписывает `data-minutes` и строку «Время: … мин» в каждом
- * `<section class="lesson-stage">` так, чтобы сумма минут **точно** равнялась
- * заявленной длительности урока (пропорциональное округление).
+ * После ответа модели: для таблицы плана или для `<section class="lesson-stage">`
+ * переписывает минуты так, чтобы сумма равнялась заявленной длительности урока.
  */
 export function applyLessonPlanTimingNormalization(
   html: string,
@@ -33,6 +107,11 @@ export function applyLessonPlanTimingNormalization(
 ): string {
   if (!html?.trim() || !Number.isFinite(durationMinutes) || durationMinutes < 1) {
     return html;
+  }
+
+  if (/<table[^>]*lesson-plan-table/i.test(html)) {
+    const t = tryNormalizeLessonPlanTable(html, durationMinutes);
+    if (t !== null) return t;
   }
 
   const re = /<section\b([^>]*)>([\s\S]*?)<\/section>/gi;

@@ -13,6 +13,8 @@ import { CharacterCount } from "@tiptap/extension-character-count";
 import type { AnyExtension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 
+import { InlineMath } from "@/lib/inlineMathExtension";
+
 const MAX_DEFAULT = 100_000;
 
 /**
@@ -35,7 +37,7 @@ export function createPlanEditorExtensions(options: {
     Underline,
     Subscript,
     Superscript,
-    TextAlign.configure({ types: ["heading", "paragraph"] }),
+    TextAlign.configure({ types: ["heading", "paragraph", "tableCell", "tableHeader"] }),
     Link.configure({
       openOnClick: false,
       autolink: true,
@@ -49,6 +51,7 @@ export function createPlanEditorExtensions(options: {
     TableRow,
     TableHeader,
     TableCell,
+    InlineMath,
     Placeholder.configure({ placeholder: options.placeholder }),
     CharacterCount.configure({ limit: maxChars }),
   ];
