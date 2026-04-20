@@ -502,7 +502,7 @@ export default function LessonPlanWorkspace() {
                 className="mt-1 min-h-[64px] w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                 value={homework}
                 onChange={(e) => setHomework(e.target.value)}
-                placeholder="Если оставить пустым — в плане появится предложение от модели; если вставите свой текст — он попадёт в этап про ДЗ дословно"
+                placeholder="Можно вставить готовый текст ДЗ или пожелание: например «5 заданий разной сложности» — в плане появятся реальные задания по теме. Пустое поле — ДЗ предложит модель."
               />
             </label>
 
@@ -607,9 +607,10 @@ export default function LessonPlanWorkspace() {
             ) : null}
 
             {homework.trim() ? (
-              <p className="rounded-md bg-amber-50 px-2 py-2 text-[11px] text-amber-900">
-                Указано домашнее задание учителя — модель должна встроить его дословно в этап «Информация о
-                домашнем задании» (если этот этап включён в чеклист).
+              <p className="rounded-md bg-amber-50 px-2 py-2 text-[11px] leading-relaxed text-amber-900">
+                Учтём ваш текст или запрос о ДЗ: готовые формулировки передаются в план; пожелания (число заданий,
+                сложность и т.д.) разворачиваются в конкретные предметные задания на этапе «Информация о домашнем
+                задании», если этап включён.
               </p>
             ) : null}
 
