@@ -88,7 +88,12 @@ export const InlineMath = Node.create({
         editor
           .chain()
           .focus()
-          .setNodeMarkup(pos, undefined, { latex: next })
+          .command(({ tr, state }) => {
+            const n = state.doc.nodeAt(pos);
+            if (!n || n.type.name !== "inlineMath") return false;
+            tr.setNodeMarkup(pos, undefined, { ...n.attrs, latex: next });
+            return true;
+          })
           .run();
       });
 
