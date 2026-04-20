@@ -17,7 +17,7 @@ export function normalizeStageMinutesToTotal(
 
   if (sumM <= 0) {
     const base = Math.floor(targetTotal / n);
-    let rem = targetTotal - base * n;
+    const rem = targetTotal - base * n;
     return rows.map((row, i) => ({
       ...row,
       minutes: base + (i < rem ? 1 : 0),
