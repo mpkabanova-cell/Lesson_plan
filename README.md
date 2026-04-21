@@ -84,3 +84,18 @@ npm run extract:knowledge
 
 Бесплатная квота Custom Search API ограничена (до 100 запросов в сутки на бесплатном плане — уточняйте в актуальной документации Google). При превышении лимита API вернёт ошибку; в интерфейсе отобразится сообщение об ошибке поиска.
 
+### Кратко для начинающих: куда вписать ключи локально
+
+1. В корне проекта создайте файл **`.env.local`** (его Git **не** сохраняет в репозиторий — так и должно быть, чтобы ключи не утекли).
+2. Добавьте две строки (без кавычек вокруг значений, без пробелов вокруг `=`):
+
+   - `GOOGLE_CUSTOM_SEARCH_API_KEY=` — ключ из Google Cloud → Credentials → API key.
+   - `GOOGLE_CUSTOM_SEARCH_ENGINE_ID=` — **Search engine ID** (`cx`) из настроек Programmable Search Engine.
+
+3. Сохраните файл и **полностью перезапустите** `npm run dev` (остановите терминал и запустите снова).
+4. Откройте вкладку **«Поиск материалов»**, введите запрос, нажмите **«Найти»**.
+
+Если в браузере или в ответе сервера видите **«Поиск не настроен на сервере: задайте GOOGLE_CUSTOM_SEARCH_API_KEY и GOOGLE_CUSTOM_SEARCH_ENGINE_ID»** — переменные не подхватились: проверьте имя файла (`.env.local`), опечатки в именах переменных и перезапуск dev-сервера.
+
+Если при проверке API приходит **403** с текстом вроде *«This project does not have the access to Custom Search JSON API»* — в [Google Cloud Console](https://console.cloud.google.com/) выберите **тот же проект**, к которому привязан ваш API key, откройте [Custom Search API](https://console.cloud.google.com/apis/library/customsearch.googleapis.com) и нажмите **Enable** (Включить). Без этого поиск работать не будет.
+
