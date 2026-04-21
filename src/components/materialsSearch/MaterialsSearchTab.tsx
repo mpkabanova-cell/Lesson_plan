@@ -30,6 +30,14 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
     setGrade(lessonGrade);
   }, [active, lessonSubject, lessonGrade]);
 
+  /** Стили в globals.css переводят CSE из overlay в поток страницы, пока активна эта вкладка. */
+  useEffect(() => {
+    const cls = "lesson-plan-cse-inline";
+    if (active) document.body.classList.add(cls);
+    else document.body.classList.remove(cls);
+    return () => document.body.classList.remove(cls);
+  }, [active]);
+
   const fallbackGoogleUrl = useMemo(
     () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
     [query, subject, grade],

@@ -129,3 +129,33 @@ body {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #e2e8f0;
 }
+
+/*
+ * Google Programmable Search: при режиме Layout «Overlay» в консоли CSE выдача рисуется как модальное окно.
+ * Пока открыта вкладка «Поиск материалов», переводим блок результатов в обычный поток страницы и убираем затемнение.
+ * Рекомендуется также в programmablesearchengine.google.com → Look and feel → Layout выбрать Full width или Compact, не Overlay.
+ */
+body.lesson-plan-cse-inline .gsc-results-wrapper-overlay {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0.75rem !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  box-shadow: none !important;
+  z-index: auto !important;
+  transform: none !important;
+}
+
+body.lesson-plan-cse-inline .gsc-modal-background-image,
+body.lesson-plan-cse-inline .gsc-modal-background-image-visible {
+  display: none !important;
+}
+
+body.lesson-plan-cse-inline.gsc-overflow-hidden {
+  overflow: auto !important;
+}

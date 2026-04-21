@@ -71,6 +71,7 @@ npm run extract:knowledge
 1. **Programmable Search Engine**  
    - Откройте [programmablesearchengine.google.com](https://programmablesearchengine.google.com) и войдите в аккаунт Google.  
    - Создайте поисковую систему: укажите имя, в разделе сайтов добавьте **`1sept.ru`**.  
+   - **Look and feel → Layout:** выберите **Full width**, **Compact** или **Results only** — не **Overlay**, иначе выдача откроется отдельным модальным окном (в приложении добавлены стили, чтобы смягчать overlay, но правильный layout в консоли предпочтителен).  
    - Откройте **Настройки поисковой системы** и скопируйте **Идентификатор поисковой системы** (Search engine ID) — это **`cx`**.
 
 2. **Переменные окружения**  

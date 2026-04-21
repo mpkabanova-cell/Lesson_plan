@@ -117,10 +117,10 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     return (
       <div className="google-cse-panel flex min-h-[min(18rem,38vh)] w-full flex-1 flex-col overflow-auto rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <div
-          className="gcse-searchresults-only"
+          className="lesson-plan-cse-root gcse-searchresults-only"
           data-gname={MATERIALS_CSE_GNAME}
           data-as_sitesearch="1sept.ru"
-          data-linktarget="_parent"
+          data-linktarget="_self"
           data-autosearchonload="false"
         />
       </div>
