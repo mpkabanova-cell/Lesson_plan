@@ -11,6 +11,9 @@ declare global {
         cse?: {
           element?: {
             getElement: (gname: string) => { execute: (query: string) => void } | null | undefined;
+            /** Рендерит все элементы `.gcse-*` внутри контейнера (нужно после ручного добавления в DOM). */
+            go?: (container?: Element | null) => void;
+            getAllElements?: () => Record<string, unknown>;
           };
         };
       };

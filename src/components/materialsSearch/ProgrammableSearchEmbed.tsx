@@ -3,8 +3,10 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
-/** Должен совпадать с data-gname на контейнере результатов. */
+/** Совпадает с data-gname на узле результатов. */
 const MATERIALS_CSE_GNAME = "materials1sept";
+
+const FALLBACK_GNAMES = [MATERIALS_CSE_GNAME, "searchresults-only0", "searchresults-only1"];
 
 function resolveCx(cxProp?: string): string | undefined {
   const fromProp = cxProp?.trim();
@@ -13,43 +15,102 @@ function resolveCx(cxProp?: string): string | undefined {
 }
 
 function getCseElement() {
-  return window.google?.search?.cse?.element?.getElement(MATERIALS_CSE_GNAME);
+  const api = window.google?.search?.cse?.element;
+  if (!api?.getElement) return null;
+  for (const name of FALLBACK_GNAMES) {
+    const el = api.getElement(name);
+    if (el && typeof el.execute === "function") return el;
+  }
+  const all = api.getAllElements?.();
+  if (all && typeof all === "object") {
+    for (const key of Object.keys(all)) {
+      const el = all[key] as { execute?: (q: string) => void };
+      if (el && typeof el.execute === "function") return el as { execute: (q: string) => void };
+    }
+  }
+  return null;
+}
+
+/** cse.js иногда подгружается с задержкой — повторяем go(), пока API не готов. */
+function scheduleGo(container: HTMLElement | null) {
+  if (!container) return;
+  let attempts = 0;
+  const max = 80;
+  const tick = () => {
+    const go = window.google?.search?.cse?.element?.go;
+    if (typeof go === "function") {
+      try {
+        go(container);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    attempts += 1;
+    if (attempts < max) setTimeout(tick, 100);
+  };
+  queueMicrotask(tick);
+  setTimeout(tick, 0);
+  setTimeout(tick, 150);
 }
 
 export type ProgrammableSearchEmbedHandle = {
-  /** Запускает поиск в блоке результатов (строка уже с site:1sept.ru). */
   executeSearch: (query: string) => void;
 };
 
 type Props = {
-  /**
-   * Идентификатор поисковой системы Google (cx). Предпочтительно передаётся с сервера из
-   * GOOGLE_CUSTOM_SEARCH_ENGINE_ID — тогда не нужен NEXT_PUBLIC_ и пересборка только ради него.
-   */
   cx?: string;
 };
 
 /**
- * Только блок выдачи Google (Programmable Search Element). Запрос задаётся через ref.executeSearch.
- * Не использует Custom Search JSON API — подходит, если нет биллинга в Google Cloud.
+ * Блок выдачи Google (searchresults-only). Узел создаётся вручную в useEffect, чтобы React не сбрасывал разметку CSE.
  * @see https://developers.google.com/custom-search/docs/element
  */
 export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle, Props>(
   function ProgrammableSearchEmbed({ cx: cxProp }, ref) {
     const cx = resolveCx(cxProp);
+    const hostRef = useRef<HTMLDivElement>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
       if (!cx || typeof window === "undefined") return;
+      const host = hostRef.current;
+      if (!host) return;
+
+      host.replaceChildren();
+
+      const gcse = document.createElement("div");
+      gcse.className = "lesson-plan-cse-root gcse-searchresults-only";
+      gcse.setAttribute("data-gname", MATERIALS_CSE_GNAME);
+      gcse.setAttribute("data-as_sitesearch", "1sept.ru");
+      gcse.setAttribute("data-linktarget", "_self");
+      gcse.setAttribute("data-autosearchonload", "false");
+      host.appendChild(gcse);
 
       const w = window as unknown as Record<string, boolean>;
-      if (w[GCSE_SCRIPT_FLAG]) return;
-      w[GCSE_SCRIPT_FLAG] = true;
+      const scriptAlreadyLoaded = w[GCSE_SCRIPT_FLAG];
 
-      const script = document.createElement("script");
-      script.src = `https://cse.google.com/cse.js?cx=${encodeURIComponent(cx)}`;
-      script.async = true;
-      document.body.appendChild(script);
+      const afterReady = () => scheduleGo(hostRef.current);
+
+      if (scriptAlreadyLoaded && typeof window.google?.search?.cse?.element?.go === "function") {
+        afterReady();
+        return () => host.replaceChildren();
+      }
+
+      if (!scriptAlreadyLoaded) {
+        w[GCSE_SCRIPT_FLAG] = true;
+        const script = document.createElement("script");
+        script.async = true;
+        script.src = `https://cse.google.com/cse.js?cx=${encodeURIComponent(cx)}`;
+        script.onload = () => scheduleGo(hostRef.current);
+        document.body.appendChild(script);
+      } else {
+        afterReady();
+      }
+
+      return () => {
+        host.replaceChildren();
+      };
     }, [cx]);
 
     useImperativeHandle(
@@ -61,7 +122,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
 
           const run = () => {
             const el = getCseElement();
-            if (el && typeof el.execute === "function") {
+            if (el) {
               el.execute(q);
               return true;
             }
@@ -72,7 +133,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
 
           if (pollRef.current) clearInterval(pollRef.current);
           let attempts = 0;
-          const maxAttempts = 150;
+          const maxAttempts = 200;
           pollRef.current = setInterval(() => {
             attempts += 1;
             if (run() || attempts >= maxAttempts) {
@@ -107,22 +168,17 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           >
             Programmable Search Engine
           </a>
-          . Либо <code className="rounded bg-white px-1 text-xs">NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID</code> с тем
-          же значением (после изменения <code className="rounded bg-white px-1 text-xs">NEXT_PUBLIC_</code> нужна
-          пересборка). Перезапустите dev-сервер или сделайте redeploy.
+          .
         </div>
       );
     }
 
     return (
-      <div className="google-cse-panel flex min-h-[min(18rem,38vh)] w-full flex-1 flex-col overflow-auto rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div
-          className="lesson-plan-cse-root gcse-searchresults-only"
-          data-gname={MATERIALS_CSE_GNAME}
-          data-as_sitesearch="1sept.ru"
-          data-linktarget="_self"
-          data-autosearchonload="false"
-        />
+      <div className="google-cse-panel flex min-h-[min(18rem,38vh)] w-full flex-1 flex-col overflow-auto rounded-xl border border-slate-200 bg-slate-50/50 p-3 shadow-sm">
+        <p className="mb-2 text-xs text-slate-500">
+          Нажмите «Найти» выше — выдача появится здесь (ограничение <span className="font-mono">site:1sept.ru</span>).
+        </p>
+        <div ref={hostRef} className="min-h-[12rem] w-full flex-1 bg-white" />
       </div>
     );
   },
