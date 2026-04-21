@@ -63,6 +63,36 @@ function hasCseAnywhere(root: HTMLElement | null): boolean {
   );
 }
 
+/** Селекторы ссылок внутри виджета CSE (в т.ч. overlay), чтобы открывать в той же вкладке. */
+const CSE_RESULT_LINK_SELECTOR = [
+  ".lesson-plan-cse-root a[href]",
+  ".gsc-results a[href]",
+  ".gsc-control-cse a[href]",
+  "[id^='___gcse_'] a[href]",
+  ".gsc-results-wrapper-overlay a[href]",
+].join(", ");
+
+function normalizeCseLinksSameTab() {
+  if (typeof document === "undefined") return;
+  try {
+    document.querySelectorAll(CSE_RESULT_LINK_SELECTOR).forEach((node) => {
+      if (node instanceof HTMLAnchorElement && node.href && !node.href.toLowerCase().startsWith("javascript:")) {
+        node.target = "_self";
+      }
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+function isCseResultLink(anchor: Element): boolean {
+  return Boolean(
+    anchor.closest(
+      ".gsc-results, .gsc-control-cse, .lesson-plan-cse-root, [id^='___gcse_'], .gsc-results-wrapper-overlay",
+    ),
+  );
+}
+
 type GoGetter = () => HTMLElement | null;
 
 /**
@@ -214,6 +244,45 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       const t = setInterval(refreshSnapshot, 1200);
       return () => clearInterval(t);
     }, [cx, refreshSnapshot]);
+
+    /** Google часто ставит ссылкам target=_blank, даже при data-linktarget=_self — правим DOM и перехватываем клик. */
+    useEffect(() => {
+      if (!cx) return;
+      let raf = 0;
+      const scheduleNormalize = () => {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => normalizeCseLinksSameTab());
+      };
+      const mo = new MutationObserver(scheduleNormalize);
+      mo.observe(document.body, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["href", "target"],
+      });
+      scheduleNormalize();
+
+      const onClickCapture = (e: MouseEvent) => {
+        if (!(e.target instanceof Element)) return;
+        const a = e.target.closest("a[href]");
+        if (!(a instanceof HTMLAnchorElement) || !isCseResultLink(a)) return;
+        if (e.defaultPrevented) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        if (e.button !== 0) return;
+        const linkTarget = (a.getAttribute("target") || "").toLowerCase();
+        if (linkTarget === "_blank" || linkTarget === "blank") {
+          e.preventDefault();
+          window.location.assign(a.href);
+        }
+      };
+      document.addEventListener("click", onClickCapture, true);
+
+      return () => {
+        cancelAnimationFrame(raf);
+        mo.disconnect();
+        document.removeEventListener("click", onClickCapture, true);
+      };
+    }, [cx]);
 
     useLayoutEffect(() => {
       if (!cx || typeof window === "undefined") return;
