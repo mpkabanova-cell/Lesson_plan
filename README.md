@@ -6,7 +6,7 @@
 
 - Node.js 20+
 - Ключ [OpenRouter](https://openrouter.ai/)
-- Для вкладки **«Поиск материалов»** (поиск по [1sept.ru](https://1sept.ru) через Google) — ключи [Custom Search JSON API](https://developers.google.com/custom-search/v1/overview) (см. ниже)
+- Для вкладки **«Поиск материалов»** — идентификатор [Programmable Search Engine](https://programmablesearchengine.google.com) (`cx`) в переменной **`NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID`** (см. ниже). Серверный [Custom Search JSON API](https://developers.google.com/custom-search/v1/overview) не обязателен.
 
 ## Запуск
 
@@ -56,46 +56,32 @@ npm run extract:knowledge
 
 ## Поиск материалов (1sept.ru)
 
-В правой колонке доступны вкладки **«Редактор урока»** и **«Поиск материалов»**. Поиск выполняется на сервере через [Google Custom Search JSON API](https://developers.google.com/custom-search/v1/overview); ключи не попадают в браузер.
+В правой колонке доступны вкладки **«Редактор урока»** и **«Поиск материалов»**.
 
-Эндпоинт: `POST /api/search-1sept`, тело: `{ "query": string, "subject"?: string, "grade"?: string }`. Ответ: `{ "results": [{ "title", "url", "snippet" }] }`.
+**Основной режим** — встроенный [Programmable Search Element](https://developers.google.com/custom-search/docs/element): строка поиска и выдача Google прямо на странице. Для этого нужен только **идентификатор поисковой системы** (`cx`) из [Programmable Search Engine](https://programmablesearchengine.google.com), в переменной окружения **`NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID`**. Это не Custom Search JSON API: **биллинг в Google Cloud не требуется** для этого сценария.
 
-К запросу на сервере добавляется ограничение `site:1sept.ru`. Поля «предмет» и «класс» на вкладке поиска при открытии подставляются из формы урока слева (их можно изменить перед поиском).
+Ниже на той же вкладке — форма с подстановкой предмета и класса из урока и кнопка **«Открыть в Google (site:1sept.ru)»**: тот же запрос открывается в новой вкладке (ограничение `site:1sept.ru` формируется в URL).
+
+Поля «предмет» и «класс» при переключении на вкладку подставляются из формы урока слева (их можно изменить).
 
 ### Настройка Google (пошагово)
 
 1. **Programmable Search Engine**  
    - Откройте [programmablesearchengine.google.com](https://programmablesearchengine.google.com) и войдите в аккаунт Google.  
-   - Создайте поисковую систему: укажите имя, в разделе сайтов добавьте **`1sept.ru`** (при необходимости включите поиск по всему вебу и ограничьте в настройках — для выдачи только с нужного домена достаточно корректно задать сайты в CSE).  
-   - После создания откройте **Настройки поисковой системы** и скопируйте **Идентификатор поисковой системы** (Search engine ID) — это значение **`cx`** для API.
+   - Создайте поисковую систему: укажите имя, в разделе сайтов добавьте **`1sept.ru`**.  
+   - Откройте **Настройки поисковой системы** и скопируйте **Идентификатор поисковой системы** (Search engine ID) — это **`cx`**.
 
-2. **Custom Search API в Google Cloud**  
-   - В [Google Cloud Console](https://console.cloud.google.com/) создайте проект или выберите существующий.  
-   - Включите API **Custom Search API** (APIs & Services → Library → «Custom Search API» → Enable).  
-   - Создайте учётные данные: **API key** (APIs & Services → Credentials). Рекомендуется ограничить ключ только Custom Search API.
+2. **Переменные окружения**  
+   В `.env.local` (и на Render — Environment) задайте:
 
-3. **Переменные окружения**  
-   В `.env` (и на Render — Environment) задайте:
+   - **`NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID`** — тот же **`cx`** (без кавычек).  
+     На хостинге переменные с префиксом `NEXT_PUBLIC_` подставляются **на этапе сборки** — после добавления переменной сделайте **новый deploy**.
 
-   - **`GOOGLE_CUSTOM_SEARCH_API_KEY`** — API key из шага 2.  
-   - **`GOOGLE_CUSTOM_SEARCH_ENGINE_ID`** — идентификатор поисковой системы (`cx`) из шага 1.
+3. Перезапустите `npm run dev` или redeploy на хостинге.
 
-4. Перезапустите `npm run dev` или redeploy на хостинге.
+Если встроенный блок не появился — проверьте, что `NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID` задан до сборки и что нет опечатки в `cx`.
 
-Бесплатная квота Custom Search API ограничена (до 100 запросов в сутки на бесплатном плане — уточняйте в актуальной документации Google). При превышении лимита API вернёт ошибку; в интерфейсе отобразится сообщение об ошибке поиска.
+### Опционально: серверный поиск (JSON API)
 
-### Кратко для начинающих: куда вписать ключи локально
-
-1. В корне проекта создайте файл **`.env.local`** (его Git **не** сохраняет в репозиторий — так и должно быть, чтобы ключи не утекли).
-2. Добавьте две строки (без кавычек вокруг значений, без пробелов вокруг `=`):
-
-   - `GOOGLE_CUSTOM_SEARCH_API_KEY=` — ключ из Google Cloud → Credentials → API key.
-   - `GOOGLE_CUSTOM_SEARCH_ENGINE_ID=` — **Search engine ID** (`cx`) из настроек Programmable Search Engine.
-
-3. Сохраните файл и **полностью перезапустите** `npm run dev` (остановите терминал и запустите снова).
-4. Откройте вкладку **«Поиск материалов»**, введите запрос, нажмите **«Найти»**.
-
-Если в браузере или в ответе сервера видите **«Поиск не настроен на сервере: задайте GOOGLE_CUSTOM_SEARCH_API_KEY и GOOGLE_CUSTOM_SEARCH_ENGINE_ID»** — переменные не подхватились: проверьте имя файла (`.env.local`), опечатки в именах переменных и перезапуск dev-сервера.
-
-Если при проверке API приходит **403** с текстом вроде *«This project does not have the access to Custom Search JSON API»* — в [Google Cloud Console](https://console.cloud.google.com/) выберите **тот же проект**, к которому привязан ваш API key, откройте [Custom Search API](https://console.cloud.google.com/apis/library/customsearch.googleapis.com) и нажмите **Enable** (Включить). Без этого поиск работать не будет.
+Эндпоинт `POST /api/search-1sept` может возвращать структурированные результаты через [Custom Search JSON API](https://developers.google.com/custom-search/v1/overview). Для этого в `.env` задают **`GOOGLE_CUSTOM_SEARCH_API_KEY`** и **`GOOGLE_CUSTOM_SEARCH_ENGINE_ID`** (тот же `cx`). Во многих проектах Google требует **привязанный Billing**; без него часто приходит **403** (*This project does not have the access to Custom Search JSON API*). Текущий интерфейс вкладки **не зависит** от этого API — достаточно `NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID` из раздела выше.
 
