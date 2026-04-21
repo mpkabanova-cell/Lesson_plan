@@ -11,7 +11,7 @@ type Props = {
   onGradeChange: (v: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
-  /** Подпись кнопки отправки (по умолчанию — открытие в Google). */
+  /** Подпись кнопки отправки. */
   submitLabel?: string;
 };
 
@@ -24,7 +24,7 @@ export function MaterialsSearchForm({
   onGradeChange,
   onSubmit,
   disabled,
-  submitLabel = "Открыть в Google (site:1sept.ru)",
+  submitLabel = "Найти",
 }: Props) {
   return (
     <form

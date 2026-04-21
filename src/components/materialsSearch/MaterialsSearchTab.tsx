@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { MaterialsSearchForm } from "./MaterialsSearchForm";
-import { ProgrammableSearchEmbed } from "./ProgrammableSearchEmbed";
+import {
+  ProgrammableSearchEmbed,
+  type ProgrammableSearchEmbedHandle,
+} from "./ProgrammableSearchEmbed";
 
 type Props = {
   /** Когда true — вкладка видима (для синхронизации фильтров с формой урока). */
@@ -18,6 +22,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
   const [subject, setSubject] = useState(lessonSubject);
   const [grade, setGrade] = useState(lessonGrade);
   const [query, setQuery] = useState("");
+  const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
 
   useEffect(() => {
     if (!active) return;
@@ -30,25 +35,20 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
     [query, subject, grade],
   );
 
-  const openExternal = () => {
-    window.open(fallbackGoogleUrl, "_blank", "noopener,noreferrer");
+  const runSearch = () => {
+    const q = build1septSearchQuery(query, { subject, grade });
+    embedRef.current?.executeSearch(q);
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-1 py-1">
-      <div className="space-y-2">
-        <p className="text-sm text-slate-600">
-          Поиск по материалам <span className="font-medium text-slate-800">1sept.ru</span>: встроенная строка и выдача
-          Google (Programmable Search). Работает без Custom Search JSON API на сервере — удобно, если в Google Cloud нельзя
-          привязать биллинг.
-        </p>
-        <ProgrammableSearchEmbed cx={programmableSearchCx} />
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-1 py-1">
+      <p className="text-sm text-slate-600">
+        Поиск по материалам <span className="font-medium text-slate-800">1sept.ru</span>: запрос собирается с
+        ограничением <span className="font-mono text-xs">site:1sept.ru</span>, выдача — как в Google, на этой странице
+        (без Custom Search JSON API).
+      </p>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-        <p className="mb-3 text-xs font-medium text-slate-600">
-          Дополнительно: тот же запрос с предметом и классом — в новой вкладке браузера
-        </p>
         <MaterialsSearchForm
           query={query}
           onQueryChange={setQuery}
@@ -56,9 +56,26 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
           onSubjectChange={setSubject}
           grade={grade}
           onGradeChange={setGrade}
-          onSubmit={openExternal}
+          onSubmit={runSearch}
         />
       </div>
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ProgrammableSearchEmbed ref={embedRef} cx={programmableSearchCx} />
+      </div>
+
+      <p className="text-center text-[11px] text-slate-500">
+        Не загружается виджет? Откройте{" "}
+        <a
+          className="text-teal-800 underline underline-offset-2"
+          href={fallbackGoogleUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          тот же поиск в Google
+        </a>
+        .
+      </p>
     </div>
   );
 }
