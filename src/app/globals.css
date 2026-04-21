@@ -160,7 +160,16 @@ body.lesson-plan-cse-inline.gsc-overflow-hidden {
   overflow: auto !important;
 }
 
-/* Дублирующая строка Google скрыта — поиск только из формы приложения; выдача остаётся в блоке */
+/*
+ * Не используем display:none — у gcse-search строка и выдача связаны; полное скрытие ломало рендер.
+ * Уводим встроенную строку за экран, блок остаётся в DOM для скрипта Google.
+ */
 .lesson-plan-cse-root .gsc-search-box {
-  display: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }

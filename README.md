@@ -58,7 +58,7 @@ npm run extract:knowledge
 
 В правой колонке доступны вкладки **«Редактор урока»** и **«Поиск материалов»**.
 
-**Основной режим** — одна форма (запрос, предмет, класс) и кнопка **«Найти»**: строка запроса собирается на клиенте с ограничением **`site:1sept.ru`** (см. `build1septSearchQuery`), затем через [Programmable Search Element](https://developers.google.com/custom-search/docs/element) показывается **выдача со ссылками на этой странице** (блок `searchresults-only` и программный `execute`). Задайте **`GOOGLE_CUSTOM_SEARCH_ENGINE_ID`** (`cx`) — значение передаётся с сервера, **отдельный `NEXT_PUBLIC_` не обязателен**. Это не Custom Search JSON API: **биллинг в Google Cloud не требуется** для виджета.
+**Основной режим** — одна форма (запрос, предмет, класс) и кнопка **«Найти»**: строка запроса собирается на клиенте с ограничением **`site:1sept.ru`** (см. `build1septSearchQuery`), затем через [Programmable Search Element](https://developers.google.com/custom-search/docs/element) подключается тот же скрипт, что в коде из консоли Google (`cse.js?cx=…`), класс контейнера **`gcse-search`**. Это соответствует макету **Full width** / **Compact** в консоли; вызов **`execute()`** запускает выдачу из нашей формы. Задайте **`GOOGLE_CUSTOM_SEARCH_ENGINE_ID`** (`cx`) — значение передаётся с сервера, **отдельный `NEXT_PUBLIC_` не обязателен**. Это не Custom Search JSON API: **биллинг в Google Cloud не требуется** для виджета.
 
 В консоли [Programmable Search Engine](https://programmablesearchengine.google.com) в списке сайтов укажите **`1sept.ru`** — так выдача не уйдёт на весь интернет даже при сбое операторов в строке запроса.
 
@@ -71,7 +71,7 @@ npm run extract:knowledge
 1. **Programmable Search Engine**  
    - Откройте [programmablesearchengine.google.com](https://programmablesearchengine.google.com) и войдите в аккаунт Google.  
    - Создайте поисковую систему: укажите имя, в разделе сайтов добавьте **`1sept.ru`**.  
-   - **Look and feel → Layout:** выберите **Full width**, **Compact** или **Results only** — не **Overlay**, иначе выдача откроется отдельным модальным окном (в приложении добавлены стили, чтобы смягчать overlay, но правильный layout в консоли предпочтителен).  
+   - **Look and feel → Layout:** для того же поведения, что в приложении (`gcse-search`), удобнее **Full width** или **Compact**; **Overlay** даёт модальное окно (в приложении есть стили, смягчающие overlay). **Results only** рассчитан на другой HTML — лучше не смешивать с выбранным в коде классом без проверки.  
    - Откройте **Настройки поисковой системы** и скопируйте **Идентификатор поисковой системы** (Search engine ID) — это **`cx`**.
 
 2. **Переменные окружения**  
