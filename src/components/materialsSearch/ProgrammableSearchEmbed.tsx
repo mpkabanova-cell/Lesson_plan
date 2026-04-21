@@ -3,6 +3,8 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 
 const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
+/** Стабильный id для div.gcse-search и для element.render({ div }) */
+const GCSE_INNER_ID = "lesson-plan-gcse-widget";
 
 const FALLBACK_GNAMES = ["standard", "search", "two-column", "searchresults-only0", "searchresults-only1"];
 
@@ -61,32 +63,52 @@ function hasCseAnywhere(root: HTMLElement | null): boolean {
   );
 }
 
-function scheduleGo(
-  container: HTMLElement | null,
-  onGo?: () => void,
-) {
-  if (!container) return;
+type GoGetter = () => HTMLElement | null;
+
+/**
+ * Вызывает element.go(контейнер). Раньше передавали hostRef.current в onload — ref часто ещё null, go не вызывался.
+ * Здесь getter вызывается на каждом тике + повторы по времени.
+ */
+function scheduleGo(getTarget: GoGetter, onGo?: () => void, onGoError?: (msg: string) => void) {
   let attempts = 0;
-  const max = 80;
+  const max = 150;
   const tick = () => {
+    const container = getTarget();
     const go = window.google?.search?.cse?.element?.go;
-    if (typeof go === "function") {
-      try {
-        go(container);
-        onGo?.();
-        debugCse("element.go(container)", { childCount: container.children.length });
-      } catch (e) {
-        debugCse("element.go error", e);
-      }
+    if (typeof go !== "function") {
+      attempts += 1;
+      if (attempts < max) setTimeout(tick, 40);
       return;
     }
-    attempts += 1;
-    if (attempts < max) setTimeout(tick, 100);
+    if (!container) {
+      attempts += 1;
+      if (attempts < max) setTimeout(tick, 40);
+      return;
+    }
+    try {
+      go(container);
+      onGo?.();
+      debugCse("element.go", { id: container.id, className: container.className });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      onGoError?.(msg);
+      debugCse("element.go error", e);
+    }
   };
   queueMicrotask(tick);
-  setTimeout(tick, 0);
-  setTimeout(tick, 150);
-  setTimeout(tick, 400);
+  [0, 30, 80, 150, 300, 500, 800, 1200, 2000, 3000].forEach((ms) => setTimeout(tick, ms));
+}
+
+function tryExplicitRender(divId: string): { ok: boolean; error?: string } {
+  const render = window.google?.search?.cse?.element?.render;
+  if (typeof render !== "function") return { ok: false, error: "нет element.render" };
+  try {
+    render({ div: divId, tag: "search" });
+    debugCse("element.render fallback", { divId });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export type ProgrammableSearchEmbedHandle = {
@@ -107,6 +129,8 @@ type DiagState = {
   domWidget: "нет" | "да";
   elementKeys: string;
   executeLast: string;
+  /** Запасной element.render, если go не заполнил getAllElements */
+  renderFallback: string;
 };
 
 function collectSnapshot(host: HTMLElement | null): Pick<DiagState, "googleObject" | "goFn" | "domWidget" | "elementKeys"> {
@@ -158,7 +182,11 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       domWidget: "нет",
       elementKeys: "—",
       executeLast: "ещё не вызывали",
+      renderFallback: "—",
     }));
+
+    /** Узел div.gcse-search (тот же, что с id) — для go() надёжнее, чем только внешний host */
+    const innerGcseRef = useRef<HTMLDivElement | null>(null);
 
     const bumpGo = useCallback(() => {
       goCountRef.current += 1;
@@ -194,13 +222,16 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
 
       host.replaceChildren();
       const gcse = document.createElement("div");
+      gcse.id = GCSE_INNER_ID;
       gcse.className = "lesson-plan-cse-root gcse-search";
       gcse.setAttribute("data-as_sitesearch", "1sept.ru");
       gcse.setAttribute("data-linktarget", "_self");
       gcse.setAttribute("data-autosearchonload", "false");
       host.appendChild(gcse);
+      innerGcseRef.current = gcse;
 
       return () => {
+        innerGcseRef.current = null;
         host.replaceChildren();
       };
     }, [cx]);
@@ -223,7 +254,50 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       const w = window as unknown as Record<string, boolean>;
       const scriptAlreadyLoaded = w[GCSE_SCRIPT_FLAG];
 
-      const afterReady = () => scheduleGo(hostRef.current, bumpGo);
+      const getHost = () => hostRef.current;
+      const getPreferInner = () => innerGcseRef.current ?? hostRef.current;
+
+      const afterReady = () => {
+        scheduleGo(getPreferInner, bumpGo, (msg) =>
+          setDiag((d) => ({ ...d, executeLast: `go (inner): ${msg}` })),
+        );
+        setTimeout(
+          () =>
+            scheduleGo(getHost, bumpGo, (msg) =>
+              setDiag((d) => ({ ...d, executeLast: `go (host): ${msg}` })),
+            ),
+          120,
+        );
+      };
+
+      const maybeRenderFallback = () => {
+        try {
+          const keys = Object.keys(window.google?.search?.cse?.element?.getAllElements?.() ?? {});
+          if (keys.length > 0) {
+            setDiag((d) => ({ ...d, renderFallback: "не нужен — есть ключи" }));
+            return;
+          }
+          const r = tryExplicitRender(GCSE_INNER_ID);
+          if (r.ok) {
+            bumpGo();
+            setDiag((d) => ({
+              ...d,
+              renderFallback: "выполнен element.render({ tag: search })",
+            }));
+          } else {
+            setDiag((d) => ({
+              ...d,
+              renderFallback: r.error ?? "render не вызван",
+            }));
+          }
+        } catch (e) {
+          setDiag((d) => ({
+            ...d,
+            renderFallback: e instanceof Error ? e.message : String(e),
+          }));
+        }
+        refreshSnapshot();
+      };
 
       if (scriptAlreadyLoaded && typeof window.google?.search?.cse?.element?.go === "function") {
         setDiag((d) => ({
@@ -232,6 +306,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           scriptDetail: "скрипт был загружен ранее (флаг в окне)",
         }));
         afterReady();
+        setTimeout(maybeRenderFallback, 1000);
         queueMicrotask(refreshSnapshot);
       } else if (!scriptAlreadyLoaded) {
         w[GCSE_SCRIPT_FLAG] = true;
@@ -245,9 +320,8 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
             scriptDetail: `cx=${maskCx(cx)}`,
           }));
           debugCse("cse.js onload");
-          scheduleGo(hostRef.current, bumpGo);
-          setTimeout(() => scheduleGo(hostRef.current, bumpGo), 400);
-          setTimeout(() => scheduleGo(hostRef.current, bumpGo), 1200);
+          afterReady();
+          setTimeout(maybeRenderFallback, 900);
           queueMicrotask(refreshSnapshot);
           setTimeout(refreshSnapshot, 500);
         };
@@ -267,6 +341,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           scriptDetail: "флаг скрипта true, но go ещё не доступен — ждём",
         }));
         afterReady();
+        setTimeout(maybeRenderFallback, 1000);
         queueMicrotask(refreshSnapshot);
       }
 
@@ -375,7 +450,8 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         `element.go: ${diag.goFn}, вызовов go: ${diag.goCount}`,
         `виджет в DOM: ${diag.domWidget}`,
         `getAllElements keys: ${diag.elementKeys}`,
-        `последний поиск: ${diag.executeLast}`,
+        `render fallback: ${diag.renderFallback}`,
+        `последний execute/init: ${diag.executeLast}`,
         `userAgent: ${typeof navigator !== "undefined" ? navigator.userAgent : "—"}`,
       ].join("\n");
       if (navigator.clipboard?.writeText) {
@@ -424,7 +500,8 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
             <li>Функция element.go: {diag.goFn} (вызовов: {diag.goCount})</li>
             <li>Виджет в DOM (маркеры CSE): {diag.domWidget}</li>
             <li>Ключи getAllElements: {diag.elementKeys || "—"}</li>
-            <li>Последний execute: {diag.executeLast}</li>
+            <li>Запасной render(): {diag.renderFallback}</li>
+            <li>Последний execute / init: {diag.executeLast}</li>
           </ul>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
