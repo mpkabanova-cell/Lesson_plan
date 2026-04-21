@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
-import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { MaterialsSearchForm } from "./MaterialsSearchForm";
 import {
   ProgrammableSearchEmbed,
@@ -14,7 +13,6 @@ type Props = {
   active: boolean;
   lessonSubject: string;
   lessonGrade: string;
-  /** Идентификатор CSE (cx), с сервера — достаточно GOOGLE_CUSTOM_SEARCH_ENGINE_ID в .env */
   programmableSearchCx?: string;
 };
 
@@ -22,6 +20,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
   const [subject, setSubject] = useState(lessonSubject);
   const [grade, setGrade] = useState(lessonGrade);
   const [query, setQuery] = useState("");
+  const [searchPending, setSearchPending] = useState(false);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
 
   useEffect(() => {
@@ -30,18 +29,12 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
     setGrade(lessonGrade);
   }, [active, lessonSubject, lessonGrade]);
 
-  /** Стили в globals.css переводят CSE из overlay в поток страницы, пока активна эта вкладка. */
   useEffect(() => {
     const cls = "lesson-plan-cse-inline";
     if (active) document.body.classList.add(cls);
     else document.body.classList.remove(cls);
     return () => document.body.classList.remove(cls);
   }, [active]);
-
-  const fallbackGoogleUrl = useMemo(
-    () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
-    [query, subject, grade],
-  );
 
   const runSearch = () => {
     const q = build1septSearchQuery(query, { subject, grade });
@@ -51,10 +44,8 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-1 py-1">
       <p className="text-sm text-slate-600">
-        Поиск по материалам <span className="font-medium text-slate-800">1sept.ru</span>: запрос с ограничением{" "}
-        <span className="font-mono text-xs">site:1sept.ru</span>. Ссылка из выдачи открывает материал в{" "}
-        <span className="font-medium text-slate-800">отдельном окне</span> рядом с конструктором (эта вкладка не
-        закрывается). <span className="whitespace-nowrap">⌘/Ctrl+клик</span> — в новой вкладке браузера.
+        Поиск по материалам сайта <span className="font-medium text-slate-800">1 сентября</span>. Результаты открываются в{" "}
+        <span className="font-medium text-slate-800">новой вкладке</span> браузера, эта страница остаётся открытой.
       </p>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
@@ -66,25 +57,29 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
           grade={grade}
           onGradeChange={setGrade}
           onSubmit={runSearch}
+          disabled={searchPending}
+          busy={searchPending}
+          submitLabel={searchPending ? "Ищем…" : "Найти"}
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        <ProgrammableSearchEmbed ref={embedRef} cx={programmableSearchCx} />
-      </div>
-
-      <p className="text-center text-[11px] text-slate-500">
-        Не загружается виджет? Откройте{" "}
-        <a
-          className="text-teal-800 underline underline-offset-2"
-          href={fallbackGoogleUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+      {searchPending ? (
+        <div
+          className="flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50/90 px-3 py-2.5 text-sm text-teal-950"
+          role="status"
+          aria-live="polite"
         >
-          тот же поиск в Google
-        </a>
-        .
-      </p>
+          <span
+            className="inline-block size-4 shrink-0 animate-spin rounded-full border-2 border-teal-700 border-t-transparent"
+            aria-hidden
+          />
+          <span>Идёт поиск по материалам…</span>
+        </div>
+      ) : null}
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ProgrammableSearchEmbed ref={embedRef} cx={programmableSearchCx} onSearchBusyChange={setSearchPending} />
+      </div>
     </div>
   );
 }

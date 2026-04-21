@@ -13,6 +13,8 @@ type Props = {
   disabled?: boolean;
   /** Подпись кнопки отправки. */
   submitLabel?: string;
+  /** Доступность: идёт запрос к поиску. */
+  busy?: boolean;
 };
 
 export function MaterialsSearchForm({
@@ -25,6 +27,7 @@ export function MaterialsSearchForm({
   onSubmit,
   disabled,
   submitLabel = "Найти",
+  busy = false,
 }: Props) {
   return (
     <form
@@ -50,6 +53,7 @@ export function MaterialsSearchForm({
         <button
           type="submit"
           disabled={disabled}
+          aria-busy={busy}
           className="shrink-0 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow hover:bg-teal-800 disabled:opacity-50"
         >
           {submitLabel}

@@ -1,9 +1,8 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 
 const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
-/** Стабильный id для div.gcse-search и для element.render({ div }) */
 const GCSE_INNER_ID = "lesson-plan-gcse-widget";
 
 const FALLBACK_GNAMES = ["standard", "search", "two-column", "searchresults-only0", "searchresults-only1"];
@@ -12,11 +11,6 @@ function resolveCx(cxProp?: string): string | undefined {
   const fromProp = cxProp?.trim();
   if (fromProp) return fromProp;
   return process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim() || undefined;
-}
-
-function maskCx(cx: string): string {
-  if (cx.length <= 8) return "••••";
-  return `${cx.slice(0, 4)}…${cx.slice(-4)}`;
 }
 
 const isDev = process.env.NODE_ENV === "development";
@@ -35,9 +29,7 @@ function getCseElement() {
   }
   const all = api.getAllElements?.();
   if (all && typeof all === "object") {
-    const keys = Object.keys(all);
-    debugCse("getAllElements keys", keys);
-    for (const key of keys) {
+    for (const key of Object.keys(all)) {
       const el = all[key] as { execute?: (q: string) => void };
       if (el && typeof el.execute === "function") return el as { execute: (q: string) => void };
     }
@@ -63,6 +55,16 @@ function hasCseAnywhere(root: HTMLElement | null): boolean {
   );
 }
 
+/** Выдача уже отрисована (есть карточки или явное «пусто»). */
+function cseResultsAppeared(host: HTMLElement | null): boolean {
+  if (!host) return false;
+  return Boolean(
+    host.querySelector(
+      ".gsc-webResult, .gs-webResult, .gs-no-results-result, .gsc-snippet-ellipsis, .gsc-result-info-container",
+    ),
+  );
+}
+
 function isCseResultLink(anchor: Element): boolean {
   return Boolean(
     anchor.closest(
@@ -71,7 +73,6 @@ function isCseResultLink(anchor: Element): boolean {
   );
 }
 
-/** Ссылки на материалы 1sept.ru из выдачи — отдельное окно, конструктор остаётся в этой вкладке. */
 function is1septArticleUrl(href: string): boolean {
   try {
     const u = new URL(href);
@@ -82,11 +83,6 @@ function is1septArticleUrl(href: string): boolean {
   }
 }
 
-const SECONDARY_1SEPT_WINDOW = "lesson-plan-1sept-material";
-
-/**
- * В выдаче CSE ссылки часто идут через google.com/url?url=… или ?q=… — иначе hostname не 1sept.ru и перехват не срабатывает.
- */
 function unwrapGoogleRedirectUrl(href: string): string {
   try {
     const u = new URL(href);
@@ -117,7 +113,6 @@ function unwrapGoogleRedirectUrl(href: string): string {
   return href;
 }
 
-/** Реальный URL материала: data-cturl у Google или развёртка /url. */
 function getEffectiveMaterialHref(anchor: HTMLAnchorElement): string {
   const dataCt =
     anchor.getAttribute("data-cturl") ||
@@ -129,39 +124,11 @@ function getEffectiveMaterialHref(anchor: HTMLAnchorElement): string {
   return unwrapGoogleRedirectUrl(anchor.href);
 }
 
-function open1septInNeighborWindow(href: string): void {
-  const sw = window.screen?.availWidth ?? 1400;
-  const sh = window.screen?.availHeight ?? 900;
-  const panelW = Math.min(1280, Math.max(640, Math.round(sw * 0.5)));
-  const panelH = Math.min(sh - 40, Math.max(480, Math.round(sh * 0.92)));
-  let left = window.screenX + window.outerWidth;
-  let top = window.screenY;
-  if (left + panelW > sw - 16) left = Math.max(16, sw - panelW - 16);
-  if (left < 0) left = 16;
-  if (top + panelH > sh - 16) top = Math.max(16, sh - panelH - 16);
-
-  const features = [
-    `width=${panelW}`,
-    `height=${panelH}`,
-    `left=${Math.round(left)}`,
-    `top=${Math.round(top)}`,
-    "scrollbars=yes",
-    "resizable=yes",
-  ].join(",");
-
-  const win = window.open(href, SECONDARY_1SEPT_WINDOW, features);
-  if (win) {
+function open1septInNewTab(href: string): void {
+  const w = window.open(href, "_blank");
+  if (w) {
     try {
-      win.opener = null;
-    } catch {
-      /* ignore */
-    }
-    return;
-  }
-  const fallback = window.open(href, "_blank");
-  if (fallback) {
-    try {
-      fallback.opener = null;
+      w.opener = null;
     } catch {
       /* ignore */
     }
@@ -170,11 +137,7 @@ function open1septInNeighborWindow(href: string): void {
 
 type GoGetter = () => HTMLElement | null;
 
-/**
- * Вызывает element.go(контейнер). Раньше передавали hostRef.current в onload — ref часто ещё null, go не вызывался.
- * Здесь getter вызывается на каждом тике + повторы по времени.
- */
-function scheduleGo(getTarget: GoGetter, onGo?: () => void, onGoError?: (msg: string) => void) {
+function scheduleGo(getTarget: GoGetter, onGo?: () => void) {
   let attempts = 0;
   const max = 150;
   const tick = () => {
@@ -195,8 +158,6 @@ function scheduleGo(getTarget: GoGetter, onGo?: () => void, onGoError?: (msg: st
       onGo?.();
       debugCse("element.go", { id: container.id, className: container.className });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      onGoError?.(msg);
       debugCse("element.go error", e);
     }
   };
@@ -204,15 +165,15 @@ function scheduleGo(getTarget: GoGetter, onGo?: () => void, onGoError?: (msg: st
   [0, 30, 80, 150, 300, 500, 800, 1200, 2000, 3000].forEach((ms) => setTimeout(tick, ms));
 }
 
-function tryExplicitRender(divId: string): { ok: boolean; error?: string } {
+function tryExplicitRender(divId: string): { ok: boolean } {
   const render = window.google?.search?.cse?.element?.render;
-  if (typeof render !== "function") return { ok: false, error: "нет element.render" };
+  if (typeof render !== "function") return { ok: false };
   try {
     render({ div: divId, tag: "search" });
     debugCse("element.render fallback", { divId });
     return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  } catch {
+    return { ok: false };
   }
 }
 
@@ -222,108 +183,50 @@ export type ProgrammableSearchEmbedHandle = {
 
 type Props = {
   cx?: string;
+  /** true — запрос отправлен, ждём ответ виджета; false — выдача обновилась или таймаут ожидания. */
+  onSearchBusyChange?: (busy: boolean) => void;
 };
-
-type DiagState = {
-  cxMasked: string;
-  script: "ожидание" | "загружен" | "ошибка" | "уже_был";
-  scriptDetail: string;
-  googleObject: "нет" | "да";
-  goFn: "нет" | "да";
-  goCount: number;
-  domWidget: "нет" | "да";
-  elementKeys: string;
-  executeLast: string;
-  /** Запасной element.render, если go не заполнил getAllElements */
-  renderFallback: string;
-};
-
-function collectSnapshot(host: HTMLElement | null): Pick<DiagState, "googleObject" | "goFn" | "domWidget" | "elementKeys"> {
-  try {
-    const g = typeof window !== "undefined" ? window.google : undefined;
-    let keyStr = "—";
-    try {
-      const keys = g?.search?.cse?.element?.getAllElements?.();
-      keyStr =
-        keys && typeof keys === "object"
-          ? Object.keys(keys as Record<string, unknown>).join(", ") || "(пусто)"
-          : "—";
-    } catch {
-      keyStr = "ошибка getAllElements";
-    }
-    return {
-      googleObject: g ? "да" : "нет",
-      goFn: typeof g?.search?.cse?.element?.go === "function" ? "да" : "нет",
-      domWidget: hasCseAnywhere(host) ? "да" : "нет",
-      elementKeys: keyStr,
-    };
-  } catch {
-    return {
-      googleObject: "нет",
-      goFn: "нет",
-      domWidget: "нет",
-      elementKeys: "ошибка снимка",
-    };
-  }
-}
 
 export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle, Props>(
-  function ProgrammableSearchEmbed({ cx: cxProp }, ref) {
+  function ProgrammableSearchEmbed({ cx: cxProp, onSearchBusyChange }, ref) {
     const cx = resolveCx(cxProp);
     const hostRef = useRef<HTMLDivElement>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const searchResultWaitRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const [showLoadIssue, setShowLoadIssue] = useState(false);
     const loadWatchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const searchWatchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const goCountRef = useRef(0);
+    const onSearchBusyChangeRef = useRef(onSearchBusyChange);
 
-    const [diag, setDiag] = useState<DiagState>(() => ({
-      cxMasked: "—",
-      script: "ожидание",
-      scriptDetail: "",
-      googleObject: "нет",
-      goFn: "нет",
-      goCount: 0,
-      domWidget: "нет",
-      elementKeys: "—",
-      executeLast: "ещё не вызывали",
-      renderFallback: "—",
-    }));
+    useEffect(() => {
+      onSearchBusyChangeRef.current = onSearchBusyChange;
+    }, [onSearchBusyChange]);
 
-    /** Узел div.gcse-search (тот же, что с id) — для go() надёжнее, чем только внешний host */
     const innerGcseRef = useRef<HTMLDivElement | null>(null);
 
-    const bumpGo = useCallback(() => {
-      goCountRef.current += 1;
-      setDiag((d) => ({ ...d, goCount: goCountRef.current }));
-    }, []);
+    const clearResultWait = () => {
+      if (searchResultWaitRef.current) {
+        clearInterval(searchResultWaitRef.current);
+        searchResultWaitRef.current = null;
+      }
+    };
 
-    const refreshSnapshot = useCallback(() => {
-      setDiag((d) => ({
-        ...d,
-        ...collectSnapshot(hostRef.current),
-        goCount: goCountRef.current,
-      }));
-    }, []);
+    const settleSearchBusy = () => {
+      clearResultWait();
+      onSearchBusyChangeRef.current?.(false);
+    };
 
-    useEffect(() => {
-      if (!cx) return;
-      setDiag((d) => ({
-        ...d,
-        cxMasked: maskCx(cx),
-      }));
-    }, [cx]);
+    const startWaitForResultsDom = () => {
+      clearResultWait();
+      let ticks = 0;
+      const maxTicks = 55;
+      searchResultWaitRef.current = setInterval(() => {
+        ticks += 1;
+        if (cseResultsAppeared(hostRef.current) || ticks >= maxTicks) {
+          settleSearchBusy();
+        }
+      }, 200);
+    };
 
-    useEffect(() => {
-      if (!cx) return;
-      const t = setInterval(refreshSnapshot, 1200);
-      return () => clearInterval(t);
-    }, [cx, refreshSnapshot]);
-
-    /**
-     * Перехват клика по ссылкам выдачи: реальный URL часто в редиректе Google, не в hostname ссылки.
-     * Без MutationObserver по document.body — иначе при пагинации выдачи тысячи мутаций и подвисание UI.
-     */
     useEffect(() => {
       if (!cx) return;
 
@@ -340,24 +243,11 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         const materialHref = getEffectiveMaterialHref(a);
         if (!is1septArticleUrl(materialHref)) return;
 
-        if (e.metaKey || e.ctrlKey) {
-          e.preventDefault();
-          e.stopPropagation();
-          const w = window.open(materialHref, "_blank");
-          if (w) {
-            try {
-              w.opener = null;
-            } catch {
-              /* ignore */
-            }
-          }
-          return;
-        }
         if (e.shiftKey || e.altKey) return;
 
         e.preventDefault();
         e.stopPropagation();
-        open1septInNeighborWindow(materialHref);
+        open1septInNewTab(materialHref);
       };
       document.addEventListener("click", onClickCapture, true);
 
@@ -390,17 +280,10 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     useEffect(() => {
       if (!cx || typeof window === "undefined") return;
       const host = hostRef.current;
-      if (!host) {
-        setDiag((d) => ({
-          ...d,
-          scriptDetail: "ref host пуст — перезагрузите страницу",
-        }));
-        return;
-      }
+      if (!host) return;
 
       setShowLoadIssue(false);
       if (loadWatchRef.current) clearTimeout(loadWatchRef.current);
-      if (searchWatchRef.current) clearTimeout(searchWatchRef.current);
 
       const w = window as unknown as Record<string, boolean>;
       const scriptAlreadyLoaded = w[GCSE_SCRIPT_FLAG];
@@ -409,91 +292,41 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       const getPreferInner = () => innerGcseRef.current ?? hostRef.current;
 
       const afterReady = () => {
-        scheduleGo(getPreferInner, bumpGo, (msg) =>
-          setDiag((d) => ({ ...d, executeLast: `go (inner): ${msg}` })),
-        );
-        setTimeout(
-          () =>
-            scheduleGo(getHost, bumpGo, (msg) =>
-              setDiag((d) => ({ ...d, executeLast: `go (host): ${msg}` })),
-            ),
-          120,
-        );
+        scheduleGo(getPreferInner);
+        setTimeout(() => scheduleGo(getHost), 120);
       };
 
       const maybeRenderFallback = () => {
         try {
           const keys = Object.keys(window.google?.search?.cse?.element?.getAllElements?.() ?? {});
-          if (keys.length > 0) {
-            setDiag((d) => ({ ...d, renderFallback: "не нужен — есть ключи" }));
-            return;
-          }
+          if (keys.length > 0) return;
           const r = tryExplicitRender(GCSE_INNER_ID);
-          if (r.ok) {
-            bumpGo();
-            setDiag((d) => ({
-              ...d,
-              renderFallback: "выполнен element.render({ tag: search })",
-            }));
-          } else {
-            setDiag((d) => ({
-              ...d,
-              renderFallback: r.error ?? "render не вызван",
-            }));
-          }
+          if (r.ok) debugCse("render fallback ok");
         } catch (e) {
-          setDiag((d) => ({
-            ...d,
-            renderFallback: e instanceof Error ? e.message : String(e),
-          }));
+          debugCse("maybeRenderFallback", e);
         }
-        refreshSnapshot();
       };
 
       if (scriptAlreadyLoaded && typeof window.google?.search?.cse?.element?.go === "function") {
-        setDiag((d) => ({
-          ...d,
-          script: "уже_был",
-          scriptDetail: "скрипт был загружен ранее (флаг в окне)",
-        }));
         afterReady();
         setTimeout(maybeRenderFallback, 1000);
-        queueMicrotask(refreshSnapshot);
       } else if (!scriptAlreadyLoaded) {
         w[GCSE_SCRIPT_FLAG] = true;
         const script = document.createElement("script");
         script.async = true;
         script.src = `https://cse.google.com/cse.js?cx=${encodeURIComponent(cx)}`;
         script.onload = () => {
-          setDiag((d) => ({
-            ...d,
-            script: "загружен",
-            scriptDetail: `cx=${maskCx(cx)}`,
-          }));
           debugCse("cse.js onload");
           afterReady();
           setTimeout(maybeRenderFallback, 900);
-          queueMicrotask(refreshSnapshot);
-          setTimeout(refreshSnapshot, 500);
         };
         script.onerror = () => {
-          setDiag((d) => ({
-            ...d,
-            script: "ошибка",
-            scriptDetail: "Не удалось загрузить cse.google.com (сеть, блокировщик, CSP).",
-          }));
           setShowLoadIssue(true);
         };
         document.body.appendChild(script);
       } else {
-        setDiag((d) => ({
-          ...d,
-          script: "уже_был",
-          scriptDetail: "флаг скрипта true, но go ещё не доступен — ждём",
-        }));
         afterReady();
         setTimeout(maybeRenderFallback, 1000);
-        queueMicrotask(refreshSnapshot);
       }
 
       loadWatchRef.current = setTimeout(() => {
@@ -501,14 +334,12 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           setShowLoadIssue(true);
           debugCse("таймаут: нет разметки CSE после загрузки");
         }
-        refreshSnapshot();
       }, 15000);
 
       return () => {
         if (loadWatchRef.current) clearTimeout(loadWatchRef.current);
-        if (searchWatchRef.current) clearTimeout(searchWatchRef.current);
       };
-    }, [cx, bumpGo, refreshSnapshot]);
+    }, [cx]);
 
     useImperativeHandle(
       ref,
@@ -517,48 +348,30 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           const q = query.trim();
           if (!q || !cx) return;
 
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+          clearResultWait();
+          onSearchBusyChangeRef.current?.(true);
           setShowLoadIssue(false);
-          if (searchWatchRef.current) clearTimeout(searchWatchRef.current);
 
-          const run = () => {
+          const run = (): boolean => {
             const el = getCseElement();
-            if (el) {
-              try {
-                el.execute(q);
-                setDiag((d) => ({
-                  ...d,
-                  executeLast: `ok, ${q.length} симв.`,
-                }));
-                debugCse("execute", { len: q.length });
-              } catch (e) {
-                setDiag((d) => ({
-                  ...d,
-                  executeLast: `ошибка execute: ${e instanceof Error ? e.message : String(e)}`,
-                }));
-              }
-              searchWatchRef.current = setTimeout(() => {
-                if (!hasCseAnywhere(hostRef.current)) {
-                  setShowLoadIssue(true);
-                  setDiag((d) => ({
-                    ...d,
-                    executeLast: `${d.executeLast} → нет DOM выдачи за 10 с`,
-                  }));
-                  debugCse("после поиска нет выдачи в DOM");
-                }
-                refreshSnapshot();
-              }, 10000);
+            if (!el) return false;
+            try {
+              el.execute(q);
+              debugCse("execute", { len: q.length });
+              startWaitForResultsDom();
+              return true;
+            } catch (e) {
+              debugCse("execute error", e);
+              settleSearchBusy();
               return true;
             }
-            return false;
           };
 
-          setDiag((d) => ({
-            ...d,
-            executeLast: "ищем элемент для execute…",
-          }));
-
           if (run()) {
-            refreshSnapshot();
             return;
           }
 
@@ -567,120 +380,45 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           const maxAttempts = 200;
           pollRef.current = setInterval(() => {
             attempts += 1;
-            if (run() || attempts >= maxAttempts) {
+            if (run()) {
               if (pollRef.current) clearInterval(pollRef.current);
               pollRef.current = null;
-              if (attempts >= maxAttempts) {
-                setShowLoadIssue(true);
-                setDiag((d) => ({
-                  ...d,
-                  executeLast: "не найден getElement/getAllElements с execute (20 с)",
-                }));
-                debugCse("execute: не найден элемент после опроса");
-              }
-              refreshSnapshot();
+            } else if (attempts >= maxAttempts) {
+              if (pollRef.current) clearInterval(pollRef.current);
+              pollRef.current = null;
+              setShowLoadIssue(true);
+              settleSearchBusy();
+              debugCse("execute: не найден элемент после опроса");
             }
           }, 100);
         },
       }),
-      [cx, refreshSnapshot],
+      [cx],
     );
 
     useEffect(
       () => () => {
         if (pollRef.current) clearInterval(pollRef.current);
+        clearResultWait();
+        onSearchBusyChangeRef.current?.(false);
       },
       [],
     );
 
-    const copyDiag = useCallback(() => {
-      const text = [
-        `cx (маска): ${diag.cxMasked}`,
-        `cse.js: ${diag.script} ${diag.scriptDetail}`,
-        `window.google: ${diag.googleObject}`,
-        `element.go: ${diag.goFn}, вызовов go: ${diag.goCount}`,
-        `виджет в DOM: ${diag.domWidget}`,
-        `getAllElements keys: ${diag.elementKeys}`,
-        `render fallback: ${diag.renderFallback}`,
-        `последний execute/init: ${diag.executeLast}`,
-        `userAgent: ${typeof navigator !== "undefined" ? navigator.userAgent : "—"}`,
-      ].join("\n");
-      if (navigator.clipboard?.writeText) {
-        void navigator.clipboard.writeText(text).catch(() => {
-          /* fallback ниже */
-        });
-      } else {
-        window.prompt("Скопируйте текст:", text);
-      }
-    }, [diag]);
-
     if (!cx) {
       return (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
-          Не задан идентификатор поисковой системы Google (cx). В корне проекта в{" "}
-          <code className="rounded bg-white px-1 text-xs">.env.local</code> и на хостинге укажите{" "}
-          <code className="rounded bg-white px-1 text-xs">GOOGLE_CUSTOM_SEARCH_ENGINE_ID</code> — тот же Search engine ID,
-          что в{" "}
-          <a
-            href="https://programmablesearchengine.google.com"
-            className="font-medium text-teal-800 underline underline-offset-2"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Programmable Search Engine
-          </a>
-          .
+          Поиск материалов сейчас недоступен. Проверьте настройки приложения или обратитесь к администратору.
         </div>
       );
     }
 
     return (
       <div className="google-cse-panel flex min-h-[min(18rem,38vh)] w-full flex-1 flex-col overflow-auto rounded-xl border border-slate-200 bg-slate-50/50 p-3 shadow-sm">
-        <p className="mb-2 text-xs text-slate-500">
-          Нажмите «Найти» выше — выдача появится здесь (ограничение <span className="font-mono">site:1sept.ru</span>).
-        </p>
-
-        <details className="mb-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
-          <summary className="cursor-pointer select-none font-medium text-slate-800">
-            Диагностика поиска (развернуть)
-          </summary>
-          <ul className="mt-2 list-inside list-disc space-y-1 font-mono text-[11px] leading-relaxed text-slate-600">
-            <li>Идентификатор CSE (cx), маска: {diag.cxMasked}</li>
-            <li>Скрипт cse.js: {diag.script} {diag.scriptDetail ? `— ${diag.scriptDetail}` : ""}</li>
-            <li>window.google: {diag.googleObject}</li>
-            <li>Функция element.go: {diag.goFn} (вызовов: {diag.goCount})</li>
-            <li>Виджет в DOM (маркеры CSE): {diag.domWidget}</li>
-            <li>Ключи getAllElements: {diag.elementKeys || "—"}</li>
-            <li>Запасной render(): {diag.renderFallback}</li>
-            <li>Последний execute / init: {diag.executeLast}</li>
-          </ul>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={refreshSnapshot}
-              className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-700 hover:bg-slate-100"
-            >
-              Обновить снимок
-            </button>
-            <button
-              type="button"
-              onClick={copyDiag}
-              className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-700 hover:bg-slate-100"
-            >
-              Копировать в буфер
-            </button>
-          </div>
-          <p className="mt-2 text-[10px] text-slate-500">
-            Если «Скрипт: ошибка» — проверьте вкладку Network (cse.js) и отключите блокировщик. Если go=нет после
-            загрузки — обновите страницу. Если ключи пусты — не вызвался element.go(контейнер).
-          </p>
-        </details>
-
         <div ref={hostRef} className="min-h-[12rem] w-full flex-1 bg-white" />
         {showLoadIssue ? (
           <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-2 text-xs text-amber-950">
-            Виджет Google не отобразился в блоке (блокировщик рекламы, сеть или настройки CSE). Попробуйте отключить
-            блокировщик для этого сайта или откройте поиск по ссылке внизу вкладки. Смотрите блок «Диагностика» выше.
+            Не удалось показать поиск. Проверьте подключение к интернету и обновите страницу.
           </p>
         ) : null}
       </div>
