@@ -63,28 +63,6 @@ function hasCseAnywhere(root: HTMLElement | null): boolean {
   );
 }
 
-/** Селекторы ссылок внутри виджета CSE (в т.ч. overlay), чтобы открывать в той же вкладке. */
-const CSE_RESULT_LINK_SELECTOR = [
-  ".lesson-plan-cse-root a[href]",
-  ".gsc-results a[href]",
-  ".gsc-control-cse a[href]",
-  "[id^='___gcse_'] a[href]",
-  ".gsc-results-wrapper-overlay a[href]",
-].join(", ");
-
-function normalizeCseLinksSameTab() {
-  if (typeof document === "undefined") return;
-  try {
-    document.querySelectorAll(CSE_RESULT_LINK_SELECTOR).forEach((node) => {
-      if (node instanceof HTMLAnchorElement && node.href && !node.href.toLowerCase().startsWith("javascript:")) {
-        node.target = "_self";
-      }
-    });
-  } catch {
-    /* ignore */
-  }
-}
-
 function isCseResultLink(anchor: Element): boolean {
   return Boolean(
     anchor.closest(
@@ -105,6 +83,51 @@ function is1septArticleUrl(href: string): boolean {
 }
 
 const SECONDARY_1SEPT_WINDOW = "lesson-plan-1sept-material";
+
+/**
+ * В выдаче CSE ссылки часто идут через google.com/url?url=… или ?q=… — иначе hostname не 1sept.ru и перехват не срабатывает.
+ */
+function unwrapGoogleRedirectUrl(href: string): string {
+  try {
+    const u = new URL(href);
+    if (!/(^|\.)google\./i.test(u.hostname)) return href;
+    const path = u.pathname.replace(/\/+$/, "");
+    if (path !== "/url") return href;
+    const sp = u.searchParams;
+    for (const key of ["url", "q", "u"]) {
+      const raw = sp.get(key);
+      if (!raw) continue;
+      let decoded = raw;
+      try {
+        decoded = decodeURIComponent(raw);
+      } catch {
+        decoded = raw;
+      }
+      if (/^https?:\/\//i.test(decoded)) {
+        try {
+          return new URL(decoded).href;
+        } catch {
+          continue;
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return href;
+}
+
+/** Реальный URL материала: data-cturl у Google или развёртка /url. */
+function getEffectiveMaterialHref(anchor: HTMLAnchorElement): string {
+  const dataCt =
+    anchor.getAttribute("data-cturl") ||
+    anchor.getAttribute("data-ctbu") ||
+    anchor.getAttribute("data-url");
+  if (dataCt && /^https?:\/\//i.test(dataCt.trim())) {
+    return unwrapGoogleRedirectUrl(dataCt.trim());
+  }
+  return unwrapGoogleRedirectUrl(anchor.href);
+}
 
 function open1septInNeighborWindow(href: string): void {
   const sw = window.screen?.availWidth ?? 1400;
@@ -297,22 +320,12 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       return () => clearInterval(t);
     }, [cx, refreshSnapshot]);
 
-    /** Google часто ставит ссылкам target=_blank, даже при data-linktarget=_self — правим DOM и перехватываем клик. */
+    /**
+     * Перехват клика по ссылкам выдачи: реальный URL часто в редиректе Google, не в hostname ссылки.
+     * Без MutationObserver по document.body — иначе при пагинации выдачи тысячи мутаций и подвисание UI.
+     */
     useEffect(() => {
       if (!cx) return;
-      let raf = 0;
-      const scheduleNormalize = () => {
-        cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(() => normalizeCseLinksSameTab());
-      };
-      const mo = new MutationObserver(scheduleNormalize);
-      mo.observe(document.body, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ["href", "target"],
-      });
-      scheduleNormalize();
 
       const onClickCapture = (e: MouseEvent) => {
         if (!(e.target instanceof Element)) return;
@@ -321,12 +334,16 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         if (e.defaultPrevented) return;
         if (e.button !== 0) return;
 
-        const href = a.href;
-        if (!is1septArticleUrl(href)) return;
+        const rawHref = a.getAttribute("href")?.trim() ?? "";
+        if (!rawHref || rawHref.toLowerCase().startsWith("javascript:")) return;
+
+        const materialHref = getEffectiveMaterialHref(a);
+        if (!is1septArticleUrl(materialHref)) return;
 
         if (e.metaKey || e.ctrlKey) {
           e.preventDefault();
-          const w = window.open(href, "_blank");
+          e.stopPropagation();
+          const w = window.open(materialHref, "_blank");
           if (w) {
             try {
               w.opener = null;
@@ -339,13 +356,12 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         if (e.shiftKey || e.altKey) return;
 
         e.preventDefault();
-        open1septInNeighborWindow(href);
+        e.stopPropagation();
+        open1septInNeighborWindow(materialHref);
       };
       document.addEventListener("click", onClickCapture, true);
 
       return () => {
-        cancelAnimationFrame(raf);
-        mo.disconnect();
         document.removeEventListener("click", onClickCapture, true);
       };
     }, [cx]);
