@@ -44,8 +44,9 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-1 py-1">
       <p className="text-sm text-slate-600">
-        Поиск по материалам сайта <span className="font-medium text-slate-800">1 сентября</span>. Результаты открываются в{" "}
-        <span className="font-medium text-slate-800">новой вкладке</span> браузера, эта страница остаётся открытой.
+        Поиск только в разделе <span className="font-medium text-slate-800">«Публикации»</span> (проект «Открытый урок»,{" "}
+        <span className="font-medium text-slate-800">urok.1sept.ru</span>). Выдача по умолчанию — по релевантности.
+        Ссылки на материалы открываются в <span className="font-medium text-slate-800">новой вкладке</span>.
       </p>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">

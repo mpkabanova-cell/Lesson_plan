@@ -1,12 +1,11 @@
 /**
- * Поиск по 1sept.ru через обычную страницу Google (без Custom Search API и биллинга).
- * Пользователь уходит на google.com с ограничением site:1sept.ru.
+ * Поиск по разделу публикаций через обычную страницу Google (без Custom Search API и биллинга).
  */
 export function buildGoogleFallbackSearchUrl(
   query: string,
   opts?: { subject?: string; grade?: string },
 ): string {
-  const parts: string[] = ["site:1sept.ru"];
+  const parts: string[] = ["site:urok.1sept.ru/publication"];
   const q = query.trim().replace(/\s+/g, " ");
   if (q) parts.push(q);
   const sub = opts?.subject?.trim();

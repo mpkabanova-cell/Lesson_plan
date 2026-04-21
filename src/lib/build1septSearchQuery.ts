@@ -1,10 +1,11 @@
-/** Ограничение выдачи Google Custom Search по домену «1 сентября». */
-export const SITE_1SEPT = "site:1sept.ru";
+/** Раздел «Публикации» портала: материалы Открытого урока (urok.1sept.ru/publication/…). */
+export const PUBLICATIONS_SITE_OPERATOR = "site:urok.1sept.ru/publication";
 
 const MAX_QUERY_LEN = 2000;
 
 /**
- * Собирает строку запроса для Google: основной текст + предмет + класс + site:1sept.ru.
+ * Строка запроса для Google: текст + предмет + класс + ограничение по разделу публикаций.
+ * В консоли Programmable Search в список сайтов нужно добавить **urok.1sept.ru** (или поиск по всей сети с уточнением в запросе).
  */
 export function build1septSearchQuery(
   query: string,
@@ -19,7 +20,7 @@ export function build1septSearchQuery(
   if (gr) {
     parts.push(`${gr} класс`);
   }
-  parts.push(SITE_1SEPT);
+  parts.push(PUBLICATIONS_SITE_OPERATOR);
   const combined = parts.join(" ").replace(/\s+/g, " ").trim();
   if (combined.length <= MAX_QUERY_LEN) return combined;
   return combined.slice(0, MAX_QUERY_LEN).trim();

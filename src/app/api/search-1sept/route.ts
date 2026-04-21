@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
+import { build1septSearchQuery, PUBLICATIONS_SITE_OPERATOR } from "@/lib/build1septSearchQuery";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     grade: body.grade,
   });
 
-  if (!q.includes("site:1sept.ru")) {
+  if (!q.includes(PUBLICATIONS_SITE_OPERATOR)) {
     return NextResponse.json({ error: "Некорректная сборка запроса" }, { status: 500 });
   }
 
