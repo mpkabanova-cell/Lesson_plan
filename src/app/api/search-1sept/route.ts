@@ -89,6 +89,21 @@ export async function POST(req: Request) {
     );
   }
 
+  /** Иногда в теле приходит объект error даже при HTTP 200 (квота, неверный cx и т.д.). */
+  if (res.ok && data.error) {
+    const msg =
+      typeof data.error === "object" && data.error !== null && "message" in data.error
+        ? String((data.error as { message?: string }).message)
+        : JSON.stringify(data.error);
+    return NextResponse.json(
+      {
+        error: "Ошибка Google Custom Search.",
+        detail: msg,
+      },
+      { status: 502 },
+    );
+  }
+
   if (!res.ok) {
     const apiErr = data.error?.message || text.slice(0, 300);
     return NextResponse.json(
