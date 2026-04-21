@@ -268,6 +268,9 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       gcse.setAttribute("data-as_sitesearch", "1sept.ru");
       gcse.setAttribute("data-linktarget", "_self");
       gcse.setAttribute("data-autosearchonload", "false");
+      /** Сначала новее; в консоли Programmable Search нужна включённая «Сортировка результатов». */
+      gcse.setAttribute("data-sort_by", "date");
+      gcse.setAttribute("data-enableOrderBy", "true");
       host.appendChild(gcse);
       innerGcseRef.current = gcse;
 
