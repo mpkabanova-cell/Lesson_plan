@@ -16,6 +16,8 @@ import {
 } from "@/lib/parseTiming";
 import { DURATION_OPTIONS, GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
+import { EditorSearchTabs, type WorkspaceTabId } from "./materialsSearch/EditorSearchTabs";
+import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
 
 function buildExportTitle(subject: string, grade: string, topic: string): string {
@@ -156,6 +158,7 @@ export default function LessonPlanWorkspace() {
   /** Сверка: длина текста в строке HTML vs в TipTap (после onExternalLoad). */
   const [editorDiagnosticsLine, setEditorDiagnosticsLine] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTabId>("editor");
 
   const stages = LESSON_STAGES[lessonType];
 
@@ -665,11 +668,12 @@ export default function LessonPlanWorkspace() {
           <section className="order-2 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden xl:max-h-full">
             <div className="shrink-0 rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-                <h2 className="text-sm font-semibold text-slate-800">План урока (редактор)</h2>
-                <div className="flex flex-wrap gap-2">
+                <h2 className="text-sm font-semibold text-slate-800">План урока</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <EditorSearchTabs active={workspaceTab} onChange={setWorkspaceTab} />
                   <button
                     type="button"
-                    disabled={!hasPlan || exporting}
+                    disabled={!hasPlan || exporting || workspaceTab !== "editor"}
                     onClick={handleExportDocx}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
                   >
@@ -711,13 +715,36 @@ export default function LessonPlanWorkspace() {
             </div>
 
             <div className="flex min-h-[240px] flex-1 flex-col overflow-hidden xl:min-h-0">
-              <PlanEditor
-                content={planHtml}
-                contentKey={contentKey}
-                onHtmlChange={onHtmlChange}
-                onExternalLoad={handlePlanEditorLoad}
-                disabled={loading}
-              />
+              <div
+                className={
+                  workspaceTab === "editor"
+                    ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+                    : "hidden min-h-0 flex-1 overflow-hidden"
+                }
+                aria-hidden={workspaceTab !== "editor"}
+              >
+                <PlanEditor
+                  content={planHtml}
+                  contentKey={contentKey}
+                  onHtmlChange={onHtmlChange}
+                  onExternalLoad={handlePlanEditorLoad}
+                  disabled={loading}
+                />
+              </div>
+              <div
+                className={
+                  workspaceTab === "search"
+                    ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200/80 bg-slate-50/40 px-2 py-2"
+                    : "hidden"
+                }
+                aria-hidden={workspaceTab !== "search"}
+              >
+                <MaterialsSearchTab
+                  active={workspaceTab === "search"}
+                  lessonSubject={subject}
+                  lessonGrade={grade}
+                />
+              </div>
             </div>
           </section>
         </div>

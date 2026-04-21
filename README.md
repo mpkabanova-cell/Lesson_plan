@@ -6,6 +6,7 @@
 
 - Node.js 20+
 - Ключ [OpenRouter](https://openrouter.ai/)
+- Для вкладки **«Поиск материалов»** (поиск по [1sept.ru](https://1sept.ru) через Google) — ключи [Custom Search JSON API](https://developers.google.com/custom-search/v1/overview) (см. ниже)
 
 ## Запуск
 
