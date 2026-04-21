@@ -93,7 +93,7 @@ function isCseResultLink(anchor: Element): boolean {
   );
 }
 
-/** Ссылки на материалы 1sept.ru из выдачи — открываем встроенно, без полной навигации в этой вкладке. */
+/** Ссылки на материалы 1sept.ru из выдачи — отдельное окно, конструктор остаётся в этой вкладке. */
 function is1septArticleUrl(href: string): boolean {
   try {
     const u = new URL(href);
@@ -101,6 +101,47 @@ function is1septArticleUrl(href: string): boolean {
     return u.hostname === "1sept.ru" || u.hostname.endsWith(".1sept.ru");
   } catch {
     return false;
+  }
+}
+
+const SECONDARY_1SEPT_WINDOW = "lesson-plan-1sept-material";
+
+function open1septInNeighborWindow(href: string): void {
+  const sw = window.screen?.availWidth ?? 1400;
+  const sh = window.screen?.availHeight ?? 900;
+  const panelW = Math.min(1280, Math.max(640, Math.round(sw * 0.5)));
+  const panelH = Math.min(sh - 40, Math.max(480, Math.round(sh * 0.92)));
+  let left = window.screenX + window.outerWidth;
+  let top = window.screenY;
+  if (left + panelW > sw - 16) left = Math.max(16, sw - panelW - 16);
+  if (left < 0) left = 16;
+  if (top + panelH > sh - 16) top = Math.max(16, sh - panelH - 16);
+
+  const features = [
+    `width=${panelW}`,
+    `height=${panelH}`,
+    `left=${Math.round(left)}`,
+    `top=${Math.round(top)}`,
+    "scrollbars=yes",
+    "resizable=yes",
+  ].join(",");
+
+  const win = window.open(href, SECONDARY_1SEPT_WINDOW, features);
+  if (win) {
+    try {
+      win.opener = null;
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
+  const fallback = window.open(href, "_blank");
+  if (fallback) {
+    try {
+      fallback.opener = null;
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -158,8 +199,6 @@ export type ProgrammableSearchEmbedHandle = {
 
 type Props = {
   cx?: string;
-  /** Материал 1sept.ru открыть встроенно (родитель показывает iframe), без ухода со страницы конструктора. */
-  onOpen1septArticle?: (url: string) => void;
 };
 
 type DiagState = {
@@ -206,7 +245,7 @@ function collectSnapshot(host: HTMLElement | null): Pick<DiagState, "googleObjec
 }
 
 export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle, Props>(
-  function ProgrammableSearchEmbed({ cx: cxProp, onOpen1septArticle }, ref) {
+  function ProgrammableSearchEmbed({ cx: cxProp }, ref) {
     const cx = resolveCx(cxProp);
     const hostRef = useRef<HTMLDivElement>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -287,22 +326,20 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
 
         if (e.metaKey || e.ctrlKey) {
           e.preventDefault();
-          window.open(href, "_blank", "noopener,noreferrer");
+          const w = window.open(href, "_blank");
+          if (w) {
+            try {
+              w.opener = null;
+            } catch {
+              /* ignore */
+            }
+          }
           return;
         }
         if (e.shiftKey || e.altKey) return;
 
-        if (onOpen1septArticle) {
-          e.preventDefault();
-          onOpen1septArticle(href);
-          return;
-        }
-
-        const linkTarget = (a.getAttribute("target") || "").toLowerCase();
-        if (linkTarget === "_blank" || linkTarget === "blank") {
-          e.preventDefault();
-          window.location.assign(a.href);
-        }
+        e.preventDefault();
+        open1septInNeighborWindow(href);
       };
       document.addEventListener("click", onClickCapture, true);
 
@@ -311,7 +348,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         mo.disconnect();
         document.removeEventListener("click", onClickCapture, true);
       };
-    }, [cx, onOpen1septArticle]);
+    }, [cx]);
 
     useLayoutEffect(() => {
       if (!cx || typeof window === "undefined") return;
