@@ -40,12 +40,22 @@ export function useMaterialsSearch() {
           }),
         });
         const text = await res.text();
-        let data: { results?: SearchResult[]; error?: string; hint?: string } = {};
+        let data: {
+          results?: SearchResult[];
+          error?: string;
+          hint?: string;
+          detail?: string;
+        } = {};
         try {
           data = JSON.parse(text) as typeof data;
         } catch {
           setStatus("error");
-          setErrorMessage("Не удалось выполнить поиск. Попробуйте позже.");
+          const preview = text.trim().slice(0, 200);
+          setErrorMessage(
+            preview
+              ? `Ответ сервера не JSON (возможна страница ошибки хостинга). Начало ответа:\n${preview}`
+              : "Не удалось выполнить поиск. Попробуйте позже.",
+          );
           setResults([]);
           return;
         }
@@ -53,9 +63,13 @@ export function useMaterialsSearch() {
         if (!res.ok) {
           setStatus("error");
           const base = data.error ?? "Не удалось выполнить поиск. Попробуйте позже.";
+          const detail =
+            typeof data.detail === "string" && data.detail.trim()
+              ? `\n\nПодробности: ${data.detail.trim()}`
+              : "";
           const hint =
             typeof data.hint === "string" && data.hint.trim() ? `\n\n${data.hint.trim()}` : "";
-          setErrorMessage(base + hint);
+          setErrorMessage(base + detail + hint);
           setResults([]);
           return;
         }
