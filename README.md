@@ -54,3 +54,33 @@ npm run extract:knowledge
 
 Тело `POST /api/generate-goal`: `{ "systemPrompt", "subject", "grade", "topic", "lessonType" }`. Ответ: `{ "goal": "..." }`.
 
+## Поиск материалов (1sept.ru)
+
+В правой колонке доступны вкладки **«Редактор урока»** и **«Поиск материалов»**. Поиск выполняется на сервере через [Google Custom Search JSON API](https://developers.google.com/custom-search/v1/overview); ключи не попадают в браузер.
+
+Эндпоинт: `POST /api/search-1sept`, тело: `{ "query": string, "subject"?: string, "grade"?: string }`. Ответ: `{ "results": [{ "title", "url", "snippet" }] }`.
+
+К запросу на сервере добавляется ограничение `site:1sept.ru`. Поля «предмет» и «класс» на вкладке поиска при открытии подставляются из формы урока слева (их можно изменить перед поиском).
+
+### Настройка Google (пошагово)
+
+1. **Programmable Search Engine**  
+   - Откройте [programmablesearchengine.google.com](https://programmablesearchengine.google.com) и войдите в аккаунт Google.  
+   - Создайте поисковую систему: укажите имя, в разделе сайтов добавьте **`1sept.ru`** (при необходимости включите поиск по всему вебу и ограничьте в настройках — для выдачи только с нужного домена достаточно корректно задать сайты в CSE).  
+   - После создания откройте **Настройки поисковой системы** и скопируйте **Идентификатор поисковой системы** (Search engine ID) — это значение **`cx`** для API.
+
+2. **Custom Search API в Google Cloud**  
+   - В [Google Cloud Console](https://console.cloud.google.com/) создайте проект или выберите существующий.  
+   - Включите API **Custom Search API** (APIs & Services → Library → «Custom Search API» → Enable).  
+   - Создайте учётные данные: **API key** (APIs & Services → Credentials). Рекомендуется ограничить ключ только Custom Search API.
+
+3. **Переменные окружения**  
+   В `.env` (и на Render — Environment) задайте:
+
+   - **`GOOGLE_CUSTOM_SEARCH_API_KEY`** — API key из шага 2.  
+   - **`GOOGLE_CUSTOM_SEARCH_ENGINE_ID`** — идентификатор поисковой системы (`cx`) из шага 1.
+
+4. Перезапустите `npm run dev` или redeploy на хостинге.
+
+Бесплатная квота Custom Search API ограничена (до 100 запросов в сутки на бесплатном плане — уточняйте в актуальной документации Google). При превышении лимита API вернёт ошибку; в интерфейсе отобразится сообщение об ошибке поиска.
+
