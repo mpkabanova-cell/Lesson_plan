@@ -1,4 +1,5 @@
 import { marked } from "marked";
+import { convertAsciiLatexDelimitersToMathSpans } from "./latexAsciiDelimitersToHtmlSpans";
 import { applyLessonPlanTimingNormalization } from "./normalizeLessonPlanTimingHtml";
 import { prepareLessonPlanHtmlForEditor } from "./prepareEditorHtml";
 
@@ -15,12 +16,15 @@ export async function aiResponseToHtml(
   const trimmed = raw.trim();
   if (!trimmed) return "<p></p>";
 
+  /** До marked: иначе `\\(` теряется/ломается и KaTeX не получает формулы. */
+  const withMathSpans = convertAsciiLatexDelimitersToMathSpans(trimmed);
+
   const looksLikeHtml = /<section[\s>]|<h[1-6][\s>]|<table[\s>]|<div[\s>]|<p[\s>]/i.test(
-    trimmed,
+    withMathSpans,
   );
 
-  const parsed = await marked.parse(trimmed);
-  const html = looksLikeHtml ? trimmed : String(parsed);
+  const parsed = await marked.parse(withMathSpans);
+  const html = looksLikeHtml ? withMathSpans : String(parsed);
   let out = prepareLessonPlanHtmlForEditor(html);
   const d = opts?.durationMinutes;
   if (d != null && Number.isFinite(d) && d >= 1) {

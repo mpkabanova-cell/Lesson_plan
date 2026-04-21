@@ -33,27 +33,36 @@ export const InlineMath = Node.create({
         renderHTML: (attrs) => {
           const latex = attrs.latex as string;
           if (!latex) return {};
-          return { "data-latex": latex, "data-math-inline": "" };
+          const display = attrs.displayMode as boolean;
+          return display
+            ? { "data-latex": latex, "data-math-block": "" }
+            : { "data-latex": latex, "data-math-inline": "" };
         },
+      },
+      displayMode: {
+        default: false,
+        parseHTML: (el) => (el as HTMLElement).hasAttribute("data-math-block"),
       },
     };
   },
 
   parseHTML() {
     return [
-      { tag: 'span[data-latex][data-math-inline]' },
-      { tag: 'span[data-latex]' },
+      { tag: "span[data-latex][data-math-block]" },
+      { tag: "span[data-latex][data-math-inline]" },
+      { tag: "span[data-latex]" },
     ];
   },
 
   renderHTML({ node, HTMLAttributes }) {
     const latex = node.attrs.latex as string;
+    const displayMode = node.attrs.displayMode as boolean;
     return [
       "span",
       mergeAttributes(HTMLAttributes, {
         "data-latex": latex,
-        "data-math-inline": "",
-        class: "katex-math-inline",
+        ...(displayMode ? { "data-math-block": "" } : { "data-math-inline": "" }),
+        class: displayMode ? "katex-math-inline katex-math-block-node" : "katex-math-inline",
       }),
     ];
   },
@@ -69,8 +78,14 @@ export const InlineMath = Node.create({
 
       const apply = (n: PMNode) => {
         const latex = (n.attrs.latex as string) || "";
+        const displayMode = !!(n.attrs.displayMode as boolean);
         dom.setAttribute("data-latex", latex);
-        renderKatex(dom, latex, false);
+        if (displayMode) {
+          dom.classList.add("katex-math-block-node");
+        } else {
+          dom.classList.remove("katex-math-block-node");
+        }
+        renderKatex(dom, latex, displayMode);
       };
       apply(node);
 
@@ -91,7 +106,7 @@ export const InlineMath = Node.create({
           .command(({ tr, state }) => {
             const n = state.doc.nodeAt(pos);
             if (!n || n.type.name !== "inlineMath") return false;
-            tr.setNodeMarkup(pos, undefined, { ...n.attrs, latex: next });
+            tr.setNodeMarkup(pos, undefined, { ...n.attrs, latex: next.trim() });
             return true;
           })
           .run();
