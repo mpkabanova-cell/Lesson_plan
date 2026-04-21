@@ -10,9 +10,11 @@ type Props = {
   active: boolean;
   lessonSubject: string;
   lessonGrade: string;
+  /** Идентификатор CSE (cx), с сервера — достаточно GOOGLE_CUSTOM_SEARCH_ENGINE_ID в .env */
+  programmableSearchCx?: string;
 };
 
-export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props) {
+export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, programmableSearchCx }: Props) {
   const [subject, setSubject] = useState(lessonSubject);
   const [grade, setGrade] = useState(lessonGrade);
   const [query, setQuery] = useState("");
@@ -40,12 +42,12 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props
           Google (Programmable Search). Работает без Custom Search JSON API на сервере — удобно, если в Google Cloud нельзя
           привязать биллинг.
         </p>
-        <ProgrammableSearchEmbed />
+        <ProgrammableSearchEmbed cx={programmableSearchCx} />
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
         <p className="mb-3 text-xs font-medium text-slate-600">
-          Тот же запрос с учётом предмета и класса — отдельной вкладкой в Google
+          Дополнительно: тот же запрос с предметом и классом — в новой вкладке браузера
         </p>
         <MaterialsSearchForm
           query={query}

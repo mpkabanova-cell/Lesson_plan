@@ -121,7 +121,12 @@ async function downloadBlob(path: string, body: unknown, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function LessonPlanWorkspace() {
+type LessonPlanWorkspaceProps = {
+  /** cx для встроенного поиска Google (Programmable Search Element). Передаётся из page.tsx с сервера. */
+  googleProgrammableSearchCx?: string;
+};
+
+export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: LessonPlanWorkspaceProps) {
   const [subject, setSubject] = useState(SUBJECT_OPTIONS[0] ?? "");
   const [grade, setGrade] = useState("5");
   const [duration, setDuration] = useState(45);
@@ -743,6 +748,7 @@ export default function LessonPlanWorkspace() {
                   active={workspaceTab === "search"}
                   lessonSubject={subject}
                   lessonGrade={grade}
+                  programmableSearchCx={googleProgrammableSearchCx}
                 />
               </div>
             </div>
