@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { MaterialsSearchForm } from "./MaterialsSearchForm";
 import { MaterialsSearchResults } from "./MaterialsSearchResults";
 import { useMaterialsSearch } from "./useMaterialsSearch";
@@ -25,6 +26,11 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props
 
   const loading = status === "loading";
 
+  const fallbackGoogleUrl = useMemo(
+    () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
+    [query, subject, grade],
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-1 py-1">
       <MaterialsSearchForm
@@ -42,6 +48,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props
         results={results}
         errorMessage={errorMessage}
         clientHint={clientHint}
+        fallbackGoogleUrl={fallbackGoogleUrl}
       />
     </div>
   );

@@ -21,6 +21,19 @@ type GoogleCseResponse = {
   error?: { message?: string; code?: number };
 };
 
+/** Подсказка по типичным ответам Google (для отображения на клиенте). */
+function hintForGoogleCseMessage(message: string): string | undefined {
+  if (message.includes("does not have the access to Custom Search JSON API")) {
+    return [
+      "Что сделать:",
+      "1) В Google Cloud привяжите к этому проекту Billing (Платёжный аккаунт): меню Billing — часто без этого Custom Search JSON API возвращает именно эту 403, даже при бесплатной квоте.",
+      "2) Убедитесь, что в том же проекте включён Custom Search API (APIs & Services → Enabled APIs).",
+      "3) Подождите 1–2 минуты, повторите запрос. При необходимости создайте новый API key в этом проекте и обновите GOOGLE_CUSTOM_SEARCH_API_KEY на Render.",
+    ].join("\n");
+  }
+  return undefined;
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY?.trim();
   const cx = process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim();
@@ -95,10 +108,12 @@ export async function POST(req: Request) {
       typeof data.error === "object" && data.error !== null && "message" in data.error
         ? String((data.error as { message?: string }).message)
         : JSON.stringify(data.error);
+    const hint = hintForGoogleCseMessage(msg);
     return NextResponse.json(
       {
         error: "Ошибка Google Custom Search.",
         detail: msg,
+        ...(hint ? { hint } : {}),
       },
       { status: 502 },
     );
@@ -106,10 +121,12 @@ export async function POST(req: Request) {
 
   if (!res.ok) {
     const apiErr = data.error?.message || text.slice(0, 300);
+    const hint = hintForGoogleCseMessage(apiErr);
     return NextResponse.json(
       {
         error: "Не удалось выполнить поиск. Попробуйте позже.",
         detail: apiErr,
+        ...(hint ? { hint } : {}),
       },
       { status: res.status >= 500 ? 502 : 400 },
     );
