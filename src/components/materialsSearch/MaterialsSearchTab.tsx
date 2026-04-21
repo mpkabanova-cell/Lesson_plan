@@ -22,6 +22,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
   const [subject, setSubject] = useState(lessonSubject);
   const [grade, setGrade] = useState(lessonGrade);
   const [query, setQuery] = useState("");
+  const [articlePreviewUrl, setArticlePreviewUrl] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
 
   useEffect(() => {
@@ -29,6 +30,10 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
     setSubject(lessonSubject);
     setGrade(lessonGrade);
   }, [active, lessonSubject, lessonGrade]);
+
+  useEffect(() => {
+    if (!active) setArticlePreviewUrl(null);
+  }, [active]);
 
   /** Стили в globals.css переводят CSE из overlay в поток страницы, пока активна эта вкладка. */
   useEffect(() => {
@@ -51,9 +56,10 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-1 py-1">
       <p className="text-sm text-slate-600">
-        Поиск по материалам <span className="font-medium text-slate-800">1sept.ru</span>: запрос собирается с
-        ограничением <span className="font-mono text-xs">site:1sept.ru</span>, выдача — как в Google, на этой странице
-        (без Custom Search JSON API).
+        Поиск по материалам <span className="font-medium text-slate-800">1sept.ru</span>: запрос с ограничением{" "}
+        <span className="font-mono text-xs">site:1sept.ru</span>. По ссылке из выдачи материал открывается{" "}
+        <span className="font-medium text-slate-800">ниже на этой вкладке</span> (встроенный просмотр), без ухода с
+        конструктора. <span className="whitespace-nowrap">⌘/Ctrl+клик</span> — в новой вкладке.
       </p>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
@@ -68,8 +74,43 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        <ProgrammableSearchEmbed ref={embedRef} cx={programmableSearchCx} />
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <ProgrammableSearchEmbed
+          ref={embedRef}
+          cx={programmableSearchCx}
+          onOpen1septArticle={setArticlePreviewUrl}
+        />
+        {articlePreviewUrl ? (
+          <div className="flex min-h-[min(50vh,28rem)] shrink-0 flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-2">
+              <button
+                type="button"
+                onClick={() => setArticlePreviewUrl(null)}
+                className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-800 hover:bg-slate-100"
+              >
+                Закрыть предпросмотр
+              </button>
+              <a
+                href={articlePreviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-teal-800 underline underline-offset-2"
+              >
+                Открыть в новой вкладке
+              </a>
+            </div>
+            <iframe
+              key={articlePreviewUrl}
+              src={articlePreviewUrl}
+              title="Материал 1sept.ru"
+              className="min-h-[min(45vh,24rem)] w-full flex-1 rounded border border-slate-200 bg-white"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+            <p className="text-[11px] text-slate-500">
+              Если окно пустое, сайт мог запретить встраивание — откройте материал по ссылке «в новой вкладке».
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <p className="text-center text-[11px] text-slate-500">

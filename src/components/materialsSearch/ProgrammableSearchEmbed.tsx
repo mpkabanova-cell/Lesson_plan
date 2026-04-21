@@ -93,6 +93,17 @@ function isCseResultLink(anchor: Element): boolean {
   );
 }
 
+/** Ссылки на материалы 1sept.ru из выдачи — открываем встроенно, без полной навигации в этой вкладке. */
+function is1septArticleUrl(href: string): boolean {
+  try {
+    const u = new URL(href);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    return u.hostname === "1sept.ru" || u.hostname.endsWith(".1sept.ru");
+  } catch {
+    return false;
+  }
+}
+
 type GoGetter = () => HTMLElement | null;
 
 /**
@@ -147,6 +158,8 @@ export type ProgrammableSearchEmbedHandle = {
 
 type Props = {
   cx?: string;
+  /** Материал 1sept.ru открыть встроенно (родитель показывает iframe), без ухода со страницы конструктора. */
+  onOpen1septArticle?: (url: string) => void;
 };
 
 type DiagState = {
@@ -193,7 +206,7 @@ function collectSnapshot(host: HTMLElement | null): Pick<DiagState, "googleObjec
 }
 
 export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle, Props>(
-  function ProgrammableSearchEmbed({ cx: cxProp }, ref) {
+  function ProgrammableSearchEmbed({ cx: cxProp, onOpen1septArticle }, ref) {
     const cx = resolveCx(cxProp);
     const hostRef = useRef<HTMLDivElement>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -267,8 +280,24 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         const a = e.target.closest("a[href]");
         if (!(a instanceof HTMLAnchorElement) || !isCseResultLink(a)) return;
         if (e.defaultPrevented) return;
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
         if (e.button !== 0) return;
+
+        const href = a.href;
+        if (!is1septArticleUrl(href)) return;
+
+        if (e.metaKey || e.ctrlKey) {
+          e.preventDefault();
+          window.open(href, "_blank", "noopener,noreferrer");
+          return;
+        }
+        if (e.shiftKey || e.altKey) return;
+
+        if (onOpen1septArticle) {
+          e.preventDefault();
+          onOpen1septArticle(href);
+          return;
+        }
+
         const linkTarget = (a.getAttribute("target") || "").toLowerCase();
         if (linkTarget === "_blank" || linkTarget === "blank") {
           e.preventDefault();
@@ -282,7 +311,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         mo.disconnect();
         document.removeEventListener("click", onClickCapture, true);
       };
-    }, [cx]);
+    }, [cx, onOpen1septArticle]);
 
     useLayoutEffect(() => {
       if (!cx || typeof window === "undefined") return;
