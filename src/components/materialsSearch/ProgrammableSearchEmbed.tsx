@@ -1,16 +1,20 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 
 const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
 
-/** Имена для getElement после инициализации (без фиксированного data-gname — автоимена Google). */
 const FALLBACK_GNAMES = ["standard", "search", "two-column", "searchresults-only0", "searchresults-only1"];
 
 function resolveCx(cxProp?: string): string | undefined {
   const fromProp = cxProp?.trim();
   if (fromProp) return fromProp;
   return process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim() || undefined;
+}
+
+function maskCx(cx: string): string {
+  if (cx.length <= 8) return "••••";
+  return `${cx.slice(0, 4)}…${cx.slice(-4)}`;
 }
 
 const isDev = process.env.NODE_ENV === "development";
@@ -48,7 +52,6 @@ function hasCseMarkup(root: HTMLElement | null): boolean {
   );
 }
 
-/** Выдача иногда монтируется вне host (overlay); проверяем и контейнер, и страницу. */
 function hasCseAnywhere(root: HTMLElement | null): boolean {
   if (hasCseMarkup(root)) return true;
   return Boolean(
@@ -58,8 +61,10 @@ function hasCseAnywhere(root: HTMLElement | null): boolean {
   );
 }
 
-/** cse.js иногда подгружается с задержкой — повторяем go(), пока API не готов. */
-function scheduleGo(container: HTMLElement | null) {
+function scheduleGo(
+  container: HTMLElement | null,
+  onGo?: () => void,
+) {
   if (!container) return;
   let attempts = 0;
   const max = 80;
@@ -68,6 +73,7 @@ function scheduleGo(container: HTMLElement | null) {
     if (typeof go === "function") {
       try {
         go(container);
+        onGo?.();
         debugCse("element.go(container)", { childCount: container.children.length });
       } catch (e) {
         debugCse("element.go error", e);
@@ -91,10 +97,47 @@ type Props = {
   cx?: string;
 };
 
-/**
- * Виджет Google CSE (`gcse-search`). Узел вставляется в useLayoutEffect; скрипт и go() — в useEffect.
- * Без data-gname — используются автоимена и getAllElements для execute.
- */
+type DiagState = {
+  cxMasked: string;
+  script: "ожидание" | "загружен" | "ошибка" | "уже_был";
+  scriptDetail: string;
+  googleObject: "нет" | "да";
+  goFn: "нет" | "да";
+  goCount: number;
+  domWidget: "нет" | "да";
+  elementKeys: string;
+  executeLast: string;
+};
+
+function collectSnapshot(host: HTMLElement | null): Pick<DiagState, "googleObject" | "goFn" | "domWidget" | "elementKeys"> {
+  try {
+    const g = typeof window !== "undefined" ? window.google : undefined;
+    let keyStr = "—";
+    try {
+      const keys = g?.search?.cse?.element?.getAllElements?.();
+      keyStr =
+        keys && typeof keys === "object"
+          ? Object.keys(keys as Record<string, unknown>).join(", ") || "(пусто)"
+          : "—";
+    } catch {
+      keyStr = "ошибка getAllElements";
+    }
+    return {
+      googleObject: g ? "да" : "нет",
+      goFn: typeof g?.search?.cse?.element?.go === "function" ? "да" : "нет",
+      domWidget: hasCseAnywhere(host) ? "да" : "нет",
+      elementKeys: keyStr,
+    };
+  } catch {
+    return {
+      googleObject: "нет",
+      goFn: "нет",
+      domWidget: "нет",
+      elementKeys: "ошибка снимка",
+    };
+  }
+}
+
 export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle, Props>(
   function ProgrammableSearchEmbed({ cx: cxProp }, ref) {
     const cx = resolveCx(cxProp);
@@ -103,6 +146,46 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     const [showLoadIssue, setShowLoadIssue] = useState(false);
     const loadWatchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchWatchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const goCountRef = useRef(0);
+
+    const [diag, setDiag] = useState<DiagState>(() => ({
+      cxMasked: "—",
+      script: "ожидание",
+      scriptDetail: "",
+      googleObject: "нет",
+      goFn: "нет",
+      goCount: 0,
+      domWidget: "нет",
+      elementKeys: "—",
+      executeLast: "ещё не вызывали",
+    }));
+
+    const bumpGo = useCallback(() => {
+      goCountRef.current += 1;
+      setDiag((d) => ({ ...d, goCount: goCountRef.current }));
+    }, []);
+
+    const refreshSnapshot = useCallback(() => {
+      setDiag((d) => ({
+        ...d,
+        ...collectSnapshot(hostRef.current),
+        goCount: goCountRef.current,
+      }));
+    }, []);
+
+    useEffect(() => {
+      if (!cx) return;
+      setDiag((d) => ({
+        ...d,
+        cxMasked: maskCx(cx),
+      }));
+    }, [cx]);
+
+    useEffect(() => {
+      if (!cx) return;
+      const t = setInterval(refreshSnapshot, 1200);
+      return () => clearInterval(t);
+    }, [cx, refreshSnapshot]);
 
     useLayoutEffect(() => {
       if (!cx || typeof window === "undefined") return;
@@ -125,7 +208,13 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     useEffect(() => {
       if (!cx || typeof window === "undefined") return;
       const host = hostRef.current;
-      if (!host) return;
+      if (!host) {
+        setDiag((d) => ({
+          ...d,
+          scriptDetail: "ref host пуст — перезагрузите страницу",
+        }));
+        return;
+      }
 
       setShowLoadIssue(false);
       if (loadWatchRef.current) clearTimeout(loadWatchRef.current);
@@ -134,24 +223,51 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       const w = window as unknown as Record<string, boolean>;
       const scriptAlreadyLoaded = w[GCSE_SCRIPT_FLAG];
 
-      const afterReady = () => scheduleGo(hostRef.current);
+      const afterReady = () => scheduleGo(hostRef.current, bumpGo);
 
       if (scriptAlreadyLoaded && typeof window.google?.search?.cse?.element?.go === "function") {
+        setDiag((d) => ({
+          ...d,
+          script: "уже_был",
+          scriptDetail: "скрипт был загружен ранее (флаг в окне)",
+        }));
         afterReady();
+        queueMicrotask(refreshSnapshot);
       } else if (!scriptAlreadyLoaded) {
         w[GCSE_SCRIPT_FLAG] = true;
         const script = document.createElement("script");
         script.async = true;
         script.src = `https://cse.google.com/cse.js?cx=${encodeURIComponent(cx)}`;
         script.onload = () => {
+          setDiag((d) => ({
+            ...d,
+            script: "загружен",
+            scriptDetail: `cx=${maskCx(cx)}`,
+          }));
           debugCse("cse.js onload");
-          scheduleGo(hostRef.current);
-          setTimeout(() => scheduleGo(hostRef.current), 400);
-          setTimeout(() => scheduleGo(hostRef.current), 1200);
+          scheduleGo(hostRef.current, bumpGo);
+          setTimeout(() => scheduleGo(hostRef.current, bumpGo), 400);
+          setTimeout(() => scheduleGo(hostRef.current, bumpGo), 1200);
+          queueMicrotask(refreshSnapshot);
+          setTimeout(refreshSnapshot, 500);
+        };
+        script.onerror = () => {
+          setDiag((d) => ({
+            ...d,
+            script: "ошибка",
+            scriptDetail: "Не удалось загрузить cse.google.com (сеть, блокировщик, CSP).",
+          }));
+          setShowLoadIssue(true);
         };
         document.body.appendChild(script);
       } else {
+        setDiag((d) => ({
+          ...d,
+          script: "уже_был",
+          scriptDetail: "флаг скрипта true, но go ещё не доступен — ждём",
+        }));
         afterReady();
+        queueMicrotask(refreshSnapshot);
       }
 
       loadWatchRef.current = setTimeout(() => {
@@ -159,13 +275,14 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           setShowLoadIssue(true);
           debugCse("таймаут: нет разметки CSE после загрузки");
         }
+        refreshSnapshot();
       }, 15000);
 
       return () => {
         if (loadWatchRef.current) clearTimeout(loadWatchRef.current);
         if (searchWatchRef.current) clearTimeout(searchWatchRef.current);
       };
-    }, [cx]);
+    }, [cx, bumpGo, refreshSnapshot]);
 
     useImperativeHandle(
       ref,
@@ -180,20 +297,44 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           const run = () => {
             const el = getCseElement();
             if (el) {
-              el.execute(q);
-              debugCse("execute", { len: q.length });
+              try {
+                el.execute(q);
+                setDiag((d) => ({
+                  ...d,
+                  executeLast: `ok, ${q.length} симв.`,
+                }));
+                debugCse("execute", { len: q.length });
+              } catch (e) {
+                setDiag((d) => ({
+                  ...d,
+                  executeLast: `ошибка execute: ${e instanceof Error ? e.message : String(e)}`,
+                }));
+              }
               searchWatchRef.current = setTimeout(() => {
                 if (!hasCseAnywhere(hostRef.current)) {
                   setShowLoadIssue(true);
+                  setDiag((d) => ({
+                    ...d,
+                    executeLast: `${d.executeLast} → нет DOM выдачи за 10 с`,
+                  }));
                   debugCse("после поиска нет выдачи в DOM");
                 }
+                refreshSnapshot();
               }, 10000);
               return true;
             }
             return false;
           };
 
-          if (run()) return;
+          setDiag((d) => ({
+            ...d,
+            executeLast: "ищем элемент для execute…",
+          }));
+
+          if (run()) {
+            refreshSnapshot();
+            return;
+          }
 
           if (pollRef.current) clearInterval(pollRef.current);
           let attempts = 0;
@@ -205,13 +346,18 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
               pollRef.current = null;
               if (attempts >= maxAttempts) {
                 setShowLoadIssue(true);
+                setDiag((d) => ({
+                  ...d,
+                  executeLast: "не найден getElement/getAllElements с execute (20 с)",
+                }));
                 debugCse("execute: не найден элемент после опроса");
               }
+              refreshSnapshot();
             }
           }, 100);
         },
       }),
-      [cx],
+      [cx, refreshSnapshot],
     );
 
     useEffect(
@@ -220,6 +366,26 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       },
       [],
     );
+
+    const copyDiag = useCallback(() => {
+      const text = [
+        `cx (маска): ${diag.cxMasked}`,
+        `cse.js: ${diag.script} ${diag.scriptDetail}`,
+        `window.google: ${diag.googleObject}`,
+        `element.go: ${diag.goFn}, вызовов go: ${diag.goCount}`,
+        `виджет в DOM: ${diag.domWidget}`,
+        `getAllElements keys: ${diag.elementKeys}`,
+        `последний поиск: ${diag.executeLast}`,
+        `userAgent: ${typeof navigator !== "undefined" ? navigator.userAgent : "—"}`,
+      ].join("\n");
+      if (navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(text).catch(() => {
+          /* fallback ниже */
+        });
+      } else {
+        window.prompt("Скопируйте текст:", text);
+      }
+    }, [diag]);
 
     if (!cx) {
       return (
@@ -246,11 +412,47 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         <p className="mb-2 text-xs text-slate-500">
           Нажмите «Найти» выше — выдача появится здесь (ограничение <span className="font-mono">site:1sept.ru</span>).
         </p>
+
+        <details className="mb-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
+          <summary className="cursor-pointer select-none font-medium text-slate-800">
+            Диагностика поиска (развернуть)
+          </summary>
+          <ul className="mt-2 list-inside list-disc space-y-1 font-mono text-[11px] leading-relaxed text-slate-600">
+            <li>Идентификатор CSE (cx), маска: {diag.cxMasked}</li>
+            <li>Скрипт cse.js: {diag.script} {diag.scriptDetail ? `— ${diag.scriptDetail}` : ""}</li>
+            <li>window.google: {diag.googleObject}</li>
+            <li>Функция element.go: {diag.goFn} (вызовов: {diag.goCount})</li>
+            <li>Виджет в DOM (маркеры CSE): {diag.domWidget}</li>
+            <li>Ключи getAllElements: {diag.elementKeys || "—"}</li>
+            <li>Последний execute: {diag.executeLast}</li>
+          </ul>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={refreshSnapshot}
+              className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-700 hover:bg-slate-100"
+            >
+              Обновить снимок
+            </button>
+            <button
+              type="button"
+              onClick={copyDiag}
+              className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-700 hover:bg-slate-100"
+            >
+              Копировать в буфер
+            </button>
+          </div>
+          <p className="mt-2 text-[10px] text-slate-500">
+            Если «Скрипт: ошибка» — проверьте вкладку Network (cse.js) и отключите блокировщик. Если go=нет после
+            загрузки — обновите страницу. Если ключи пусты — не вызвался element.go(контейнер).
+          </p>
+        </details>
+
         <div ref={hostRef} className="min-h-[12rem] w-full flex-1 bg-white" />
         {showLoadIssue ? (
           <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-2 text-xs text-amber-950">
             Виджет Google не отобразился в блоке (блокировщик рекламы, сеть или настройки CSE). Попробуйте отключить
-            блокировщик для этого сайта или откройте поиск по ссылке внизу вкладки.
+            блокировщик для этого сайта или откройте поиск по ссылке внизу вкладки. Смотрите блок «Диагностика» выше.
           </p>
         ) : null}
       </div>
