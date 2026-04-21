@@ -40,7 +40,7 @@ export function useMaterialsSearch() {
           }),
         });
         const text = await res.text();
-        let data: { results?: SearchResult[]; error?: string } = {};
+        let data: { results?: SearchResult[]; error?: string; hint?: string } = {};
         try {
           data = JSON.parse(text) as typeof data;
         } catch {
@@ -52,7 +52,10 @@ export function useMaterialsSearch() {
 
         if (!res.ok) {
           setStatus("error");
-          setErrorMessage(data.error ?? "Не удалось выполнить поиск. Попробуйте позже.");
+          const base = data.error ?? "Не удалось выполнить поиск. Попробуйте позже.";
+          const hint =
+            typeof data.hint === "string" && data.hint.trim() ? `\n\n${data.hint.trim()}` : "";
+          setErrorMessage(base + hint);
           setResults([]);
           return;
         }

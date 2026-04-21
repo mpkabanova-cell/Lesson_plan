@@ -30,6 +30,8 @@ export async function POST(req: Request) {
       {
         error:
           "Поиск не настроен на сервере: задайте GOOGLE_CUSTOM_SEARCH_API_KEY и GOOGLE_CUSTOM_SEARCH_ENGINE_ID.",
+        hint:
+          "На Render, Vercel и других хостингах добавьте обе переменные в раздел Environment сервиса (они не подхватываются из .env.local — этот файл только на вашем компьютере и не попадает в Git). После сохранения — redeploy.",
       },
       { status: 500 },
     );

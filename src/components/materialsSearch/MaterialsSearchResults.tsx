@@ -33,7 +33,10 @@ export function MaterialsSearchResults({ status, results, errorMessage, clientHi
 
   if (status === "error") {
     return (
-      <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
+      <p
+        className="whitespace-pre-wrap rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm leading-relaxed text-red-900"
+        role="alert"
+      >
         {errorMessage ?? "Не удалось выполнить поиск. Попробуйте позже."}
       </p>
     );
