@@ -159,3 +159,8 @@ body.lesson-plan-cse-inline .gsc-modal-background-image-visible {
 body.lesson-plan-cse-inline.gsc-overflow-hidden {
   overflow: auto !important;
 }
+
+/* Дублирующая строка Google скрыта — поиск только из формы приложения; выдача остаётся в блоке */
+.lesson-plan-cse-root .gsc-search-box {
+  display: none !important;
+}

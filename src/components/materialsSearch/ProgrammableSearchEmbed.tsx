@@ -6,7 +6,15 @@ const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
 /** Совпадает с data-gname на узле результатов. */
 const MATERIALS_CSE_GNAME = "materials1sept";
 
-const FALLBACK_GNAMES = [MATERIALS_CSE_GNAME, "searchresults-only0", "searchresults-only1"];
+/** Имена из getElement: свой gname, типичные для gcse-search (Full width) и searchresults-only */
+const FALLBACK_GNAMES = [
+  MATERIALS_CSE_GNAME,
+  "standard",
+  "search",
+  "two-column",
+  "searchresults-only0",
+  "searchresults-only1",
+];
 
 function resolveCx(cxProp?: string): string | undefined {
   const fromProp = cxProp?.trim();
@@ -63,7 +71,9 @@ type Props = {
 };
 
 /**
- * Блок выдачи Google (searchresults-only). Узел создаётся вручную в useEffect, чтобы React не сбрасывал разметку CSE.
+ * Виджет Google CSE: `gcse-search` — тот же класс, что в коде из консоли при макете Full width.
+ * Строка поиска Google скрыта в CSS; запрос задаётся нашей формой через execute().
+ * Узел создаётся в useEffect, чтобы React не сбрасывал разметку CSE.
  * @see https://developers.google.com/custom-search/docs/element
  */
 export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle, Props>(
@@ -80,7 +90,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       host.replaceChildren();
 
       const gcse = document.createElement("div");
-      gcse.className = "lesson-plan-cse-root gcse-searchresults-only";
+      gcse.className = "lesson-plan-cse-root gcse-search";
       gcse.setAttribute("data-gname", MATERIALS_CSE_GNAME);
       gcse.setAttribute("data-as_sitesearch", "1sept.ru");
       gcse.setAttribute("data-linktarget", "_self");
@@ -102,7 +112,10 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
         const script = document.createElement("script");
         script.async = true;
         script.src = `https://cse.google.com/cse.js?cx=${encodeURIComponent(cx)}`;
-        script.onload = () => scheduleGo(hostRef.current);
+        script.onload = () => {
+          scheduleGo(hostRef.current);
+          setTimeout(() => scheduleGo(hostRef.current), 400);
+        };
         document.body.appendChild(script);
       } else {
         afterReady();
