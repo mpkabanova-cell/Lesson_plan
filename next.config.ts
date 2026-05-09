@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["html-to-docx"],
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.txt$/,
+      type: "asset/source",
+    });
+    return config;
+  },
   /** Чтобы CDN/браузер не отдавали старый HTML с ссылками на устаревшие чанки после деплоя. */
   async headers() {
     return [

@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { LESSON_GOAL_SHORT_EXAMPLES } from "@/lib/lessonGoalExamples";
-import {
-  LESSON_STAGES,
-  LESSON_TYPE_LABELS,
-  type LessonTypeId,
-} from "@/lib/lessonTypes";
+import { LESSON_STAGES, LESSON_TYPE_LABELS } from "@/lib/lessonTypes";
+
+const LESSON_TYPE_ID = "new_knowledge" as const;
 import {
   extractTimingFromHtml,
   normalizeStageMinutesToTotal,
@@ -130,7 +128,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [subject, setSubject] = useState(SUBJECT_OPTIONS[0] ?? "");
   const [grade, setGrade] = useState("5");
   const [duration, setDuration] = useState(45);
-  const [lessonType, setLessonType] = useState<LessonTypeId>("new_knowledge");
   const [topic, setTopic] = useState("");
   const [goal, setGoal] = useState("");
   const [homework, setHomework] = useState("");
@@ -165,15 +162,11 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [exporting, setExporting] = useState(false);
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTabId>("editor");
 
-  const stages = LESSON_STAGES[lessonType];
+  const stages = LESSON_STAGES[LESSON_TYPE_ID];
 
   const [stageFlags, setStageFlags] = useState<boolean[]>(() =>
     LESSON_STAGES.new_knowledge.map(() => true),
   );
-
-  useEffect(() => {
-    setStageFlags(LESSON_STAGES[lessonType].map(() => true));
-  }, [lessonType]);
 
   const effectiveStageFlags = useMemo(() => {
     if (stageFlags.length !== stages.length) return stages.map(() => true);
@@ -255,7 +248,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         topic,
         goal,
         durationMinutes: duration,
-        lessonType,
+        lessonType: LESSON_TYPE_ID,
         homework: homework.trim() || undefined,
         selectedStages,
       });
@@ -310,7 +303,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
           subject,
           grade,
           topic: topic.trim(),
-          lessonType,
+          lessonType: LESSON_TYPE_ID,
         },
         70_000,
       );
@@ -425,26 +418,18 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               />
             </label>
 
-            <label className="block text-xs font-medium text-slate-600">
+            <div className="block text-xs font-medium text-slate-600">
               Тип урока
-              <select
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm"
-                value={lessonType}
-                onChange={(e) => setLessonType(e.target.value as LessonTypeId)}
-              >
-                {(Object.keys(LESSON_TYPE_LABELS) as LessonTypeId[]).map((id) => (
-                  <option key={id} value={id}>
-                    {LESSON_TYPE_LABELS[id]}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-800">
+                {LESSON_TYPE_LABELS[LESSON_TYPE_ID]}
+              </div>
+            </div>
 
             <details className="rounded-lg border border-slate-200 bg-slate-50/90">
               <summary className="cursor-pointer select-none px-3 py-2.5 text-xs font-medium text-slate-800 hover:bg-slate-100/80">
                 Этапы для этого типа урока
                 <span className="mt-0.5 block text-[11px] font-normal text-slate-500">
-                  {LESSON_TYPE_LABELS[lessonType]} — нажмите, чтобы развернуть список и при необходимости снять этапы
+                  {LESSON_TYPE_LABELS[LESSON_TYPE_ID]} — нажмите, чтобы развернуть список и при необходимости снять этапы
                 </span>
               </summary>
               <div className="border-t border-slate-200 p-3 pt-2">
@@ -480,8 +465,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             <div className="block text-xs font-medium text-slate-600">
               <span className="block">Образовательные результаты</span>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                <span className="font-medium text-slate-700">Ориентир для выбранного типа урока: </span>
-                {LESSON_GOAL_SHORT_EXAMPLES[lessonType]}
+                <span className="font-medium text-slate-700">Ориентир для типа урока: </span>
+                {LESSON_GOAL_SHORT_EXAMPLES[LESSON_TYPE_ID]}
               </p>
               <button
                 type="button"
