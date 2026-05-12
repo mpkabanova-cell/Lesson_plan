@@ -5,8 +5,6 @@ import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { LESSON_GOAL_SHORT_EXAMPLES } from "@/lib/lessonGoalExamples";
 import { LESSON_STAGES, LESSON_TYPE_LABELS } from "@/lib/lessonTypes";
-
-const LESSON_TYPE_ID = "new_knowledge" as const;
 import {
   extractTimingFromHtml,
   normalizeStageMinutesToTotal,
@@ -17,6 +15,10 @@ import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
 import { EditorSearchTabs, type WorkspaceTabId } from "./materialsSearch/EditorSearchTabs";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
+
+const LESSON_TYPE_ID = "new_knowledge" as const;
+
+type GenerationVersion = 1 | 2;
 
 function buildExportTitle(subject: string, grade: string, topic: string): string {
   const t = topic.trim() || "План урока";
@@ -136,6 +138,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   /** Системный промпт для кнопки генерации образовательных результатов (POST /api/generate-goal). */
   const [goalSystemPrompt, setGoalSystemPrompt] = useState(DEFAULT_GOAL_SYSTEM_PROMPT);
 
+  const [generationVersion, setGenerationVersion] = useState<GenerationVersion>(1);
+
   const [planHtml, setPlanHtml] = useState("<p></p>");
   const [contentKey, setContentKey] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -200,6 +204,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const resetPlanSystemPrompt = () => setPlanSystemPrompt(DEFAULT_SYSTEM_PROMPT);
   const resetGoalSystemPrompt = () => setGoalSystemPrompt(DEFAULT_GOAL_SYSTEM_PROMPT);
 
+  const lastGenerationVersionRef = useRef<GenerationVersion>(1);
+
   const handlePlanEditorLoad = useCallback((info: PlanEditorLoadInfo) => {
     if (info.contentKey === 0 && info.approxPlainFromHtml === 0 && info.textLength === 0) {
       return;
@@ -219,8 +225,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
     if (info.textLength > 0) {
       setError(null);
+      const modeHint =
+        lastGenerationVersionRef.current === 2 ? " · режим: версия 2 (планировщик + сценарий)" : "";
       setGenerateSuccessInfo(
-        `Успешно: в редакторе ${info.textLength.toLocaleString("ru-RU")} симв.${info.usedFallback ? " Показан упрощённый текст (без части форматирования)." : ""}`,
+        `Успешно: в редакторе ${info.textLength.toLocaleString("ru-RU")} симв.${info.usedFallback ? " Показан упрощённый текст (без части форматирования)." : ""}${modeHint}`,
       );
     } else if (info.contentKey > 0) {
       setGenerateSuccessInfo(null);
@@ -239,19 +247,34 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     }
     setLoading(true);
     setGenerateStep("Отправка запроса на сервер…");
+    lastGenerationVersionRef.current = generationVersion;
     try {
-      setGenerateStep("Ожидание ответа от OpenRouter (обычно 20–90 с, максимум ~2 мин)…");
-      const data = await postJson<{ html?: string; raw?: string }>("/api/generate", {
-        systemPrompt: planSystemPrompt,
-        subject,
-        grade,
-        topic,
-        goal,
-        durationMinutes: duration,
-        lessonType: LESSON_TYPE_ID,
-        homework: homework.trim() || undefined,
-        selectedStages,
-      });
+      const genTimeoutMs = generationVersion === 2 ? 220_000 : 130_000;
+      if (generationVersion === 2) {
+        setGenerateStep("Версия 2: шаг 1/2 — планировщик, затем полный сценарий (до ~3 мин)…");
+      } else {
+        setGenerateStep("Ожидание ответа от OpenRouter (обычно 20–90 с, максимум ~2 мин)…");
+      }
+      const data = await postJson<{
+        html?: string;
+        raw?: string;
+        generationVersion?: GenerationVersion;
+      }>(
+        "/api/generate",
+        {
+          systemPrompt: planSystemPrompt,
+          subject,
+          grade,
+          topic,
+          goal,
+          durationMinutes: duration,
+          lessonType: LESSON_TYPE_ID,
+          homework: homework.trim() || undefined,
+          selectedStages,
+          generationVersion,
+        },
+        genTimeoutMs,
+      );
 
       setGenerateStep("Обработка ответа и загрузка в редактор…");
 
@@ -554,6 +577,45 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                 </button>
               </div>
             </details>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-2.5">
+              <p className="text-xs font-medium text-slate-800">Режим генерации плана</p>
+              <div
+                className="mt-2 flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-inner"
+                role="group"
+                aria-label="Режим генерации плана"
+              >
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => setGenerationVersion(1)}
+                  className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition ${
+                    generationVersion === 1
+                      ? "bg-teal-700 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  Версия 1
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => setGenerationVersion(2)}
+                  className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition ${
+                    generationVersion === 2
+                      ? "bg-teal-700 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  Версия 2
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+                <span className="font-medium text-slate-700">1</span> — один запрос к модели.{" "}
+                <span className="font-medium text-slate-700">2</span> — сначала JSON-проект (этапы, минуты, пробное
+                действие, продукт), затем полный сценарий; дольше по времени, структура задаётся явно.
+              </p>
+            </div>
 
             <button
               type="button"
