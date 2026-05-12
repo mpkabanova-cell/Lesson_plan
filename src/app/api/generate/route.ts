@@ -28,9 +28,15 @@ type Body = {
   /**
    * 1 — один запрос к модели (как раньше).
    * 2 — два шага: JSON-планировщик, затем полный сценарий Markdown.
+   * С клиента может прийти число или строка (JSON).
    */
-  generationVersion?: GenerationVersion;
+  generationVersion?: GenerationVersion | string | number;
 };
+
+function parseGenerationVersion(v: unknown): GenerationVersion {
+  if (v === 2 || v === "2") return 2;
+  return 1;
+}
 
 function parseOpenRouterErrorBody(bodyText: string): string {
   try {
@@ -228,9 +234,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
 
-  const rawV = body.generationVersion;
-  const generationVersion: GenerationVersion =
-    rawV === 2 || rawV === "2" ? 2 : 1;
+  const generationVersion = parseGenerationVersion(body.generationVersion);
 
   if (!body.systemPrompt?.trim()) {
     return NextResponse.json({ error: "Пустой системный промпт" }, { status: 400 });
