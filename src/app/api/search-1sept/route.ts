@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { build1septSearchQuery, PUBLICATIONS_SITE_OPERATOR } from "@/lib/build1septSearchQuery";
+import { rankAndLimitMaterials } from "@/lib/materialsSearchRanking";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -74,6 +75,7 @@ export async function POST(req: Request) {
   url.searchParams.set("cx", cx);
   url.searchParams.set("q", q);
   url.searchParams.set("num", "10");
+  url.searchParams.set("sort", "date");
 
   let res: Response;
   try {
@@ -128,11 +130,11 @@ export async function POST(req: Request) {
   }
 
   const items = data.items ?? [];
-  const results = items.map((it) => ({
+  const results = rankAndLimitMaterials(items.map((it) => ({
     title: (it.title ?? "").replace(/<[^>]+>/g, "").trim() || "Без названия",
     url: it.link ?? "",
     snippet: (it.snippet ?? "").trim(),
-  }));
+  })));
 
   return NextResponse.json({ results });
 }

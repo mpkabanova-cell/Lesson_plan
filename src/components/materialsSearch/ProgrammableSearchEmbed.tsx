@@ -1,11 +1,13 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { rankAndLimitMaterials } from "@/lib/materialsSearchRanking";
 
 const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
 const GCSE_INNER_ID = "lesson-plan-gcse-widget";
 
 const FALLBACK_GNAMES = ["standard", "search", "two-column", "searchresults-only0", "searchresults-only1"];
+const MAX_EXTRACTED_CANDIDATES = 30;
 const MAX_EXTRACTED_RESULTS = 10;
 
 export type ProgrammableSearchResult = {
@@ -190,10 +192,10 @@ function extractCseResults(host: HTMLElement | null): ProgrammableSearchResult[]
       normalizeText(node.querySelector(".gsc-table-cell-snippet-close")?.textContent);
 
     out.push({ title, url, snippet });
-    if (out.length >= MAX_EXTRACTED_RESULTS) break;
+    if (out.length >= MAX_EXTRACTED_CANDIDATES) break;
   }
 
-  return out;
+  return rankAndLimitMaterials(out, MAX_EXTRACTED_RESULTS);
 }
 
 type GoGetter = () => HTMLElement | null;
@@ -339,6 +341,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       gcse.id = GCSE_INNER_ID;
       gcse.className = "lesson-plan-cse-root gcse-search";
       gcse.setAttribute("data-as_sitesearch", "urok.1sept.ru");
+      gcse.setAttribute("data-sort_by", "date");
       gcse.setAttribute("data-linktarget", "_self");
       gcse.setAttribute("data-autosearchonload", "false");
       host.appendChild(gcse);
