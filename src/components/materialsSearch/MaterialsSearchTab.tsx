@@ -104,12 +104,24 @@ export function MaterialsSearchTab({
   const [error, setError] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
   const submittedContextRef = useRef<{ query: string; subject: string; grade: string } | null>(null);
+  const lastLessonSubjectRef = useRef(lessonSubject);
 
   useLayoutEffect(() => {
     if (!active) return;
+    const lessonSubjectChanged = lastLessonSubjectRef.current !== lessonSubject;
+    lastLessonSubjectRef.current = lessonSubject;
+
     setSubject(lessonSubject);
     setGrade(lessonGrade);
-    if (!queryEdited) {
+
+    if (lessonSubjectChanged) {
+      setQuery("");
+      setQueryEdited(false);
+      setSearched(false);
+      setResults([]);
+      setError(null);
+      submittedContextRef.current = null;
+    } else if (!queryEdited) {
       setQuery(lessonTopic);
       setSearched(false);
       setResults([]);
@@ -201,7 +213,15 @@ export function MaterialsSearchTab({
             setError(null);
           }}
           subject={subject}
-          onSubjectChange={setSubject}
+          onSubjectChange={(value) => {
+            setSubject(value);
+            setQuery("");
+            setQueryEdited(true);
+            setSearched(false);
+            setResults([]);
+            setError(null);
+            submittedContextRef.current = null;
+          }}
           grade={grade}
           onGradeChange={setGrade}
           onSubmit={runSearch}

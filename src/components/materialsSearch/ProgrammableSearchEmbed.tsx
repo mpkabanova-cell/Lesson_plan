@@ -196,12 +196,6 @@ function extractCseResults(host: ParentNode | null): ProgrammableSearchResult[] 
   return out.slice(0, MAX_EXTRACTED_CANDIDATES);
 }
 
-function cseResultsSignature(host: ParentNode | null): string {
-  return extractCseResults(host)
-    .map((result) => canonicalUrl(result.url))
-    .join("|");
-}
-
 type GoGetter = () => HTMLElement | null;
 
 function scheduleGo(getTarget: GoGetter, onGo?: () => void) {
@@ -294,21 +288,15 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       onResultsChangeRef.current?.(ownResults.length > 0 ? ownResults : extractCseResults(document));
     };
 
-    const currentResultsSignature = () => {
-      const ownSignature = cseResultsSignature(hostRef.current);
-      return ownSignature || cseResultsSignature(document);
-    };
-
-    const startWaitForResultsDom = (previousSignature: string) => {
+    const startWaitForResultsDom = () => {
       clearResultWait();
       let ticks = 0;
       const maxTicks = 55;
+      const minTicksBeforePublish = 6;
       searchResultWaitRef.current = setInterval(() => {
         ticks += 1;
         const appeared = cseResultsAppeared(hostRef.current) || cseResultsAppeared(document);
-        const signature = currentResultsSignature();
-        const resultsChanged = signature.length > 0 && signature !== previousSignature;
-        if ((appeared && resultsChanged) || ticks >= maxTicks) {
+        if ((appeared && ticks >= minTicksBeforePublish) || ticks >= maxTicks) {
           publishResults();
           settleSearchBusy();
         }
@@ -449,10 +437,9 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
             const el = getCseElement();
             if (!el) return false;
             try {
-              const previousSignature = currentResultsSignature();
               el.execute(q);
               debugCse("execute", { len: q.length });
-              startWaitForResultsDom(previousSignature);
+              startWaitForResultsDom();
               return true;
             } catch (e) {
               debugCse("execute error", e);

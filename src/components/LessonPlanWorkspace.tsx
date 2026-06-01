@@ -649,7 +649,11 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   <select
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm shadow-sm"
                     value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
+                    onChange={(e) => {
+                      setSubject(e.target.value);
+                      setTopic("");
+                      setSelectedSuggestion(null);
+                    }}
                   >
                     {SUBJECT_OPTIONS.map((s) => (
                       <option key={s} value={s}>
