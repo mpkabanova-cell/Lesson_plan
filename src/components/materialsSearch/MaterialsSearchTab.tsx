@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { firstAvailableGrade, formatGradeRange, isSubjectGradeCompatible } from "@/config/subjectClassMap";
+import { useMemo, useRef, useState } from "react";
+import { firstAvailableGrade, isSubjectGradeCompatible } from "@/config/subjectClassMap";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
 import { rankAndLimitMaterials, type MaterialSearchResult } from "@/lib/materialsSearchRanking";
+import { SUBJECT_OPTIONS } from "@/lib/options";
 import { MaterialsSearchForm } from "./MaterialsSearchForm";
 import {
   ProgrammableSearchEmbed,
@@ -13,13 +14,7 @@ import {
 } from "./ProgrammableSearchEmbed";
 
 type Props = {
-  /** Когда true — вкладка видима (для синхронизации фильтров с формой урока). */
-  active: boolean;
-  lessonSubject: string;
-  lessonGrade: string;
-  lessonTopic: string;
   programmableSearchCx?: string;
-  onToast?: (message: string) => void;
 };
 
 type SearchResult = MaterialSearchResult;
@@ -87,48 +82,16 @@ function hostnameFromUrl(url: string): string {
 }
 
 export function MaterialsSearchTab({
-  active,
-  lessonSubject,
-  lessonGrade,
-  lessonTopic,
   programmableSearchCx,
-  onToast,
 }: Props) {
-  const [subject, setSubject] = useState(lessonSubject);
-  const [grade, setGrade] = useState(lessonGrade);
-  const [query, setQuery] = useState(lessonTopic);
-  const [queryEdited, setQueryEdited] = useState(false);
+  const [subject, setSubject] = useState(SUBJECT_OPTIONS[0] ?? "");
+  const [grade, setGrade] = useState("5");
+  const [query, setQuery] = useState("");
   const [searchPending, setSearchPending] = useState(false);
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
-
-  useEffect(() => {
-    if (!active) return;
-    setSubject(lessonSubject);
-    setGrade(lessonGrade);
-    if (!queryEdited) {
-      setQuery(lessonTopic);
-      setSearched(false);
-      setResults([]);
-      setError(null);
-    }
-  }, [active, lessonSubject, lessonGrade, lessonTopic, queryEdited]);
-
-  useEffect(() => {
-    if (isSubjectGradeCompatible(subject, grade)) return;
-    const nextGrade = firstAvailableGrade(subject);
-    if (!nextGrade) return;
-
-    setGrade(nextGrade);
-    const range = formatGradeRange(subject);
-    onToast?.(
-      range
-        ? `Для предмета “${subject}” доступны только ${range}`
-        : `Для предмета “${subject}” выбран доступный класс`,
-    );
-  }, [subject, grade, onToast]);
 
   const fallbackUrl = useMemo(
     () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
@@ -141,6 +104,16 @@ export function MaterialsSearchTab({
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
     const limited = limitResults(next, { query, subject, grade });
     setResults(limited);
+    setError(null);
+  };
+
+  const handleSubjectChange = (nextSubject: string) => {
+    setSubject(nextSubject);
+    setGrade((currentGrade) =>
+      isSubjectGradeCompatible(nextSubject, currentGrade)
+        ? currentGrade
+        : firstAvailableGrade(nextSubject),
+    );
     setError(null);
   };
 
@@ -194,11 +167,10 @@ export function MaterialsSearchTab({
           query={query}
           onQueryChange={(value) => {
             setQuery(value);
-            setQueryEdited(true);
             setError(null);
           }}
           subject={subject}
-          onSubjectChange={setSubject}
+          onSubjectChange={handleSubjectChange}
           grade={grade}
           onGradeChange={setGrade}
           onSubmit={runSearch}
