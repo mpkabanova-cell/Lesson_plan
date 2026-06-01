@@ -29,24 +29,21 @@ function debugCse(label: string, payload?: unknown) {
   console.debug(`[CSE] ${label}`, payload ?? "");
 }
 
-function getCseElements() {
+function getCseElement() {
   const api = window.google?.search?.cse?.element;
-  if (!api?.getElement) return [];
-  const elements: Array<{ execute: (q: string) => void }> = [];
+  if (!api?.getElement) return null;
   for (const name of FALLBACK_GNAMES) {
     const el = api.getElement(name);
-    if (el && typeof el.execute === "function") elements.push(el);
+    if (el && typeof el.execute === "function") return el;
   }
   const all = api.getAllElements?.();
   if (all && typeof all === "object") {
     for (const key of Object.keys(all)) {
       const el = all[key] as { execute?: (q: string) => void };
-      if (el && typeof el.execute === "function" && !elements.includes(el as { execute: (q: string) => void })) {
-        elements.push(el as { execute: (q: string) => void });
-      }
+      if (el && typeof el.execute === "function") return el as { execute: (q: string) => void };
     }
   }
-  return elements;
+  return null;
 }
 
 function hasCseMarkup(root: HTMLElement | null): boolean {
@@ -434,15 +431,14 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           }
           clearResultWait();
           onSearchBusyChangeRef.current?.(true);
-          onResultsChangeRef.current?.([]);
           setShowLoadIssue(false);
 
           const run = (): boolean => {
-            const elements = getCseElements();
-            if (elements.length === 0) return false;
+            const el = getCseElement();
+            if (!el) return false;
             try {
-              elements.forEach((el) => el.execute(q));
-              debugCse("execute", { len: q.length, elements: elements.length });
+              el.execute(q);
+              debugCse("execute", { len: q.length });
               startWaitForResultsDom();
               return true;
             } catch (e) {

@@ -89,7 +89,6 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
-  const cseAttemptRef = useRef(0);
 
   useEffect(() => {
     if (!active) return;
@@ -113,26 +112,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
 
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
     const limited = limitResults(next);
-    if (limited.length > 0) {
-      setResults(limited);
-      setError(null);
-      return;
-    }
-
-    const q = query.trim();
-    const embed = embedRef.current;
-    if (q && embed && cseAttemptRef.current === 0) {
-      cseAttemptRef.current = 1;
-      window.setTimeout(() => embed.executeSearch(build1septSearchQuery(q, { subject })), 0);
-      return;
-    }
-    if (q && embed && cseAttemptRef.current === 1) {
-      cseAttemptRef.current = 2;
-      window.setTimeout(() => embed.executeSearch(build1septSearchQuery(q)), 0);
-      return;
-    }
-
-    setResults([]);
+    setResults(limited);
     setError(null);
   };
 
@@ -149,7 +129,6 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
     setError(null);
     setSearched(true);
     setResults([]);
-    cseAttemptRef.current = 0;
 
     if (canUseProgrammableSearch) {
       const embed = embedRef.current;
@@ -177,9 +156,9 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-1 py-1">
       <p className="text-sm text-slate-600">
-        Поиск только в разделе <span className="font-medium text-slate-800">«Публикации»</span> (проект «Открытый урок»,{" "}
-        <span className="font-medium text-slate-800">urok.1sept.ru</span>). Выдача по умолчанию — по релевантности.
-        Ссылки на материалы открываются в <span className="font-medium text-slate-800">новой вкладке</span>.
+        Поиск материалов на портале <span className="font-medium text-slate-800">«Первое сентября»</span>{" "}
+        (<span className="font-medium text-slate-800">urok.1sept.ru</span>). Ссылки на материалы открываются в{" "}
+        <span className="font-medium text-slate-800">новой вкладке</span>.
       </p>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
@@ -345,7 +324,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
           </ul>
         ) : null}
 
-        {searched && !searchPending && !error ? (
+        {searched && !searchPending && !error && results.length > 0 ? (
           <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs leading-relaxed text-slate-600">
             <p>
               Если нужно больше материалов, откройте этот же запрос в Google или перейдите на портал «Открытый урок» и
