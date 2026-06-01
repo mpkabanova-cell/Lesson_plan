@@ -331,7 +331,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<"lesson" | "materials">("lesson");
   const [materialsWorkspaceMounted, setMaterialsWorkspaceMounted] = useState(false);
-  const [planNoticeCollapsed, setPlanNoticeCollapsed] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -504,7 +503,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setPlanHtml(prepared);
       setContentKey((k) => k + 1);
       setActiveWorkspace("lesson");
-      setPlanNoticeCollapsed(false);
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
@@ -881,41 +879,11 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                     <div className="space-y-3">
                       <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-2.5 text-sm text-emerald-950">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setPlanNoticeCollapsed((value) => !value)}
-                            aria-expanded={!planNoticeCollapsed}
-                            className="font-medium hover:text-emerald-800"
-                          >
-                            ✨ План создан{planNoticeCollapsed ? "" : ". Можно продолжить редактирование."}
-                          </button>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setPlanNoticeCollapsed((value) => !value)}
-                              className="rounded-full px-2.5 py-1 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
-                            >
-                              {planNoticeCollapsed ? "Развернуть" : "Свернуть"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPlanHtml("");
-                                setContentKey((k) => k + 1);
-                                setGenerateSuccessInfo(null);
-                                setError(null);
-                              }}
-                              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-100 hover:bg-emerald-100"
-                            >
-                              Создать новый
-                            </button>
-                          </div>
+                          <p className="font-medium">✨ План создан. Можно продолжить редактирование.</p>
                         </div>
-                        {!planNoticeCollapsed ? (
-                          <p className="mt-1 text-xs leading-relaxed text-emerald-900">
-                            Основная работа теперь в редакторе ниже: можно править текст, добавлять материалы и скачать Word.
-                          </p>
-                        ) : null}
+                        <p className="mt-1 text-xs leading-relaxed text-emerald-900">
+                          План урока в редакторе ниже: можно редактировать текст, добавлять материалы и скачать документ.
+                        </p>
                       </div>
                       <div className="min-h-[560px]">
                         <PlanEditor

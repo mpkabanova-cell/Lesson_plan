@@ -266,7 +266,7 @@ export function PlanEditor({
     "h-8 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-800 shadow-sm outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-300";
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+    <div className="flex min-h-0 flex-col rounded-2xl border border-slate-200/90 bg-white shadow-sm">
       <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
         <IconBtn
           active={editor.isActive("bold")}
@@ -533,7 +533,7 @@ export function PlanEditor({
         ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-white">
+      <div className="overflow-x-hidden bg-white">
         <EditorContent editor={editor} className="plan-editor-content bg-white" />
       </div>
 
