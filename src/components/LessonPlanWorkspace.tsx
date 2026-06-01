@@ -937,9 +937,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               >
                 {materialsWorkspaceMounted ? (
                   <MaterialsSearchTab
-                    active={activeWorkspace === "materials"}
                     programmableSearchCx={googleProgrammableSearchCx}
-                    onToast={setToast}
                   />
                 ) : null}
               </div>

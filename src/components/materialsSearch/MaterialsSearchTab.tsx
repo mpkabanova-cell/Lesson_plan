@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { firstAvailableGrade, formatGradeRange, isSubjectGradeCompatible } from "@/config/subjectClassMap";
+import { useMemo, useRef, useState } from "react";
+import { firstAvailableGrade, isSubjectGradeCompatible } from "@/config/subjectClassMap";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
 import { rankAndLimitMaterials, type MaterialSearchResult } from "@/lib/materialsSearchRanking";
@@ -14,9 +14,7 @@ import {
 } from "./ProgrammableSearchEmbed";
 
 type Props = {
-  active: boolean;
   programmableSearchCx?: string;
-  onToast?: (message: string) => void;
 };
 
 type SearchResult = MaterialSearchResult;
@@ -84,9 +82,7 @@ function hostnameFromUrl(url: string): string {
 }
 
 export function MaterialsSearchTab({
-  active,
   programmableSearchCx,
-  onToast,
 }: Props) {
   const [subject, setSubject] = useState(SUBJECT_OPTIONS[0] ?? "");
   const [grade, setGrade] = useState("5");
@@ -96,21 +92,6 @@ export function MaterialsSearchTab({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
-
-  useEffect(() => {
-    if (!active) return;
-    if (isSubjectGradeCompatible(subject, grade)) return;
-    const nextGrade = firstAvailableGrade(subject);
-    if (!nextGrade) return;
-
-    setGrade(nextGrade);
-    const range = formatGradeRange(subject);
-    onToast?.(
-      range
-        ? `Для предмета “${subject}” доступны только ${range}`
-        : `Для предмета “${subject}” выбран доступный класс`,
-    );
-  }, [active, subject, grade, onToast]);
 
   const fallbackUrl = useMemo(
     () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
@@ -123,6 +104,16 @@ export function MaterialsSearchTab({
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
     const limited = limitResults(next, { query, subject, grade });
     setResults(limited);
+    setError(null);
+  };
+
+  const handleSubjectChange = (nextSubject: string) => {
+    setSubject(nextSubject);
+    setGrade((currentGrade) =>
+      isSubjectGradeCompatible(nextSubject, currentGrade)
+        ? currentGrade
+        : firstAvailableGrade(nextSubject),
+    );
     setError(null);
   };
 
@@ -179,7 +170,7 @@ export function MaterialsSearchTab({
             setError(null);
           }}
           subject={subject}
-          onSubjectChange={setSubject}
+          onSubjectChange={handleSubjectChange}
           grade={grade}
           onGradeChange={setGrade}
           onSubmit={runSearch}
