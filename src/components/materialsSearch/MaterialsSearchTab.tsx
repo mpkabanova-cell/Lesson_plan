@@ -110,9 +110,30 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
     programmableSearchCx?.trim() || process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim(),
   );
 
-  const handleCseResults = (next: ProgrammableSearchResult[]) => {
-    setResults(limitResults(next));
-    setError(null);
+  const handleCseResults = async (next: ProgrammableSearchResult[]) => {
+    const limited = limitResults(next);
+    if (limited.length > 0) {
+      setResults(limited);
+      setError(null);
+      return;
+    }
+
+    const q = query.trim();
+    if (!q) {
+      setResults([]);
+      setError(null);
+      return;
+    }
+
+    try {
+      const data = await searchMaterials({ query: q, subject, grade });
+      setResults(data.results);
+      setError(null);
+    } catch (e) {
+      setResults([]);
+      const msg = e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`;
+      setError(friendlySearchError(msg));
+    }
   };
 
   const runSearch = async () => {
@@ -225,7 +246,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">Подобранные материалы</h3>
+            <h3 className="text-sm font-semibold text-slate-900">Поиск материалов</h3>
             <p className="mt-0.5 text-xs text-slate-500">
               Показаны до {MAX_VISIBLE_RESULTS} свежих и релевантных ссылок, если они доступны.
             </p>

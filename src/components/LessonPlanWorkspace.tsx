@@ -843,8 +843,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             </section>
           ) : null}
 
-          <section className="order-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/80 shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
-            <div className="sticky top-[73px] z-10 shrink-0 border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur-xl">
+          <section className="order-2 flex min-h-0 flex-1 flex-col rounded-3xl border border-white/70 bg-white/80 shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
+            <div className="sticky top-0 z-20 shrink-0 rounded-t-3xl border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">Результат</p>
@@ -895,9 +895,12 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               ) : null}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
-              {activeWorkspace === "lesson" ? (
-                <div ref={resultRef} className="min-h-[360px]">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-6 sm:px-6 sm:pb-6">
+              <div
+                ref={resultRef}
+                className={`min-h-[360px] scroll-mt-6 ${activeWorkspace === "lesson" ? "block" : "hidden"}`}
+                aria-hidden={activeWorkspace !== "lesson"}
+              >
                   {loading ? (
                     <LessonSkeleton />
                   ) : hasPlan ? (
@@ -940,7 +943,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                           </p>
                         ) : null}
                       </div>
-                      <div className="min-h-[560px] overflow-hidden">
+                      <div className="min-h-[560px]">
                         <PlanEditor
                           content={planHtml}
                           contentKey={contentKey}
@@ -998,16 +1001,20 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                       </div>
                     </div>
                   )}
-                </div>
-              ) : (
+              </div>
+
+              <div
+                className={activeWorkspace === "materials" ? "block" : "hidden"}
+                aria-hidden={activeWorkspace !== "materials"}
+              >
                 <MaterialsSearchTab
-                  active
+                  active={activeWorkspace === "materials"}
                   lessonSubject={subject}
                   lessonGrade={grade}
                   lessonTopic={topic}
                   programmableSearchCx={googleProgrammableSearchCx}
                 />
-              )}
+              </div>
             </div>
           </section>
         </div>
