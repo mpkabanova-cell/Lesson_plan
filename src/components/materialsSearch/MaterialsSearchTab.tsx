@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
+import { rankAndLimitMaterials, type MaterialSearchResult } from "@/lib/materialsSearchRanking";
 import { MaterialsSearchForm } from "./MaterialsSearchForm";
 import {
   ProgrammableSearchEmbed,
@@ -18,17 +19,13 @@ type Props = {
   programmableSearchCx?: string;
 };
 
-type SearchResult = {
-  title: string;
-  url: string;
-  snippet: string;
-};
+type SearchResult = MaterialSearchResult;
 
 const MAX_VISIBLE_RESULTS = 10;
 const PUBLICATIONS_PORTAL_URL = "https://urok.1sept.ru/";
 
 function limitResults(results: SearchResult[]): SearchResult[] {
-  return results.slice(0, MAX_VISIBLE_RESULTS);
+  return rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS);
 }
 
 function friendlySearchError(message: string): string {
@@ -218,7 +215,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
           <div>
             <h3 className="text-sm font-semibold text-slate-900">Подобранные материалы</h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              Показаны первые {MAX_VISIBLE_RESULTS} наиболее релевантных ссылок, если они доступны.
+              Показаны до {MAX_VISIBLE_RESULTS} свежих и релевантных ссылок, если они доступны.
             </p>
           </div>
           {searched && !searchPending ? (
