@@ -16,6 +16,7 @@ type Props = {
   active: boolean;
   lessonSubject: string;
   lessonGrade: string;
+  lessonTopic: string;
   programmableSearchCx?: string;
 };
 
@@ -78,10 +79,11 @@ function hostnameFromUrl(url: string): string {
   }
 }
 
-export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, programmableSearchCx }: Props) {
+export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonTopic, programmableSearchCx }: Props) {
   const [subject, setSubject] = useState(lessonSubject);
   const [grade, setGrade] = useState(lessonGrade);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(lessonTopic);
+  const [queryEdited, setQueryEdited] = useState(false);
   const [searchPending, setSearchPending] = useState(false);
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -92,7 +94,13 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
     if (!active) return;
     setSubject(lessonSubject);
     setGrade(lessonGrade);
-  }, [active, lessonSubject, lessonGrade]);
+    if (!queryEdited) {
+      setQuery(lessonTopic);
+      setSearched(false);
+      setResults([]);
+      setError(null);
+    }
+  }, [active, lessonSubject, lessonGrade, lessonTopic, queryEdited]);
 
   const fallbackUrl = useMemo(
     () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
@@ -110,7 +118,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
   const runSearch = async () => {
     const q = query.trim();
     if (!q) {
-      setError("Введите тему или ключевые слова для поиска материалов.");
+      setError(null);
       setSearched(false);
       setResults([]);
       return;
@@ -155,7 +163,11 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
         <MaterialsSearchForm
           query={query}
-          onQueryChange={setQuery}
+          onQueryChange={(value) => {
+            setQuery(value);
+            setQueryEdited(true);
+            setError(null);
+          }}
           subject={subject}
           onSubjectChange={setSubject}
           grade={grade}
@@ -228,7 +240,9 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
         {!searched && !searchPending ? (
           <div className="flex min-h-[12rem] flex-1 items-center justify-center rounded-lg bg-white px-4 py-8 text-center">
             <div className="max-w-sm">
-              <p className="text-sm font-medium text-slate-800">Введите тему урока или ключевые слова</p>
+              <p className="text-sm font-medium text-slate-800">
+                {query.trim() ? "Нажмите «Найти», чтобы подобрать материалы" : "Введите тему урока или ключевые слова"}
+              </p>
               <p className="mt-1 text-xs leading-relaxed text-slate-500">
                 После поиска здесь появятся карточки материалов: заголовок, краткое описание и ссылка.
               </p>
