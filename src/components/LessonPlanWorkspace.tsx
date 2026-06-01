@@ -368,7 +368,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       <main className="mx-auto flex w-full max-w-[1680px] min-h-0 flex-1 flex-col px-3 py-4 xl:overflow-hidden">
         <div
           className={`grid min-h-0 flex-1 grid-cols-1 gap-4 xl:items-stretch xl:overflow-hidden ${
-            leftPanelCollapsed ? "xl:grid-cols-[48px_minmax(0,1fr)]" : "xl:grid-cols-[260px_minmax(0,1fr)]"
+            leftPanelCollapsed ? "xl:grid-cols-[48px_minmax(0,1fr)]" : "xl:grid-cols-[390px_minmax(0,1fr)]"
           }`}
         >
           {leftPanelCollapsed ? (
