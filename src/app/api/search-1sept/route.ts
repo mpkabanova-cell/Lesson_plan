@@ -130,11 +130,19 @@ export async function POST(req: Request) {
   }
 
   const items = data.items ?? [];
-  const results = rankAndLimitMaterials(items.map((it) => ({
-    title: (it.title ?? "").replace(/<[^>]+>/g, "").trim() || "Без названия",
-    url: it.link ?? "",
-    snippet: (it.snippet ?? "").trim(),
-  })));
+  const results = rankAndLimitMaterials(
+    items.map((it) => ({
+      title: (it.title ?? "").replace(/<[^>]+>/g, "").trim() || "Без названия",
+      url: it.link ?? "",
+      snippet: (it.snippet ?? "").trim(),
+    })),
+    10,
+    {
+      query: rawQ,
+      subject: body.subject,
+      grade: body.grade,
+    },
+  );
 
   return NextResponse.json({ results });
 }

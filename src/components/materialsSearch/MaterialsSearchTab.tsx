@@ -25,8 +25,11 @@ type SearchResult = MaterialSearchResult;
 const MAX_VISIBLE_RESULTS = 10;
 const PUBLICATIONS_PORTAL_URL = "https://urok.1sept.ru/";
 
-function limitResults(results: SearchResult[]): SearchResult[] {
-  return rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS);
+function limitResults(
+  results: SearchResult[],
+  context: { query: string; subject: string; grade: string },
+): SearchResult[] {
+  return rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS, context);
 }
 
 function friendlySearchError(message: string): string {
@@ -68,7 +71,9 @@ async function searchMaterials(body: {
     throw new Error(friendlySearchError(parts.join("\n\n") || `Ошибка поиска: HTTP ${res.status}`));
   }
 
-  return { results: limitResults(Array.isArray(data.results) ? data.results : []) };
+  return {
+    results: limitResults(Array.isArray(data.results) ? data.results : [], body),
+  };
 }
 
 function hostnameFromUrl(url: string): string {
@@ -111,7 +116,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
   );
 
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
-    const limited = limitResults(next);
+    const limited = limitResults(next, { query, subject, grade });
     setResults(limited);
     setError(null);
   };
@@ -232,7 +237,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
             <p className="mt-0.5 text-xs text-slate-500">
               {searched && results.length > 0
                 ? `Показаны первые ${MAX_VISIBLE_RESULTS} наиболее релевантных ссылок, если они доступны.`
-                : `Показаны до ${MAX_VISIBLE_RESULTS} свежих и релевантных ссылок, если они доступны.`}
+                : `Показаны до ${MAX_VISIBLE_RESULTS} наиболее релевантных ссылок, если они доступны.`}
             </p>
           </div>
           {searched && !searchPending && !error ? (

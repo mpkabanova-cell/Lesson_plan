@@ -1,14 +1,12 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
-import { rankAndLimitMaterials } from "@/lib/materialsSearchRanking";
 
 const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
 const GCSE_INNER_ID = "lesson-plan-gcse-widget";
 
 const FALLBACK_GNAMES = ["standard", "search", "two-column", "searchresults-only0", "searchresults-only1"];
 const MAX_EXTRACTED_CANDIDATES = 30;
-const MAX_EXTRACTED_RESULTS = 10;
 
 export type ProgrammableSearchResult = {
   title: string;
@@ -195,7 +193,7 @@ function extractCseResults(host: ParentNode | null): ProgrammableSearchResult[] 
     if (out.length >= MAX_EXTRACTED_CANDIDATES) break;
   }
 
-  return rankAndLimitMaterials(out, MAX_EXTRACTED_RESULTS);
+  return out.slice(0, MAX_EXTRACTED_CANDIDATES);
 }
 
 type GoGetter = () => HTMLElement | null;
