@@ -24,6 +24,26 @@ type SearchResult = {
   snippet: string;
 };
 
+const MAX_VISIBLE_RESULTS = 10;
+const PUBLICATIONS_PORTAL_URL = "https://urok.1sept.ru/";
+
+function limitResults(results: SearchResult[]): SearchResult[] {
+  return results.slice(0, MAX_VISIBLE_RESULTS);
+}
+
+function friendlySearchError(message: string): string {
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("custom search json api") ||
+    lower.includes("google custom search") ||
+    lower.includes("billing") ||
+    lower.includes("google cloud")
+  ) {
+    return "Серверный поиск сейчас недоступен. Можно открыть этот же запрос вручную в Google или перейти на портал «Открытый урок».";
+  }
+  return message;
+}
+
 async function searchMaterials(body: {
   query: string;
   subject: string;
@@ -47,10 +67,10 @@ async function searchMaterials(body: {
     const parts = [data.error, data.detail, data.hint].filter(
       (x): x is string => typeof x === "string" && x.trim().length > 0,
     );
-    throw new Error(parts.join("\n\n") || `Ошибка поиска: HTTP ${res.status}`);
+    throw new Error(friendlySearchError(parts.join("\n\n") || `Ошибка поиска: HTTP ${res.status}`));
   }
 
-  return { results: Array.isArray(data.results) ? data.results : [] };
+  return { results: limitResults(Array.isArray(data.results) ? data.results : []) };
 }
 
 function hostnameFromUrl(url: string): string {
@@ -86,7 +106,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
   );
 
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
-    setResults(next);
+    setResults(limitResults(next));
     setError(null);
   };
 
@@ -105,7 +125,13 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
     setResults([]);
 
     if (canUseProgrammableSearch) {
-      embedRef.current?.executeSearch(build1septSearchQuery(q, { subject, grade }));
+      const embed = embedRef.current;
+      if (!embed) {
+        setSearchPending(false);
+        setError("Поиск ещё загружается. Попробуйте нажать «Найти» ещё раз через несколько секунд.");
+        return;
+      }
+      embed.executeSearch(build1septSearchQuery(q, { subject, grade }));
       return;
     }
 
@@ -114,7 +140,8 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
       setResults(data.results);
     } catch (e) {
       setResults([]);
-      setError(e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`);
+      const msg = e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`;
+      setError(friendlySearchError(msg));
     } finally {
       setSearchPending(false);
     }
@@ -191,12 +218,12 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
           <div>
             <h3 className="text-sm font-semibold text-slate-900">Подобранные материалы</h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              Аккуратный список ссылок на публикации, без встроенного интерфейса Google.
+              Показаны первые {MAX_VISIBLE_RESULTS} наиболее релевантных ссылок, если они доступны.
             </p>
           </div>
           {searched && !searchPending ? (
             <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
-              Найдено: {results.length}
+              Показано: {results.length}
             </span>
           ) : null}
         </div>
@@ -215,18 +242,28 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
         {searched && !searchPending && results.length === 0 && !error ? (
           <div className="flex min-h-[12rem] flex-1 items-center justify-center rounded-lg bg-white px-4 py-8 text-center">
             <div className="max-w-sm">
-              <p className="text-sm font-medium text-slate-800">Материалы не найдены</p>
+              <p className="text-sm font-medium text-slate-800">Автоматически не удалось собрать ссылки</p>
               <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                Попробуйте сократить запрос или открыть тот же поиск в Google.
+                Можно открыть этот же поиск вручную или перейти на портал и продолжить подбор самостоятельно.
               </p>
-              <a
-                href={fallbackUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex text-xs font-medium text-teal-800 underline decoration-teal-300 underline-offset-2 hover:text-teal-950"
-              >
-                Открыть поиск в Google
-              </a>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <a
+                  href={fallbackUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex rounded-full bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-800 ring-1 ring-teal-100 hover:bg-teal-100"
+                >
+                  Открыть поиск в Google
+                </a>
+                <a
+                  href={PUBLICATIONS_PORTAL_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                >
+                  Перейти на портал
+                </a>
+              </div>
             </div>
           </div>
         ) : null}
@@ -269,6 +306,33 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, program
               );
             })}
           </ul>
+        ) : null}
+
+        {searched && !searchPending ? (
+          <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs leading-relaxed text-slate-600">
+            <p>
+              Если нужно больше материалов, откройте этот же запрос в Google или перейдите на портал «Открытый урок» и
+              продолжите подбор вручную.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <a
+                href={fallbackUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex rounded-full bg-teal-50 px-3 py-1.5 font-medium text-teal-800 ring-1 ring-teal-100 hover:bg-teal-100"
+              >
+                Открыть этот поиск в Google
+              </a>
+              <a
+                href={PUBLICATIONS_PORTAL_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex rounded-full bg-slate-50 px-3 py-1.5 font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+              >
+                Перейти на портал
+              </a>
+            </div>
+          </div>
         ) : null}
       </section>
     </div>
