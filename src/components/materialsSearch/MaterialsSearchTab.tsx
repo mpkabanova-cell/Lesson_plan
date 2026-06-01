@@ -84,7 +84,7 @@ function hostnameFromUrl(url: string): string {
 export function MaterialsSearchTab({
   programmableSearchCx,
 }: Props) {
-  const [subject, setSubject] = useState(SUBJECT_OPTIONS[0] ?? "");
+  const [subject, setSubject] = useState<string>(SUBJECT_OPTIONS[0] ?? "");
   const [grade, setGrade] = useState("5");
   const [query, setQuery] = useState("");
   const [searchPending, setSearchPending] = useState(false);
