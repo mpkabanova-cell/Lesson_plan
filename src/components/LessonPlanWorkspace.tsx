@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { LESSON_STAGES, LESSON_TYPE_LABELS } from "@/lib/lessonTypes";
@@ -11,7 +11,6 @@ import {
 } from "@/lib/parseTiming";
 import { DURATION_OPTIONS, GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
-import { EditorSearchTabs, type WorkspaceTabId } from "./materialsSearch/EditorSearchTabs";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
 
@@ -43,6 +42,58 @@ function buildExportTitle(subject: string, grade: string, topic: string): string
   const t = topic.trim() || "План урока";
   return `${subject} — ${grade} класс — ${t}`.slice(0, 180);
 }
+
+function WizardCard({
+  icon,
+  title,
+  hint,
+  children,
+}: {
+  icon: string;
+  title: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-[0_18px_50px_rgba(99,102,241,0.08)] backdrop-blur">
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-lg">
+          {icon}
+        </span>
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+          {hint ? <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{hint}</p> : null}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function LessonSkeleton() {
+  return (
+    <div className="space-y-4 rounded-3xl border border-white/70 bg-white/90 p-6 shadow-sm">
+      <div className="h-6 w-56 animate-pulse rounded-full bg-violet-100" />
+      <div className="space-y-3">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="space-y-2 rounded-2xl border border-slate-100 p-4">
+            <div className="h-4 w-1/3 animate-pulse rounded-full bg-slate-200" />
+            <div className="h-3 w-full animate-pulse rounded-full bg-slate-100" />
+            <div className="h-3 w-5/6 animate-pulse rounded-full bg-slate-100" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const TOPIC_CHIPS = ["Дроби", "Уравнения", "Площадь", "Деление"];
+const DEMO_LESSONS = [
+  { subject: "Математика", grade: "5 класс", topic: "Дроби" },
+  { subject: "Русский язык", grade: "4 класс", topic: "Имя прилагательное" },
+  { subject: "Окружающий мир", grade: "3 класс", topic: "Круговорот воды" },
+];
+const DRAFT_STORAGE_KEY = "lesson-plan-wizard-draft";
 
 /** Запрос с таймаутом; тело всегда читается как текст, затем JSON — так видны не-JSON и пустые ответы. */
 async function postJson<T>(url: string, body: unknown, timeoutMs = 130_000): Promise<T> {
@@ -175,8 +226,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   /** Итог успешной генерации (после loading). */
   const [generateSuccessInfo, setGenerateSuccessInfo] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
-  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTabId>("editor");
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const stages = LESSON_STAGES[LESSON_TYPE_ID];
 
@@ -212,6 +264,46 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
   const timingWasRescaled =
     timingRaw.length > 0 && timingRawSum > 0 && timingRawSum !== duration;
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as Partial<{
+        subject: string;
+        grade: string;
+        duration: number;
+        topic: string;
+        goal: string;
+        homework: string;
+      }>;
+      if (draft.subject) setSubject(draft.subject);
+      if (draft.grade) setGrade(draft.grade);
+      if (typeof draft.duration === "number") setDuration(draft.duration);
+      if (draft.topic) setTopic(draft.topic);
+      if (draft.goal) setGoal(draft.goal);
+      if (draft.homework) setHomework(draft.homework);
+    } catch {
+      /* ignore broken draft */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        DRAFT_STORAGE_KEY,
+        JSON.stringify({ subject, grade, duration, topic, goal, homework }),
+      );
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [subject, grade, duration, topic, goal, homework]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2400);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   const handlePlanEditorLoad = useCallback((info: PlanEditorLoadInfo) => {
     if (info.contentKey === 0 && info.approxPlainFromHtml === 0 && info.textLength === 0) {
@@ -284,9 +376,13 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       } else {
         setError(null);
         setGenerateSuccessInfo(null);
+        setToast("План урока готов");
       }
       setPlanHtml(prepared);
       setContentKey((k) => k + 1);
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
     } catch (e) {
       const msg =
         e instanceof Error && e.message.trim().length > 0
@@ -324,6 +420,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         throw new Error("Сервер не вернул текст.");
       }
       setGoal(g);
+      setToast("Формулировка добавлена");
     } catch (e) {
       const msg =
         e instanceof Error && e.message.trim().length > 0
@@ -360,12 +457,20 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const hasPlan = planHtml.replace(/<[^>]+>/g, "").trim().length > 0;
 
   return (
-    <div className="flex min-h-screen flex-col xl:h-[100dvh] xl:max-h-[100dvh] xl:overflow-hidden">
-      <header className="shrink-0 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
-        <h1 className="text-lg font-semibold text-slate-900">Конструктор плана урока</h1>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f4ddff_0,#eef2ff_32%,#f8fafc_62%)]">
+      <header className="sticky top-0 z-20 border-b border-white/70 bg-white/80 px-4 py-3 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-[1680px] items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-500">AI-мастер урока</p>
+            <h1 className="text-lg font-semibold text-slate-950">Конструктор плана урока</h1>
+          </div>
+          <div className="hidden rounded-full bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800 ring-1 ring-violet-100 sm:block">
+            Создайте сценарий за 1 минуту
+          </div>
+        </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1680px] min-h-0 flex-1 flex-col px-3 py-4 xl:overflow-hidden">
+      <main className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col px-3 py-4">
         <div
           className={`grid min-h-0 flex-1 grid-cols-1 gap-4 xl:items-stretch xl:overflow-hidden ${
             leftPanelCollapsed ? "xl:grid-cols-[48px_minmax(0,1fr)]" : "xl:grid-cols-[390px_minmax(0,1fr)]"
@@ -387,9 +492,12 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
           {/* Column 1: параметры + этапы + тайминг — своя прокрутка */}
           {!leftPanelCollapsed ? (
-            <section className="order-1 flex min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm xl:max-h-full">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold text-slate-800">Параметры</h2>
+            <section className="order-1 flex max-h-[calc(100dvh-6rem)] flex-col gap-4 overflow-y-auto overflow-x-hidden rounded-3xl border border-white/70 bg-white/45 p-3 shadow-[0_24px_80px_rgba(99,102,241,0.12)] backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-2 px-1">
+              <div>
+                <p className="text-xs font-medium text-violet-600">Шаги создания</p>
+                <h2 className="text-base font-semibold text-slate-950">Параметры урока</h2>
+              </div>
               <button
                 type="button"
                 onClick={() => setLeftPanelCollapsed(true)}
@@ -401,74 +509,91 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               </button>
             </div>
 
-            <label className="block text-xs font-medium text-slate-600">
-              Предмет
-              <select
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-              >
-                {SUBJECT_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <WizardCard icon="📘" title="Основная информация" hint="Начните с темы, предмета и класса.">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs font-medium text-slate-600">
+                  Предмет
+                  <select
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm shadow-sm"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                  >
+                    {SUBJECT_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            <label className="block text-xs font-medium text-slate-600">
-              Класс (параллель)
-              <select
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm"
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-              >
-                {GRADE_OPTIONS.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-xs font-medium text-slate-600">
-              Длительность (мин.)
-              <select
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-              >
-                {DURATION_OPTIONS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-xs font-medium text-slate-600">
-              Тема урока
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="Например: Дробные числа"
-              />
-            </label>
-
-            <div className="block text-xs font-medium text-slate-600">
-              Тип урока
-              <div className="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-800">
-                {LESSON_TYPE_LABELS[LESSON_TYPE_ID]}
+                <label className="block text-xs font-medium text-slate-600">
+                  Класс
+                  <select
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm shadow-sm"
+                    value={grade}
+                    onChange={(e) => setGrade(e.target.value)}
+                  >
+                    {GRADE_OPTIONS.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
-            </div>
 
-            <details className="rounded-lg border border-slate-200 bg-slate-50/90">
-              <summary className="cursor-pointer select-none px-3 py-2.5 text-xs font-medium text-slate-800 hover:bg-slate-100/80">
-                Этапы урока
-              </summary>
-              <div className="border-t border-slate-200 p-3 pt-2">
-                <ul className="space-y-2 pr-1">
+              <label className="mt-3 block text-xs font-medium text-slate-600">
+                Тема урока
+                <input
+                  className="mt-1 w-full rounded-2xl border border-violet-200 bg-white px-3 py-3 text-base font-medium text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Например: Дробные числа"
+                />
+              </label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {TOPIC_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setTopic(chip)}
+                    className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800 ring-1 ring-violet-100 hover:bg-violet-100"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </WizardCard>
+
+            <WizardCard icon="🧩" title="Формат урока" hint="Тип урока уже подобран под открытие нового знания.">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="block text-xs font-medium text-slate-600">
+                  Тип урока
+                  <div className="mt-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-800">
+                    {LESSON_TYPE_LABELS[LESSON_TYPE_ID]}
+                  </div>
+                </div>
+                <label className="block text-xs font-medium text-slate-600">
+                  Длительность
+                  <select
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm shadow-sm"
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                  >
+                    {DURATION_OPTIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d} мин
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/90">
+                <summary className="cursor-pointer select-none px-3 py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-100/80">
+                  Структура урока
+                </summary>
+                <ul className="space-y-2 border-t border-slate-200 p-3">
                   {stages.map((label, i) => (
                     <li key={label}>
                       <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-800">
@@ -490,26 +615,25 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                     </li>
                   ))}
                 </ul>
-              </div>
-            </details>
+              </details>
+            </WizardCard>
 
-            <div className="block text-xs font-medium text-slate-600">
-              <span className="block">Образовательные результаты</span>
+            <WizardCard icon="🎯" title="Результаты" hint="Опишите простыми словами, чему научатся ученики.">
               <button
                 type="button"
                 disabled={!topic.trim() || goalSuggesting}
                 onClick={handleSuggestGoal}
-                className="mt-2 w-full rounded-lg border border-teal-600 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-900 shadow-sm hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {goalSuggesting ? "Запрос…" : "Предложить формулировку"}
+                {goalSuggesting ? "Формулирую…" : "✨ Помочь сформулировать"}
               </button>
               <textarea
                 ref={goalTextareaRef}
                 rows={1}
-                className="mt-2 min-h-[72px] w-full resize-none overflow-x-hidden rounded-lg border border-slate-200 px-2 py-2 text-sm leading-snug"
+                className="mt-3 min-h-[86px] w-full resize-none overflow-x-hidden rounded-2xl border border-slate-200 px-3 py-3 text-sm leading-snug shadow-sm outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="Ожидаемые результаты урока"
+                placeholder="Чему научатся ученики"
               />
               {goalError ? (
                 <p
@@ -519,25 +643,27 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   {goalError}
                 </p>
               ) : null}
-            </div>
+            </WizardCard>
 
-            <label className="block text-xs font-medium text-slate-600">
-              Домашнее задание (необязательно)
-              <textarea
-                className="mt-1 min-h-[64px] w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                value={homework}
-                onChange={(e) => setHomework(e.target.value)}
-                placeholder="Готовое ДЗ или пожелание"
-              />
-            </label>
+            <WizardCard icon="🏠" title="Домашнее задание">
+              <label className="block text-xs font-medium text-slate-600">
+                Необязательно
+                <textarea
+                  className="mt-1 min-h-[74px] w-full rounded-2xl border border-slate-200 px-3 py-3 text-sm shadow-sm outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                  value={homework}
+                  onChange={(e) => setHomework(e.target.value)}
+                  placeholder="Готовое ДЗ или пожелание"
+                />
+              </label>
+            </WizardCard>
 
             <button
               type="button"
-              disabled={loading}
+              disabled={loading || !topic.trim()}
               onClick={handleGenerate}
-              className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-teal-800 disabled:opacity-60"
+              className="sticky bottom-3 z-10 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-4 text-base font-semibold text-white shadow-2xl shadow-violet-300 transition hover:-translate-y-0.5 hover:shadow-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Генерация…" : "Сформировать план"}
+              {loading ? "✨ Генерирую…" : "✨ Сгенерировать план урока"}
             </button>
 
             <div className="border-t border-slate-100 pt-3">
@@ -579,83 +705,112 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             </section>
           ) : null}
 
-          {/* Column 2: шапка + редактор; прокрутка только у текста в PlanEditor */}
-          <section className="order-2 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden xl:max-h-full">
-            <div className="shrink-0 rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-                <h2 className="text-sm font-semibold text-slate-800">План урока</h2>
-                <div className="flex flex-wrap items-center gap-2">
-                  <EditorSearchTabs active={workspaceTab} onChange={setWorkspaceTab} />
-                  <button
-                    type="button"
-                    disabled={!hasPlan || exporting || workspaceTab !== "editor"}
-                    onClick={handleExportDocx}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    {exporting ? "Word…" : "Скачать Word"}
-                  </button>
+          <section className="order-2 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-8">
+            <div className="rounded-3xl border border-white/70 bg-white/80 p-4 shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">Результат</p>
+                  <h2 className="text-xl font-semibold text-slate-950">План урока</h2>
                 </div>
+                <button
+                  type="button"
+                  disabled={!hasPlan || exporting}
+                  onClick={handleExportDocx}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {exporting ? "Готовлю Word…" : "Скачать Word"}
+                </button>
               </div>
               {(generateStep || (generateSuccessInfo && !loading) || error) ? (
-                <div className="border-t border-slate-100 bg-slate-50/80 px-3 py-2 text-[11px] leading-snug text-slate-700">
-                  {generateStep ? (
-                    <p className="text-sky-900">
-                      <span className="font-medium">Статус: </span>
-                      {generateStep}
-                    </p>
-                  ) : null}
-                  {error ? (
-                    <p className="mt-1 text-red-800">
-                      <span className="font-medium">Ошибка: </span>
-                      {error}
-                    </p>
-                  ) : null}
-                  {generateSuccessInfo && !loading ? (
-                    <p className="mt-1 text-emerald-900">
-                      <span className="font-medium">Итог: </span>
-                      {generateSuccessInfo}
-                    </p>
-                  ) : null}
+                <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-snug text-slate-700">
+                  {generateStep ? <p className="text-violet-900">{generateStep}</p> : null}
+                  {error ? <p className="mt-1 text-red-800">{error}</p> : null}
+                  {generateSuccessInfo && !loading ? <p className="mt-1 text-emerald-900">{generateSuccessInfo}</p> : null}
                 </div>
               ) : null}
             </div>
 
-            <div className="flex min-h-[240px] flex-1 flex-col overflow-hidden xl:min-h-0">
-              <div
-                className={
-                  workspaceTab === "editor"
-                    ? "flex min-h-0 flex-1 flex-col overflow-hidden"
-                    : "hidden min-h-0 flex-1 overflow-hidden"
-                }
-                aria-hidden={workspaceTab !== "editor"}
-              >
-                <PlanEditor
-                  content={planHtml}
-                  contentKey={contentKey}
-                  onHtmlChange={onHtmlChange}
-                  onExternalLoad={handlePlanEditorLoad}
-                  disabled={loading}
-                />
+            <div ref={resultRef} className="min-h-[360px]">
+              {loading ? (
+                <LessonSkeleton />
+              ) : hasPlan ? (
+                <div className="min-h-[560px] overflow-hidden rounded-3xl">
+                  <PlanEditor
+                    content={planHtml}
+                    contentKey={contentKey}
+                    onHtmlChange={onHtmlChange}
+                    onExternalLoad={handlePlanEditorLoad}
+                    disabled={loading}
+                    placeholder="Здесь появится готовый сценарий урока."
+                  />
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-white/70 bg-white/80 p-8 text-center shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
+                  <div className="mx-auto flex size-14 items-center justify-center rounded-3xl bg-violet-100 text-2xl">
+                    ✨
+                  </div>
+                  <h2 className="mt-4 text-2xl font-semibold text-slate-950">Создайте план урока за 1 минуту</h2>
+                  <div className="mx-auto mt-5 grid max-w-2xl grid-cols-1 gap-3 text-left sm:grid-cols-2">
+                    {["Выберите предмет и класс", "Укажите тему урока", "Нажмите «Сгенерировать»", "Отредактируйте результат"].map((step, i) => (
+                      <div key={step} className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        <span className="mr-2 font-semibold text-violet-700">{i + 1}.</span>
+                        {step}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubject("Математика");
+                      setGrade("5");
+                      setTopic("Дроби");
+                      setGoal("Ученики откроют новый способ действия с дробями и применят его по эталону.");
+                    }}
+                    className="mt-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200 hover:-translate-y-0.5"
+                  >
+                    Создать пример
+                  </button>
+                  <div className="mt-8 grid gap-3 text-left md:grid-cols-3">
+                    {DEMO_LESSONS.map((demo) => (
+                      <button
+                        key={`${demo.subject}-${demo.topic}`}
+                        type="button"
+                        onClick={() => {
+                          setSubject(demo.subject);
+                          setGrade(demo.grade.replace(" класс", ""));
+                          setTopic(demo.topic);
+                        }}
+                        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-violet-200 hover:shadow-md"
+                      >
+                        <p className="text-xs font-medium text-violet-600">{demo.subject} · {demo.grade}</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{demo.topic}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-3xl border border-white/70 bg-white/80 p-4 shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
+              <div className="mb-3">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">Материалы</p>
+                <h2 className="text-xl font-semibold text-slate-950">Материалы к уроку</h2>
               </div>
-              <div
-                className={
-                  workspaceTab === "search"
-                    ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200/80 bg-slate-50/40 px-2 py-2"
-                    : "hidden"
-                }
-                aria-hidden={workspaceTab !== "search"}
-              >
-                <MaterialsSearchTab
-                  active={workspaceTab === "search"}
-                  lessonSubject={subject}
-                  lessonGrade={grade}
-                  programmableSearchCx={googleProgrammableSearchCx}
-                />
-              </div>
+              <MaterialsSearchTab
+                active
+                lessonSubject={subject}
+                lessonGrade={grade}
+                programmableSearchCx={googleProgrammableSearchCx}
+              />
             </div>
           </section>
         </div>
       </main>
+      {toast ? (
+        <div className="fixed bottom-5 right-5 z-50 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white shadow-2xl">
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -117,6 +117,7 @@ export function PlanEditor({
 }: PlanEditorProps) {
   const maxChars = Number(process.env.NEXT_PUBLIC_PLAN_CONTENT_MAX_CHARS) || MAX_DEFAULT;
   const [, setToolbarTick] = useState(0);
+  const [advancedEditing, setAdvancedEditing] = useState(false);
   /** Пока true — не пробрасывать onHtmlChange (программная загрузка). */
   const applyingExternalRef = useRef(false);
   /** Не синхронизировать повторно тот же contentKey (в т.ч. Strict Mode). */
@@ -265,24 +266,8 @@ export function PlanEditor({
     "h-8 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-800 shadow-sm outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-300";
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200/90 bg-white shadow-sm">
-      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-gradient-to-b from-white to-slate-50 px-2 py-1.5 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
-        <select
-          className={`${selectBase} min-w-[7.5rem] max-w-[11rem]`}
-          value={block}
-          title="Стиль абзаца"
-          onChange={(e) => applyBlock(editor, e.target.value)}
-        >
-          <option value="paragraph">Абзац</option>
-          <option value="h1">Заголовок 1</option>
-          <option value="h2">Заголовок 2</option>
-          <option value="h3">Заголовок 3</option>
-          <option value="h4">Заголовок 4</option>
-          <option value="blockquote">Цитата</option>
-        </select>
-
-        <ToolbarDivider />
-
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
         <IconBtn
           active={editor.isActive("bold")}
           title="Жирный"
@@ -297,6 +282,78 @@ export function PlanEditor({
         >
           <span className="font-serif text-[15px] italic leading-none">К</span>
         </IconBtn>
+
+        <ToolbarDivider />
+
+        <IconBtn
+          active={editor.isActive("bulletList")}
+          title="Маркированный список"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            <circle cx="2" cy="6" r="1.2" fill="currentColor" stroke="none" />
+            <circle cx="2" cy="12" r="1.2" fill="currentColor" stroke="none" />
+            <circle cx="2" cy="18" r="1.2" fill="currentColor" stroke="none" />
+          </svg>
+        </IconBtn>
+        <IconBtn
+          active={editor.isActive("orderedList")}
+          title="Нумерованный список"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M7 6h14M7 12h14M7 18h14M3 6h.01M3 12h.01M3 18h.01"
+            />
+          </svg>
+        </IconBtn>
+        <IconBtn active={false} title="Изображение по URL" onClick={addImage}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </IconBtn>
+
+        <ToolbarDivider />
+
+        <button
+          type="button"
+          onClick={() => setAdvancedEditing((v) => !v)}
+          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+            advancedEditing
+              ? "bg-violet-100 text-violet-900 ring-1 ring-violet-200"
+              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+          }`}
+        >
+          Расширенное редактирование
+        </button>
+
+        {advancedEditing ? (
+          <>
+            <ToolbarDivider />
+
+            <select
+              className={`${selectBase} min-w-[7.5rem] max-w-[11rem]`}
+              value={block}
+              title="Стиль абзаца"
+              onChange={(e) => applyBlock(editor, e.target.value)}
+            >
+              <option value="paragraph">Абзац</option>
+              <option value="h1">Заголовок 1</option>
+              <option value="h2">Заголовок 2</option>
+              <option value="h3">Заголовок 3</option>
+              <option value="h4">Заголовок 4</option>
+              <option value="blockquote">Цитата</option>
+            </select>
+
+            <ToolbarDivider />
+
         <IconBtn
           active={editor.isActive("underline")}
           title="Подчёркнутый"
@@ -472,6 +529,8 @@ export function PlanEditor({
         >
           Найти…
         </button>
+          </>
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-white">
