@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { firstAvailableGrade, formatGradeRange, isSubjectGradeCompatible } from "@/config/subjectClassMap";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
 import { rankAndLimitMaterials, type MaterialSearchResult } from "@/lib/materialsSearchRanking";
@@ -18,6 +19,7 @@ type Props = {
   lessonGrade: string;
   lessonTopic: string;
   programmableSearchCx?: string;
+  onToast?: (message: string) => void;
 };
 
 type SearchResult = MaterialSearchResult;
@@ -84,7 +86,14 @@ function hostnameFromUrl(url: string): string {
   }
 }
 
-export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonTopic, programmableSearchCx }: Props) {
+export function MaterialsSearchTab({
+  active,
+  lessonSubject,
+  lessonGrade,
+  lessonTopic,
+  programmableSearchCx,
+  onToast,
+}: Props) {
   const [subject, setSubject] = useState(lessonSubject);
   const [grade, setGrade] = useState(lessonGrade);
   const [query, setQuery] = useState(lessonTopic);
@@ -106,6 +115,20 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
       setError(null);
     }
   }, [active, lessonSubject, lessonGrade, lessonTopic, queryEdited]);
+
+  useEffect(() => {
+    if (isSubjectGradeCompatible(subject, grade)) return;
+    const nextGrade = firstAvailableGrade(subject);
+    if (!nextGrade) return;
+
+    setGrade(nextGrade);
+    const range = formatGradeRange(subject);
+    onToast?.(
+      range
+        ? `Для предмета “${subject}” доступны только ${range}`
+        : `Для предмета “${subject}” выбран доступный класс`,
+    );
+  }, [subject, grade, onToast]);
 
   const fallbackUrl = useMemo(
     () => buildGoogleFallbackSearchUrl(query, { subject, grade }),

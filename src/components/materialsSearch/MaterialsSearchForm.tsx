@@ -1,6 +1,7 @@
 "use client";
 
-import { GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
+import { getAvailableGrades } from "@/config/subjectClassMap";
+import { SUBJECT_OPTIONS } from "@/lib/options";
 
 type Props = {
   query: string;
@@ -29,6 +30,8 @@ export function MaterialsSearchForm({
   submitLabel = "Найти",
   busy = false,
 }: Props) {
+  const gradeOptions = getAvailableGrades(subject);
+
   return (
     <form
       className="flex flex-col gap-3"
@@ -84,7 +87,7 @@ export function MaterialsSearchForm({
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm"
             disabled={disabled}
           >
-            {GRADE_OPTIONS.map((g) => (
+            {gradeOptions.map((g) => (
               <option key={g} value={g}>
                 {g}
               </option>

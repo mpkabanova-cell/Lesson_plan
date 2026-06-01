@@ -1,10 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  firstAvailableGrade,
+  formatGradeRange,
+  getAvailableGrades,
+  isSubjectGradeCompatible,
+} from "@/config/subjectClassMap";
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { LESSON_STAGES, LESSON_TYPE_LABELS } from "@/lib/lessonTypes";
-import { DURATION_OPTIONS, GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
+import { DURATION_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
@@ -88,8 +94,6 @@ const TOPIC_SUGGESTIONS_BY_SUBJECT: Record<string, Partial<Record<string, string
   Математика: {
     "1-4": ["Сложение", "Вычитание", "Таблица умножения", "Периметр"],
     "5-6": ["Дроби", "Деление", "Площадь", "Проценты"],
-    "7-9": ["Уравнения", "Функции", "Степени", "Теорема Пифагора"],
-    "10-11": ["Производная", "Логарифмы", "Тригонометрия", "Вероятность"],
     default: ["Дроби", "Уравнения", "Площадь", "Деление"],
   },
   Алгебра: {
@@ -108,11 +112,14 @@ const TOPIC_SUGGESTIONS_BY_SUBJECT: Record<string, Partial<Record<string, string
     "10-11": ["Стили речи", "Пунктуация", "Нормы языка", "Аргументация"],
     default: ["Имя прилагательное", "Глагол", "Однородные члены", "Синонимы"],
   },
-  Литература: {
+  "Литературное чтение": {
     "1-4": ["Сказка", "Басня", "Главная мысль", "Герои произведения"],
+    default: ["Сказка", "Басня", "Главная мысль", "Герои произведения"],
+  },
+  Литература: {
     "5-9": ["Лирический герой", "Повесть", "Роман", "Авторская позиция"],
     "10-11": ["Романтизм", "Реализм", "Образ героя", "Проблематика произведения"],
-    default: ["Сказка", "Басня", "Образ героя", "Авторская позиция"],
+    default: ["Лирический герой", "Повесть", "Образ героя", "Авторская позиция"],
   },
   "Иностранный язык": {
     "1-4": ["Семья", "Цвета", "Животные", "Мой день"],
@@ -121,15 +128,16 @@ const TOPIC_SUGGESTIONS_BY_SUBJECT: Record<string, Partial<Record<string, string
     default: ["Семья", "Путешествия", "Школьная жизнь", "Present Simple"],
   },
   История: {
-    "5-6": ["Древний Египет", "Древняя Греция", "Римская республика", "Киевская Русь"],
+    "5": ["Древний Египет", "Древняя Греция", "Древний Рим"],
+    "5-6": ["Древний Египет", "Древняя Греция", "Древний Рим", "Киевская Русь"],
     "7-9": ["Пётр I", "Отечественная война 1812 года", "Реформы Александра II", "Великая Отечественная война"],
     "10-11": ["Индустриализация", "Холодная война", "Перестройка", "Международные отношения"],
     default: ["Древний Египет", "Киевская Русь", "Пётр I", "Великая Отечественная война"],
   },
   Обществознание: {
-    "5-9": ["Семья", "Права ребёнка", "Государство", "Экономика"],
+    "9": ["Конституция РФ", "Право", "Экономика"],
     "10-11": ["Правовое государство", "Гражданское общество", "Рынок труда", "Политическая система"],
-    default: ["Семья", "Право", "Государство", "Экономика"],
+    default: ["Конституция РФ", "Право", "Экономика"],
   },
   География: {
     "5-6": ["План местности", "Материки", "Океаны", "Климат"],
@@ -144,7 +152,7 @@ const TOPIC_SUGGESTIONS_BY_SUBJECT: Record<string, Partial<Record<string, string
     default: ["Клетка", "Экосистемы", "ДНК", "Наследственность"],
   },
   Химия: {
-    "7-9": ["Атом", "Химическая реакция", "Кислоты", "Периодическая система"],
+    "8-9": ["Атом", "Химическая реакция", "Кислоты", "Периодическая система"],
     "10-11": ["Органические вещества", "Спирты", "Белки", "Окислительно-восстановительные реакции"],
     default: ["Атом", "Химическая реакция", "Кислоты", "Периодическая система"],
   },
@@ -154,7 +162,9 @@ const TOPIC_SUGGESTIONS_BY_SUBJECT: Record<string, Partial<Record<string, string
     default: ["Сила", "Давление", "Электрический ток", "Законы Ньютона"],
   },
   Информатика: {
-    "5-6": ["Алгоритм", "Информация", "Файлы", "Исполнитель"],
+    "5": ["Алгоритмы", "Исполнители", "Информация", "Кодирование"],
+    "5-6": ["Алгоритмы", "Исполнители", "Информация", "Кодирование"],
+    "9": ["Системы счисления", "Логика", "Таблицы", "Программирование"],
     "7-9": ["Циклы", "Условия", "Массивы", "Кодирование информации"],
     "10-11": ["Базы данных", "Рекурсия", "Сети", "Моделирование"],
     default: ["Алгоритм", "Циклы", "Базы данных", "Кодирование информации"],
@@ -236,6 +246,7 @@ function gradeSuggestionKeys(grade: string): string[] {
   if (!Number.isFinite(gradeNumber)) return [];
   if (gradeNumber >= 1 && gradeNumber <= 4) return [grade, "1-4"];
   if (gradeNumber >= 5 && gradeNumber <= 6) return [grade, "5-6", "5-9"];
+  if (gradeNumber >= 8 && gradeNumber <= 9) return [grade, "8-9", "7-9", "5-9"];
   if (gradeNumber >= 7 && gradeNumber <= 9) return [grade, "7-9", "5-9"];
   if (gradeNumber >= 10 && gradeNumber <= 11) return [grade, "10-11"];
   return [grade];
@@ -327,6 +338,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const generateActionRef = useRef<HTMLDivElement>(null);
 
   const stages = LESSON_STAGES[LESSON_TYPE_ID];
+  const availableGradeOptions = useMemo(() => getAvailableGrades(subject), [subject]);
   const topicSuggestions = useMemo(() => getTopicSuggestions(subject, grade), [subject, grade]);
   const suggestionsKey = `${subject}-${grade}`;
 
@@ -351,7 +363,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         goal: string;
         homework: string;
       }>;
-      if (draft.subject) setSubject(draft.subject);
+      if (draft.subject && SUBJECT_OPTIONS.some((option) => option === draft.subject)) {
+        setSubject(draft.subject);
+      }
       if (draft.grade) setGrade(draft.grade);
       if (typeof draft.duration === "number") setDuration(draft.duration);
       if (draft.topic) setTopic(draft.topic);
@@ -378,6 +392,21 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     const t = window.setTimeout(() => setToast(null), 2400);
     return () => window.clearTimeout(t);
   }, [toast]);
+
+  useEffect(() => {
+    if (isSubjectGradeCompatible(subject, grade)) return;
+
+    const nextGrade = firstAvailableGrade(subject);
+    if (!nextGrade) return;
+
+    setGrade(nextGrade);
+    const range = formatGradeRange(subject);
+    setToast(
+      range
+        ? `Для предмета “${subject}” доступны только ${range}`
+        : `Для предмета “${subject}” выбран доступный класс`,
+    );
+  }, [subject, grade]);
 
   useEffect(() => {
     if (selectedSuggestion && !topicSuggestions.includes(selectedSuggestion)) {
@@ -419,6 +448,12 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const handleGenerate = async () => {
     setError(null);
     setGenerateSuccessInfo(null);
+    if (!isSubjectGradeCompatible(subject, grade)) {
+      setError("Этот предмет не изучается в выбранном классе.");
+      setToast("Этот предмет не изучается в выбранном классе");
+      setGenerateStep(null);
+      return;
+    }
     const selectedStages = stages.filter((_, i) => effectiveStageFlags[i]);
     if (selectedStages.length === 0) {
       setError("Отметьте хотя бы один этап в структуре урока.");
@@ -633,7 +668,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                     value={grade}
                     onChange={(e) => setGrade(e.target.value)}
                   >
-                    {GRADE_OPTIONS.map((g) => (
+                    {availableGradeOptions.map((g) => (
                       <option key={g} value={g}>
                         {g}
                       </option>
@@ -672,14 +707,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               </div>
             </WizardCard>
 
-            <WizardCard icon="🧩" title="Формат урока" hint="Тип урока уже подобран под открытие нового знания.">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="block text-xs font-medium text-slate-600">
-                  Тип урока
-                  <div className="mt-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-800">
-                    {LESSON_TYPE_LABELS[LESSON_TYPE_ID]}
-                  </div>
-                </div>
+            <WizardCard icon="🧩" title={`Тип урока «${LESSON_TYPE_LABELS[LESSON_TYPE_ID]}»`}>
+              <div className="grid grid-cols-1 gap-2">
                 <label className="block text-xs font-medium text-slate-600">
                   Длительность
                   <select
@@ -913,6 +942,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                     lessonGrade={grade}
                     lessonTopic={topic}
                     programmableSearchCx={googleProgrammableSearchCx}
+                    onToast={setToast}
                   />
                 ) : null}
               </div>
