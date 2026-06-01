@@ -4,11 +4,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { LESSON_STAGES, LESSON_TYPE_LABELS } from "@/lib/lessonTypes";
-import {
-  extractTimingFromHtml,
-  normalizeStageMinutesToTotal,
-  type StageTiming,
-} from "@/lib/parseTiming";
 import { DURATION_OPTIONS, GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
@@ -343,30 +338,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     if (stageFlags.length !== stages.length) return stages.map(() => true);
     return stageFlags;
   }, [stageFlags, stages]);
-
-  const timingRaw: StageTiming[] = useMemo(() => {
-    if (!planHtml || planHtml === "<p></p>") return [];
-    return extractTimingFromHtml(planHtml);
-  }, [planHtml]);
-
-  /** Минуты из плана приведены к выбранной длительности урока, сумма всегда = длительность. */
-  const timing: StageTiming[] = useMemo(
-    () => normalizeStageMinutesToTotal(timingRaw, duration),
-    [timingRaw, duration],
-  );
-
-  const timingRawSum = useMemo(
-    () => timingRaw.reduce((s, x) => s + x.minutes, 0),
-    [timingRaw],
-  );
-
-  const totalMinutes = useMemo(
-    () => timing.reduce((s, x) => s + x.minutes, 0),
-    [timing],
-  );
-
-  const timingWasRescaled =
-    timingRaw.length > 0 && timingRawSum > 0 && timingRawSum !== duration;
 
   useEffect(() => {
     try {
@@ -793,42 +764,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               </label>
             </WizardCard>
 
-            <div className="border-t border-slate-100 pt-3">
-              <h3 className="text-xs font-semibold text-slate-700">Минуты по этапам</h3>
-              {timing.length === 0 ? (
-                <p className="mt-1 text-xs text-slate-500">Появятся после генерации.</p>
-              ) : (
-                <>
-                  <table className="mt-2 w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-500">
-                        <th className="py-1 pr-2 font-medium">Этап</th>
-                        <th className="py-1 font-medium">Мин.</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {timing.map((row) => (
-                        <tr key={row.stage} className="border-b border-slate-100">
-                          <td className="py-1 pr-2 text-slate-800">{row.stage}</td>
-                          <td className="py-1 tabular-nums text-slate-800">{row.minutes}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                    В сумме:{" "}
-                    <span className="font-semibold tabular-nums text-slate-900">{totalMinutes}</span> мин (как в
-                    настройках урока:{" "}
-                    <span className="tabular-nums">{duration}</span> мин)
-                  </p>
-                  {timingWasRescaled ? (
-                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                      Минуты приведены к {duration} мин.
-                    </p>
-                  ) : null}
-                </>
-              )}
-            </div>
             </div>
 
             <div ref={generateActionRef} className="shrink-0 border-t border-white/70 bg-white/70 pt-3 backdrop-blur">
@@ -964,41 +899,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                         />
                       </div>
                     </div>
-                  ) : (
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                          <h2 className="text-xl font-semibold text-slate-950">✨ План урока за 1 минуту</h2>
-                          <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-700">
-                            {["1. Предмет", "2. Тема", "3. Генерация", "4. Редактирование"].map((step) => (
-                              <span key={step} className="rounded-full bg-slate-50 px-3 py-1.5 ring-1 ring-slate-200">
-                                {step}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <div key={`empty-${suggestionsKey}`} className="suggestions-fade mt-4 flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          Попробуйте:
-                        </span>
-                        {topicSuggestions.slice(0, 4).map((demoTopic) => (
-                          <button
-                            key={demoTopic}
-                            type="button"
-                            onClick={() => handleTopicSuggestionClick(demoTopic)}
-                            className={`rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition ${
-                              selectedSuggestion === demoTopic
-                                ? "bg-violet-600 text-white ring-violet-500 shadow-sm shadow-violet-200"
-                                : "bg-violet-50 text-violet-800 ring-violet-100 hover:bg-violet-100"
-                            }`}
-                          >
-                            {demoTopic}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  ) : null}
               </div>
 
               <div

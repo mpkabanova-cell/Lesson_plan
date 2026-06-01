@@ -89,6 +89,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
+  const cseAttemptRef = useRef(0);
 
   useEffect(() => {
     if (!active) return;
@@ -112,7 +113,26 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
 
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
     const limited = limitResults(next);
-    setResults(limited);
+    if (limited.length > 0) {
+      setResults(limited);
+      setError(null);
+      return;
+    }
+
+    const q = query.trim();
+    const embed = embedRef.current;
+    if (q && embed && cseAttemptRef.current === 0) {
+      cseAttemptRef.current = 1;
+      window.setTimeout(() => embed.executeSearch(build1septSearchQuery(q, { subject })), 0);
+      return;
+    }
+    if (q && embed && cseAttemptRef.current === 1) {
+      cseAttemptRef.current = 2;
+      window.setTimeout(() => embed.executeSearch(build1septSearchQuery(q)), 0);
+      return;
+    }
+
+    setResults([]);
     setError(null);
   };
 
@@ -129,6 +149,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
     setError(null);
     setSearched(true);
     setResults([]);
+    cseAttemptRef.current = 0;
 
     if (canUseProgrammableSearch) {
       const embed = embedRef.current;
