@@ -7,6 +7,12 @@ const GCSE_INNER_ID = "lesson-plan-gcse-widget";
 
 const FALLBACK_GNAMES = ["standard", "search", "two-column", "searchresults-only0", "searchresults-only1"];
 
+export type ProgrammableSearchResult = {
+  title: string;
+  url: string;
+  snippet: string;
+};
+
 function resolveCx(cxProp?: string): string | undefined {
   const fromProp = cxProp?.trim();
   if (fromProp) return fromProp;
@@ -135,6 +141,41 @@ function open1septInNewTab(href: string): void {
   }
 }
 
+function normalizeText(text: string | null | undefined): string {
+  return (text ?? "").replace(/\s+/g, " ").trim();
+}
+
+function extractCseResults(host: HTMLElement | null): ProgrammableSearchResult[] {
+  if (!host) return [];
+  const nodes = Array.from(host.querySelectorAll(".gsc-webResult, .gs-webResult"));
+  const seen = new Set<string>();
+  const out: ProgrammableSearchResult[] = [];
+
+  for (const node of nodes) {
+    const anchor =
+      node.querySelector<HTMLAnchorElement>("a.gs-title[href]") ??
+      node.querySelector<HTMLAnchorElement>(".gs-title a[href]") ??
+      node.querySelector<HTMLAnchorElement>("a[href]");
+    if (!anchor) continue;
+
+    const url = getEffectiveMaterialHref(anchor);
+    if (!is1septArticleUrl(url) || seen.has(url)) continue;
+    seen.add(url);
+
+    const title =
+      normalizeText(anchor.textContent) ||
+      normalizeText(node.querySelector(".gs-title")?.textContent) ||
+      "Материал без названия";
+    const snippet =
+      normalizeText(node.querySelector(".gs-snippet")?.textContent) ||
+      normalizeText(node.querySelector(".gsc-snippet")?.textContent);
+
+    out.push({ title, url, snippet });
+  }
+
+  return out;
+}
+
 type GoGetter = () => HTMLElement | null;
 
 function scheduleGo(getTarget: GoGetter, onGo?: () => void) {
@@ -185,10 +226,12 @@ type Props = {
   cx?: string;
   /** true — запрос отправлен, ждём ответ виджета; false — выдача обновилась или таймаут ожидания. */
   onSearchBusyChange?: (busy: boolean) => void;
+  /** Отдаёт результаты Google CSE наружу, чтобы UI мог рисовать свои карточки. */
+  onResultsChange?: (results: ProgrammableSearchResult[]) => void;
 };
 
 export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle, Props>(
-  function ProgrammableSearchEmbed({ cx: cxProp, onSearchBusyChange }, ref) {
+  function ProgrammableSearchEmbed({ cx: cxProp, onSearchBusyChange, onResultsChange }, ref) {
     const cx = resolveCx(cxProp);
     const hostRef = useRef<HTMLDivElement>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -196,10 +239,15 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     const [showLoadIssue, setShowLoadIssue] = useState(false);
     const loadWatchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const onSearchBusyChangeRef = useRef(onSearchBusyChange);
+    const onResultsChangeRef = useRef(onResultsChange);
 
     useEffect(() => {
       onSearchBusyChangeRef.current = onSearchBusyChange;
     }, [onSearchBusyChange]);
+
+    useEffect(() => {
+      onResultsChangeRef.current = onResultsChange;
+    }, [onResultsChange]);
 
     const innerGcseRef = useRef<HTMLDivElement | null>(null);
 
@@ -215,6 +263,10 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       onSearchBusyChangeRef.current?.(false);
     };
 
+    const publishResults = () => {
+      onResultsChangeRef.current?.(extractCseResults(hostRef.current));
+    };
+
     const startWaitForResultsDom = () => {
       clearResultWait();
       let ticks = 0;
@@ -222,6 +274,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       searchResultWaitRef.current = setInterval(() => {
         ticks += 1;
         if (cseResultsAppeared(hostRef.current) || ticks >= maxTicks) {
+          publishResults();
           settleSearchBusy();
         }
       }, 200);
@@ -354,6 +407,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           }
           clearResultWait();
           onSearchBusyChangeRef.current?.(true);
+          onResultsChangeRef.current?.([]);
           setShowLoadIssue(false);
 
           const run = (): boolean => {

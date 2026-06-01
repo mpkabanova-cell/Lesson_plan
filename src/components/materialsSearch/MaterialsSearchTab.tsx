@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
+import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
 import { MaterialsSearchForm } from "./MaterialsSearchForm";
+import {
+  ProgrammableSearchEmbed,
+  type ProgrammableSearchEmbedHandle,
+  type ProgrammableSearchResult,
+} from "./ProgrammableSearchEmbed";
 
 type Props = {
   /** Когда true — вкладка видима (для синхронизации фильтров с формой урока). */
@@ -55,7 +61,7 @@ function hostnameFromUrl(url: string): string {
   }
 }
 
-export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props) {
+export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, programmableSearchCx }: Props) {
   const [subject, setSubject] = useState(lessonSubject);
   const [grade, setGrade] = useState(lessonGrade);
   const [query, setQuery] = useState("");
@@ -63,6 +69,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
 
   useEffect(() => {
     if (!active) return;
@@ -74,6 +81,14 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props
     () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
     [query, subject, grade],
   );
+  const canUseProgrammableSearch = Boolean(
+    programmableSearchCx?.trim() || process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim(),
+  );
+
+  const handleCseResults = (next: ProgrammableSearchResult[]) => {
+    setResults(next);
+    setError(null);
+  };
 
   const runSearch = async () => {
     const q = query.trim();
@@ -87,6 +102,13 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props
     setSearchPending(true);
     setError(null);
     setSearched(true);
+    setResults([]);
+
+    if (canUseProgrammableSearch) {
+      embedRef.current?.executeSearch(build1septSearchQuery(q, { subject, grade }));
+      return;
+    }
+
     try {
       const data = await searchMaterials({ query: q, subject, grade });
       setResults(data.results);
@@ -154,6 +176,17 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade }: Props
       ) : null}
 
       <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-3 shadow-sm">
+        {canUseProgrammableSearch ? (
+          <div className="pointer-events-none absolute -left-[10000px] top-0 h-[480px] w-[720px] overflow-hidden opacity-0">
+            <ProgrammableSearchEmbed
+              ref={embedRef}
+              cx={programmableSearchCx}
+              onSearchBusyChange={setSearchPending}
+              onResultsChange={handleCseResults}
+            />
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">Подобранные материалы</h3>
