@@ -62,16 +62,6 @@ function hasCseAnywhere(root: HTMLElement | null): boolean {
   );
 }
 
-/** Выдача уже отрисована (есть карточки или явное «пусто»). */
-function cseResultsAppeared(host: ParentNode | null): boolean {
-  if (!host) return false;
-  return Boolean(
-    host.querySelector(
-      ".gsc-webResult, .gs-webResult, .gs-no-results-result, .gsc-snippet-ellipsis, .gsc-result-info-container",
-    ),
-  );
-}
-
 function isCseResultLink(anchor: Element): boolean {
   return Boolean(
     anchor.closest(
@@ -196,6 +186,10 @@ function extractCseResults(host: ParentNode | null): ProgrammableSearchResult[] 
   return out.slice(0, MAX_EXTRACTED_CANDIDATES);
 }
 
+function resultsSignature(results: ProgrammableSearchResult[]): string {
+  return results.map((result) => canonicalUrl(result.url)).join("|");
+}
+
 type GoGetter = () => HTMLElement | null;
 
 function scheduleGo(getTarget: GoGetter, onGo?: () => void) {
@@ -288,13 +282,17 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       onResultsChangeRef.current?.(ownResults.length > 0 ? ownResults : extractCseResults(document));
     };
 
-    const startWaitForResultsDom = () => {
+    const startWaitForResultsDom = (previousSignature: string) => {
       clearResultWait();
       let ticks = 0;
       const maxTicks = 55;
       searchResultWaitRef.current = setInterval(() => {
         ticks += 1;
-        if (cseResultsAppeared(hostRef.current) || cseResultsAppeared(document) || ticks >= maxTicks) {
+        const ownResults = extractCseResults(hostRef.current);
+        const documentResults = ownResults.length > 0 ? ownResults : extractCseResults(document);
+        const nextSignature = resultsSignature(documentResults);
+        const hasNewResults = documentResults.length > 0 && nextSignature !== previousSignature;
+        if (hasNewResults || ticks >= maxTicks) {
           publishResults();
           settleSearchBusy();
         }
@@ -434,10 +432,14 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           const run = (): boolean => {
             const el = getCseElement();
             if (!el) return false;
+            const beforeResults = extractCseResults(hostRef.current);
+            const previousSignature = resultsSignature(
+              beforeResults.length > 0 ? beforeResults : extractCseResults(document),
+            );
             try {
               el.execute(q);
               debugCse("execute", { len: q.length });
-              startWaitForResultsDom();
+              startWaitForResultsDom(previousSignature);
               return true;
             } catch (e) {
               debugCse("execute error", e);
