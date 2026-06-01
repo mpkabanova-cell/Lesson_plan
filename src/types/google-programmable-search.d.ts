@@ -14,7 +14,7 @@ declare global {
             /** Рендерит все элементы `.gcse-*` внутри контейнера (нужно после ручного добавления в DOM). */
             go?: (container?: Element | null) => void;
             /** Явный рендер по id контейнера (fallback, если go не зарегистрировал виджет). */
-            render?: (config: { div: string; tag: string }) => void;
+            render?: (config: { div: string; tag: string; gname?: string }) => void;
             getAllElements?: () => Record<string, unknown>;
           };
         };
