@@ -4,7 +4,6 @@ import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, us
 
 const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
 const GCSE_INNER_ID = "lesson-plan-gcse-widget";
-const GCSE_GNAME = "lesson-plan-materials-search";
 
 const FALLBACK_GNAMES = ["standard", "search", "two-column", "searchresults-only0", "searchresults-only1"];
 const MAX_EXTRACTED_CANDIDATES = 30;
@@ -28,12 +27,10 @@ function debugCse(label: string, payload?: unknown) {
   console.debug(`[CSE] ${label}`, payload ?? "");
 }
 
-type CseExecutableElement = { execute: (q: string) => void };
-
-function getCseElement(preferredNames: string[] = []): CseExecutableElement | null {
+function getCseElement() {
   const api = window.google?.search?.cse?.element;
   if (!api?.getElement) return null;
-  for (const name of [...preferredNames, ...FALLBACK_GNAMES]) {
+  for (const name of FALLBACK_GNAMES) {
     const el = api.getElement(name);
     if (el && typeof el.execute === "function") return el;
   }
@@ -41,7 +38,7 @@ function getCseElement(preferredNames: string[] = []): CseExecutableElement | nu
   if (all && typeof all === "object") {
     for (const key of Object.keys(all)) {
       const el = all[key] as { execute?: (q: string) => void };
-      if (el && typeof el.execute === "function") return el as CseExecutableElement;
+      if (el && typeof el.execute === "function") return el as { execute: (q: string) => void };
     }
   }
   return null;
@@ -199,15 +196,6 @@ function extractCseResults(host: ParentNode | null): ProgrammableSearchResult[] 
   return out.slice(0, MAX_EXTRACTED_CANDIDATES);
 }
 
-function clearCseResultMarkup(host: ParentNode | null): void {
-  if (!host) return;
-  host
-    .querySelectorAll(
-      ".gsc-webResult, .gs-webResult, .gsc-result, .gs-result, .gsc-table-result, .gs-no-results-result, .gsc-result-info-container",
-    )
-    .forEach((node) => node.remove());
-}
-
 type GoGetter = () => HTMLElement | null;
 
 function scheduleGo(getTarget: GoGetter, onGo?: () => void) {
@@ -242,7 +230,7 @@ function tryExplicitRender(divId: string): { ok: boolean } {
   const render = window.google?.search?.cse?.element?.render;
   if (typeof render !== "function") return { ok: false };
   try {
-    render({ div: divId, tag: "search", gname: GCSE_GNAME });
+    render({ div: divId, tag: "search" });
     debugCse("element.render fallback", { divId });
     return { ok: true };
   } catch {
@@ -251,15 +239,15 @@ function tryExplicitRender(divId: string): { ok: boolean } {
 }
 
 export type ProgrammableSearchEmbedHandle = {
-  executeSearch: (query: string, searchId?: number) => void;
+  executeSearch: (query: string) => void;
 };
 
 type Props = {
   cx?: string;
   /** true — запрос отправлен, ждём ответ виджета; false — выдача обновилась или таймаут ожидания. */
-  onSearchBusyChange?: (busy: boolean, searchId?: number) => void;
+  onSearchBusyChange?: (busy: boolean) => void;
   /** Отдаёт результаты Google CSE наружу, чтобы UI мог рисовать свои карточки. */
-  onResultsChange?: (results: ProgrammableSearchResult[], searchId?: number) => void;
+  onResultsChange?: (results: ProgrammableSearchResult[]) => void;
 };
 
 export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle, Props>(
@@ -272,7 +260,6 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     const loadWatchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const onSearchBusyChangeRef = useRef(onSearchBusyChange);
     const onResultsChangeRef = useRef(onResultsChange);
-    const currentSearchIdRef = useRef<number | undefined>(undefined);
 
     useEffect(() => {
       onSearchBusyChangeRef.current = onSearchBusyChange;
@@ -291,34 +278,25 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       }
     };
 
-    const settleSearchBusy = (searchId?: number) => {
+    const settleSearchBusy = () => {
       clearResultWait();
-      onSearchBusyChangeRef.current?.(false, searchId);
+      onSearchBusyChangeRef.current?.(false);
     };
 
-    const publishResults = (searchId?: number, allowDocumentFallback = false) => {
+    const publishResults = () => {
       const ownResults = extractCseResults(hostRef.current);
-      const results = ownResults.length > 0 || !allowDocumentFallback ? ownResults : extractCseResults(document);
-      debugCse("publish results", {
-        searchId,
-        ownCount: ownResults.length,
-        count: results.length,
-        allowDocumentFallback,
-      });
-      onResultsChangeRef.current?.(results, searchId);
+      onResultsChangeRef.current?.(ownResults.length > 0 ? ownResults : extractCseResults(document));
     };
 
-    const startWaitForResultsDom = (searchId?: number) => {
+    const startWaitForResultsDom = () => {
       clearResultWait();
       let ticks = 0;
       const maxTicks = 55;
-      const minTicksBeforePublish = 6;
       searchResultWaitRef.current = setInterval(() => {
         ticks += 1;
-        const appeared = cseResultsAppeared(hostRef.current);
-        if ((appeared && ticks >= minTicksBeforePublish) || ticks >= maxTicks) {
-          publishResults(searchId, ticks >= maxTicks);
-          settleSearchBusy(searchId);
+        if (cseResultsAppeared(hostRef.current) || cseResultsAppeared(document) || ticks >= maxTicks) {
+          publishResults();
+          settleSearchBusy();
         }
       }, 200);
     };
@@ -361,7 +339,6 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       const gcse = document.createElement("div");
       gcse.id = GCSE_INNER_ID;
       gcse.className = "lesson-plan-cse-root gcse-search";
-      gcse.setAttribute("data-gname", GCSE_GNAME);
       gcse.setAttribute("data-as_sitesearch", "urok.1sept.ru");
       gcse.setAttribute("data-sort_by", "date");
       gcse.setAttribute("data-linktarget", "_self");
@@ -442,31 +419,29 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     useImperativeHandle(
       ref,
       () => ({
-        executeSearch: (query: string, searchId?: number) => {
+        executeSearch: (query: string) => {
           const q = query.trim();
           if (!q || !cx) return;
-          currentSearchIdRef.current = searchId;
 
           if (pollRef.current) {
             clearInterval(pollRef.current);
             pollRef.current = null;
           }
           clearResultWait();
-          clearCseResultMarkup(hostRef.current);
-          onSearchBusyChangeRef.current?.(true, searchId);
+          onSearchBusyChangeRef.current?.(true);
           setShowLoadIssue(false);
 
           const run = (): boolean => {
-            const el = getCseElement([GCSE_GNAME]);
+            const el = getCseElement();
             if (!el) return false;
             try {
               el.execute(q);
-              debugCse("execute", { len: q.length, searchId });
-              startWaitForResultsDom(searchId);
+              debugCse("execute", { len: q.length });
+              startWaitForResultsDom();
               return true;
             } catch (e) {
               debugCse("execute error", e);
-              settleSearchBusy(searchId);
+              settleSearchBusy();
               return true;
             }
           };
@@ -487,7 +462,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
               if (pollRef.current) clearInterval(pollRef.current);
               pollRef.current = null;
               setShowLoadIssue(true);
-              settleSearchBusy(searchId);
+              settleSearchBusy();
               debugCse("execute: не найден элемент после опроса");
             }
           }, 100);
@@ -500,7 +475,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       () => () => {
         if (pollRef.current) clearInterval(pollRef.current);
         clearResultWait();
-        onSearchBusyChangeRef.current?.(false, currentSearchIdRef.current);
+        onSearchBusyChangeRef.current?.(false);
       },
       [],
     );

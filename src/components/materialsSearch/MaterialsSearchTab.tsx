@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { firstAvailableGrade, formatGradeRange, isSubjectGradeCompatible } from "@/config/subjectClassMap";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
@@ -26,12 +26,6 @@ type SearchResult = MaterialSearchResult;
 
 const MAX_VISIBLE_RESULTS = 10;
 const PUBLICATIONS_PORTAL_URL = "https://urok.1sept.ru/";
-const isDev = process.env.NODE_ENV === "development";
-
-function debugMaterialsSearch(label: string, payload?: unknown) {
-  if (!isDev) return;
-  console.debug(`[MaterialsSearch] ${label}`, payload ?? "");
-}
 
 function limitResults(
   results: SearchResult[],
@@ -103,49 +97,24 @@ export function MaterialsSearchTab({
   const [subject, setSubject] = useState(lessonSubject);
   const [grade, setGrade] = useState(lessonGrade);
   const [query, setQuery] = useState(lessonTopic);
+  const [queryEdited, setQueryEdited] = useState(false);
   const [searchPending, setSearchPending] = useState(false);
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
-  const submittedContextRef = useRef<{ query: string; subject: string; grade: string } | null>(null);
-  const lessonSnapshotRef = useRef({ subject: lessonSubject, grade: lessonGrade, topic: lessonTopic });
-  const manualQueryEditRef = useRef(false);
-  const activeSearchIdRef = useRef(0);
 
-  const resetSearchState = () => {
-    activeSearchIdRef.current += 1;
-    setSearched(false);
-    setResults([]);
-    setError(null);
-    setSearchPending(false);
-    submittedContextRef.current = null;
-  };
-
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!active) return;
-    const previous = lessonSnapshotRef.current;
-    const lessonSubjectChanged = previous.subject !== lessonSubject;
-    const lessonTopicChanged = previous.topic !== lessonTopic;
-    lessonSnapshotRef.current = { subject: lessonSubject, grade: lessonGrade, topic: lessonTopic };
-
     setSubject(lessonSubject);
     setGrade(lessonGrade);
-
-    if (lessonSubjectChanged) {
-      manualQueryEditRef.current = false;
+    if (!queryEdited) {
       setQuery(lessonTopic);
-      resetSearchState();
-      debugMaterialsSearch("lesson subject changed", {
-        lessonSubject,
-        lessonGrade,
-        lessonTopic,
-      });
-    } else if (lessonTopicChanged && !manualQueryEditRef.current) {
-      setQuery(lessonTopic);
-      resetSearchState();
+      setSearched(false);
+      setResults([]);
+      setError(null);
     }
-  }, [active, lessonSubject, lessonGrade, lessonTopic]);
+  }, [active, lessonSubject, lessonGrade, lessonTopic, queryEdited]);
 
   useEffect(() => {
     if (isSubjectGradeCompatible(subject, grade)) return;
@@ -169,29 +138,10 @@ export function MaterialsSearchTab({
     programmableSearchCx?.trim() || process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim(),
   );
 
-  const handleCseBusyChange = (busy: boolean, searchId?: number) => {
-    if (searchId != null && searchId !== activeSearchIdRef.current) {
-      debugMaterialsSearch("ignore stale busy change", { searchId, activeSearchId: activeSearchIdRef.current, busy });
-      return;
-    }
-    setSearchPending(busy);
-  };
-
-  const handleCseResults = (next: ProgrammableSearchResult[], searchId?: number) => {
-    if (searchId != null && searchId !== activeSearchIdRef.current) {
-      debugMaterialsSearch("ignore stale cse results", {
-        searchId,
-        activeSearchId: activeSearchIdRef.current,
-        count: next.length,
-      });
-      return;
-    }
-
-    const context = submittedContextRef.current ?? { query, subject, grade };
-    const limited = limitResults(next, context);
+  const handleCseResults = (next: ProgrammableSearchResult[]) => {
+    const limited = limitResults(next, { query, subject, grade });
     setResults(limited);
     setError(null);
-    debugMaterialsSearch("publish cse results", { searchId, count: next.length, limited: limited.length, context });
   };
 
   const runSearch = async () => {
@@ -207,19 +157,6 @@ export function MaterialsSearchTab({
     setError(null);
     setSearched(true);
     setResults([]);
-    const searchId = activeSearchIdRef.current + 1;
-    activeSearchIdRef.current = searchId;
-    submittedContextRef.current = { query: q, subject, grade };
-    const searchQuery = build1septSearchQuery(q, { subject, grade });
-    debugMaterialsSearch("run search", {
-      searchId,
-      lessonSubject,
-      lessonTopic,
-      query: q,
-      subject,
-      grade,
-      searchQuery,
-    });
 
     if (canUseProgrammableSearch) {
       const embed = embedRef.current;
@@ -228,29 +165,19 @@ export function MaterialsSearchTab({
         setError("Поиск ещё загружается. Попробуйте нажать «Найти» ещё раз через несколько секунд.");
         return;
       }
-      embed.executeSearch(searchQuery, searchId);
+      embed.executeSearch(build1septSearchQuery(q, { subject, grade }));
       return;
     }
 
     try {
       const data = await searchMaterials({ query: q, subject, grade });
-      if (searchId !== activeSearchIdRef.current) {
-        debugMaterialsSearch("ignore stale server results", { searchId, activeSearchId: activeSearchIdRef.current });
-        return;
-      }
       setResults(data.results);
     } catch (e) {
-      if (searchId !== activeSearchIdRef.current) {
-        debugMaterialsSearch("ignore stale server error", { searchId, activeSearchId: activeSearchIdRef.current });
-        return;
-      }
       setResults([]);
       const msg = e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`;
       setError(friendlySearchError(msg));
     } finally {
-      if (searchId === activeSearchIdRef.current) {
-        setSearchPending(false);
-      }
+      setSearchPending(false);
     }
   };
 
@@ -267,19 +194,17 @@ export function MaterialsSearchTab({
           query={query}
           onQueryChange={(value) => {
             setQuery(value);
-            manualQueryEditRef.current = true;
+            setQueryEdited(true);
             setError(null);
           }}
           subject={subject}
           onSubjectChange={(value) => {
             setSubject(value);
             setQuery("");
-            manualQueryEditRef.current = true;
+            setQueryEdited(true);
             setSearched(false);
             setResults([]);
             setError(null);
-            submittedContextRef.current = null;
-            activeSearchIdRef.current += 1;
           }}
           grade={grade}
           onGradeChange={setGrade}
@@ -328,7 +253,7 @@ export function MaterialsSearchTab({
             <ProgrammableSearchEmbed
               ref={embedRef}
               cx={programmableSearchCx}
-              onSearchBusyChange={handleCseBusyChange}
+              onSearchBusyChange={setSearchPending}
               onResultsChange={handleCseResults}
             />
           </div>
