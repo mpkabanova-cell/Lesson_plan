@@ -331,6 +331,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<"lesson" | "materials">("lesson");
   const [materialsWorkspaceMounted, setMaterialsWorkspaceMounted] = useState(false);
+  const [planNoticeCollapsed, setPlanNoticeCollapsed] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -503,6 +504,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setPlanHtml(prepared);
       setContentKey((k) => k + 1);
       setActiveWorkspace("lesson");
+      setPlanNoticeCollapsed(false);
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
@@ -649,11 +651,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   <select
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm shadow-sm"
                     value={subject}
-                    onChange={(e) => {
-                      setSubject(e.target.value);
-                      setTopic("");
-                      setSelectedSuggestion(null);
-                    }}
+                    onChange={(e) => setSubject(e.target.value)}
                   >
                     {SUBJECT_OPTIONS.map((s) => (
                       <option key={s} value={s}>
@@ -810,7 +808,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             </section>
           ) : null}
 
-          <section className="order-2 flex max-h-[calc(100dvh-6rem)] min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/80 shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
+          <section className="order-2 flex min-h-0 flex-1 flex-col rounded-3xl border border-white/70 bg-white/80 shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
             <div className="sticky top-0 z-20 shrink-0 rounded-t-3xl border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -883,11 +881,41 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                     <div className="space-y-3">
                       <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-2.5 text-sm text-emerald-950">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="font-medium">✨ План создан. Можно продолжить редактирование.</p>
+                          <button
+                            type="button"
+                            onClick={() => setPlanNoticeCollapsed((value) => !value)}
+                            aria-expanded={!planNoticeCollapsed}
+                            className="font-medium hover:text-emerald-800"
+                          >
+                            ✨ План создан{planNoticeCollapsed ? "" : ". Можно продолжить редактирование."}
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setPlanNoticeCollapsed((value) => !value)}
+                              className="rounded-full px-2.5 py-1 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
+                            >
+                              {planNoticeCollapsed ? "Развернуть" : "Свернуть"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlanHtml("");
+                                setContentKey((k) => k + 1);
+                                setGenerateSuccessInfo(null);
+                                setError(null);
+                              }}
+                              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-100 hover:bg-emerald-100"
+                            >
+                              Создать новый
+                            </button>
+                          </div>
                         </div>
-                        <p className="mt-1 text-xs leading-relaxed text-emerald-900">
-                          План урока в редакторе ниже: можно редактировать текст, добавлять материалы и скачать документ.
-                        </p>
+                        {!planNoticeCollapsed ? (
+                          <p className="mt-1 text-xs leading-relaxed text-emerald-900">
+                            Основная работа теперь в редакторе ниже: можно править текст, добавлять материалы и скачать Word.
+                          </p>
+                        ) : null}
                       </div>
                       <div className="min-h-[560px]">
                         <PlanEditor
@@ -900,35 +928,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                         />
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex min-h-[520px] items-center justify-center rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50/70 via-white to-slate-50 px-6 py-10 text-center shadow-sm">
-                      <div className="max-w-[500px]">
-                        <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-violet-100 text-2xl shadow-sm">
-                          ✨
-                        </div>
-                        <h3 className="mt-4 text-lg font-semibold text-slate-900">Здесь появится план урока</h3>
-                        <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                          Заполните тему урока и нажмите{" "}
-                          <span className="font-medium text-slate-800">«Сгенерировать план урока»</span>.
-                        </p>
-                        <div className="mt-5 rounded-2xl border border-slate-200 bg-white/75 px-4 py-4 text-left text-sm leading-relaxed text-slate-600">
-                          <p className="font-medium text-slate-800">ИИ автоматически создаст:</p>
-                          <ul className="mt-2 space-y-1">
-                            <li>• цели урока</li>
-                            <li>• этапы занятия</li>
-                            <li>• задания</li>
-                            <li>• домашнюю работу</li>
-                            <li>• образовательные результаты</li>
-                          </ul>
-                        </div>
-                        <p className="mt-5 text-xs leading-relaxed text-slate-500">
-                          Например: <span className="font-medium text-slate-700">«Дроби»</span>,{" "}
-                          <span className="font-medium text-slate-700">«Квадратные уравнения»</span>,{" "}
-                          <span className="font-medium text-slate-700">«Пётр I»</span>
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  ) : null}
               </div>
 
               <div
