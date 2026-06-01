@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { firstAvailableGrade, formatGradeRange, isSubjectGradeCompatible } from "@/config/subjectClassMap";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
@@ -103,8 +103,9 @@ export function MaterialsSearchTab({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
+  const submittedContextRef = useRef<{ query: string; subject: string; grade: string } | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!active) return;
     setSubject(lessonSubject);
     setGrade(lessonGrade);
@@ -139,7 +140,8 @@ export function MaterialsSearchTab({
   );
 
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
-    const limited = limitResults(next, { query, subject, grade });
+    const context = submittedContextRef.current ?? { query, subject, grade };
+    const limited = limitResults(next, context);
     setResults(limited);
     setError(null);
   };
@@ -157,6 +159,7 @@ export function MaterialsSearchTab({
     setError(null);
     setSearched(true);
     setResults([]);
+    submittedContextRef.current = { query: q, subject, grade };
 
     if (canUseProgrammableSearch) {
       const embed = embedRef.current;
