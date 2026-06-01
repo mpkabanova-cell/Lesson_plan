@@ -3,7 +3,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
-import { LESSON_GOAL_SHORT_EXAMPLES } from "@/lib/lessonGoalExamples";
 import { LESSON_STAGES, LESSON_TYPE_LABELS } from "@/lib/lessonTypes";
 import {
   extractTimingFromHtml,
@@ -17,8 +16,6 @@ import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
 
 const LESSON_TYPE_ID = "new_knowledge" as const;
-
-type GenerationVersion = 1 | 2;
 
 function buildExportTitle(subject: string, grade: string, topic: string): string {
   const t = topic.trim() || "План урока";
@@ -133,12 +130,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [topic, setTopic] = useState("");
   const [goal, setGoal] = useState("");
   const [homework, setHomework] = useState("");
-  /** Системный промпт для генерации плана (POST /api/generate, поле `systemPrompt`). */
-  const [planSystemPrompt, setPlanSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
-  /** Системный промпт для кнопки генерации образовательных результатов (POST /api/generate-goal). */
-  const [goalSystemPrompt, setGoalSystemPrompt] = useState(DEFAULT_GOAL_SYSTEM_PROMPT);
-
-  const [generationVersion, setGenerationVersion] = useState<GenerationVersion>(1);
 
   const [planHtml, setPlanHtml] = useState("<p></p>");
   const [contentKey, setContentKey] = useState(0);
@@ -161,10 +152,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [generateStep, setGenerateStep] = useState<string | null>(null);
   /** Итог успешной генерации (после loading). */
   const [generateSuccessInfo, setGenerateSuccessInfo] = useState<string | null>(null);
-  /** Сверка: длина текста в строке HTML vs в TipTap (после onExternalLoad). */
-  const [editorDiagnosticsLine, setEditorDiagnosticsLine] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTabId>("editor");
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
   const stages = LESSON_STAGES[LESSON_TYPE_ID];
 
@@ -201,19 +191,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const timingWasRescaled =
     timingRaw.length > 0 && timingRawSum > 0 && timingRawSum !== duration;
 
-  const resetPlanSystemPrompt = () => setPlanSystemPrompt(DEFAULT_SYSTEM_PROMPT);
-  const resetGoalSystemPrompt = () => setGoalSystemPrompt(DEFAULT_GOAL_SYSTEM_PROMPT);
-
-  const lastGenerationVersionRef = useRef<GenerationVersion>(1);
-
   const handlePlanEditorLoad = useCallback((info: PlanEditorLoadInfo) => {
     if (info.contentKey === 0 && info.approxPlainFromHtml === 0 && info.textLength === 0) {
       return;
     }
-
-    setEditorDiagnosticsLine(
-      `Исходный текст после очистки HTML ≈ ${info.approxPlainFromHtml.toLocaleString("ru-RU")} симв. · в редакторе ${info.textLength.toLocaleString("ru-RU")} · вставка: ${info.usedJsonParse ? "JSON (TipTap)" : "HTML"}${info.usedFallback ? " · фолбэк: простой текст" : ""}`,
-    );
 
     if (info.approxPlainFromHtml > 0 && info.textLength === 0) {
       setError(
@@ -225,10 +206,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
     if (info.textLength > 0) {
       setError(null);
-      const modeHint =
-        lastGenerationVersionRef.current === 2 ? " · режим: версия 2 (планировщик + сценарий)" : "";
       setGenerateSuccessInfo(
-        `Успешно: в редакторе ${info.textLength.toLocaleString("ru-RU")} симв.${info.usedFallback ? " Показан упрощённый текст (без части форматирования)." : ""}${modeHint}`,
+        `Успешно: в редакторе ${info.textLength.toLocaleString("ru-RU")} симв.${info.usedFallback ? " Показан упрощённый текст (без части форматирования)." : ""}`,
       );
     } else if (info.contentKey > 0) {
       setGenerateSuccessInfo(null);
@@ -238,7 +217,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const handleGenerate = async () => {
     setError(null);
     setGenerateSuccessInfo(null);
-    setEditorDiagnosticsLine(null);
     const selectedStages = stages.filter((_, i) => effectiveStageFlags[i]);
     if (selectedStages.length === 0) {
       setError("Отметьте хотя бы один этап в структуре урока.");
@@ -247,34 +225,23 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     }
     setLoading(true);
     setGenerateStep("Отправка запроса на сервер…");
-    lastGenerationVersionRef.current = generationVersion;
     try {
-      const genTimeoutMs = generationVersion === 2 ? 220_000 : 130_000;
-      if (generationVersion === 2) {
-        setGenerateStep("Версия 2: шаг 1/2 — планировщик, затем полный сценарий (до ~3 мин)…");
-      } else {
-        setGenerateStep("Ожидание ответа от OpenRouter (обычно 20–90 с, максимум ~2 мин)…");
-      }
+      setGenerateStep("Ожидание ответа от OpenRouter (обычно 20–90 с, максимум ~2 мин)…");
       const data = await postJson<{
         html?: string;
         raw?: string;
-        generationVersion?: GenerationVersion;
-      }>(
-        "/api/generate",
-        {
-          systemPrompt: planSystemPrompt,
-          subject,
-          grade,
-          topic,
-          goal,
-          durationMinutes: duration,
-          lessonType: LESSON_TYPE_ID,
-          homework: homework.trim() || undefined,
-          selectedStages,
-          generationVersion,
-        },
-        genTimeoutMs,
-      );
+      }>("/api/generate", {
+        systemPrompt: DEFAULT_SYSTEM_PROMPT,
+        subject,
+        grade,
+        topic,
+        goal,
+        durationMinutes: duration,
+        lessonType: LESSON_TYPE_ID,
+        homework: homework.trim() || undefined,
+        selectedStages,
+        generationVersion: 1,
+      });
 
       setGenerateStep("Обработка ответа и загрузка в редактор…");
 
@@ -322,7 +289,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       const data = await postJson<{ goal?: string }>(
         "/api/generate-goal",
         {
-          systemPrompt: goalSystemPrompt,
+          systemPrompt: DEFAULT_GOAL_SYSTEM_PROMPT,
           subject,
           grade,
           topic: topic.trim(),
@@ -374,17 +341,39 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     <div className="flex min-h-screen flex-col xl:h-[100dvh] xl:max-h-[100dvh] xl:overflow-hidden">
       <header className="shrink-0 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
         <h1 className="text-lg font-semibold text-slate-900">Конструктор плана урока</h1>
-        <p className="text-xs text-slate-600">
-          Слева — что за урок и какие этапы взять в сценарий; справа — готовый текст плана и экспорт в Word. Кнопка
-          подсказки по образовательным результатам и настройки промптов — ниже поля темы.
-        </p>
       </header>
 
       <main className="mx-auto flex w-full max-w-[1680px] min-h-0 flex-1 flex-col px-3 py-4 xl:overflow-hidden">
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)] xl:items-stretch xl:overflow-hidden">
+        {leftPanelCollapsed ? (
+          <div className="mb-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setLeftPanelCollapsed(false)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 shadow-sm hover:bg-slate-50"
+            >
+              Показать параметры
+            </button>
+          </div>
+        ) : null}
+
+        <div
+          className={`grid min-h-0 flex-1 grid-cols-1 gap-4 xl:items-stretch xl:overflow-hidden ${
+            leftPanelCollapsed ? "xl:grid-cols-[minmax(0,1fr)]" : "xl:grid-cols-[260px_minmax(0,1fr)]"
+          }`}
+        >
           {/* Column 1: параметры + этапы + тайминг — своя прокрутка */}
-          <section className="order-1 flex min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:max-h-full">
-            <h2 className="text-sm font-semibold text-slate-800">Параметры урока</h2>
+          {!leftPanelCollapsed ? (
+            <section className="order-1 flex min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm xl:max-h-full">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-800">Параметры</h2>
+              <button
+                type="button"
+                onClick={() => setLeftPanelCollapsed(true)}
+                className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Скрыть
+              </button>
+            </div>
 
             <label className="block text-xs font-medium text-slate-600">
               Предмет
@@ -450,17 +439,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
             <details className="rounded-lg border border-slate-200 bg-slate-50/90">
               <summary className="cursor-pointer select-none px-3 py-2.5 text-xs font-medium text-slate-800 hover:bg-slate-100/80">
-                Этапы для этого типа урока
-                <span className="mt-0.5 block text-[11px] font-normal text-slate-500">
-                  {LESSON_TYPE_LABELS[LESSON_TYPE_ID]} — нажмите, чтобы развернуть список и при необходимости снять этапы
-                </span>
+                Этапы урока
               </summary>
               <div className="border-t border-slate-200 p-3 pt-2">
-                <p className="text-[11px] leading-relaxed text-slate-600">
-                  По умолчанию отмечено всё: сценарий строится по полной линейке этого типа урока. Снимите галочку с этапа,
-                  если его не будет на уроке — в план попадут только отмеченные шаги (порядок сохраняется).
-                </p>
-                <ul className="mt-2 space-y-2 pr-1">
+                <ul className="space-y-2 pr-1">
                   {stages.map((label, i) => (
                     <li key={label}>
                       <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-800">
@@ -487,10 +469,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
             <div className="block text-xs font-medium text-slate-600">
               <span className="block">Образовательные результаты</span>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                <span className="font-medium text-slate-700">Ориентир для типа урока: </span>
-                {LESSON_GOAL_SHORT_EXAMPLES[LESSON_TYPE_ID]}
-              </p>
               <button
                 type="button"
                 disabled={!topic.trim() || goalSuggesting}
@@ -505,7 +483,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                 className="mt-2 min-h-[72px] w-full resize-none overflow-x-hidden rounded-lg border border-slate-200 px-2 py-2 text-sm leading-snug"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="Опишите ожидаемые результаты своими словами или воспользуйтесь кнопкой — подставим формулировку под тему и тип урока"
+                placeholder="Ожидаемые результаты урока"
               />
               {goalError ? (
                 <p
@@ -523,99 +501,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                 className="mt-1 min-h-[64px] w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                 value={homework}
                 onChange={(e) => setHomework(e.target.value)}
-                placeholder="Можно вставить готовый текст ДЗ или пожелание: например «5 заданий разной сложности» — в плане появятся реальные задания по теме. Пустое поле — ДЗ предложит модель."
+                placeholder="Готовое ДЗ или пожелание"
               />
             </label>
-
-            <details className="rounded-lg border border-slate-200 bg-slate-50/80">
-              <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-slate-700">
-                Системный промпт: образовательные результаты
-              </summary>
-              <div className="border-t border-slate-200 p-2">
-                <p className="mb-2 text-[11px] leading-relaxed text-slate-600">
-                  Здесь задаёте тон и требования к формулировке образовательных результатов. На сервер к этому тексту
-                  подмешивается фрагмент методики (целеполагание) из{" "}
-                  <code className="rounded bg-slate-100 px-1">konstruktorUroka.md</code> — как опора, не как дублирование
-                  всего файла.
-                </p>
-                <textarea
-                  className="h-36 w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-2 font-mono text-[11px] leading-snug"
-                  value={goalSystemPrompt}
-                  onChange={(e) => setGoalSystemPrompt(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={resetGoalSystemPrompt}
-                  className="mt-2 text-xs text-teal-700 underline hover:text-teal-900"
-                >
-                  Сбросить к шаблону
-                </button>
-              </div>
-            </details>
-
-            <details className="rounded-lg border border-slate-200 bg-slate-50/80">
-              <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-slate-700">
-                Системный промпт: план
-              </summary>
-              <div className="border-t border-slate-200 p-2">
-                <p className="mb-2 text-[11px] leading-relaxed text-slate-600">
-                  Здесь — роль модели, структура этапов и то, что должно быть в блоках «цель этапа», «действия учителя» и
-                  т.д. Полный текст методики KONSTRUKTOR_UROKA подставляется на сервере автоматически; в поле ниже его
-                  не нужно копировать.
-                </p>
-                <textarea
-                  className="h-48 w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-2 font-mono text-[11px] leading-snug"
-                  value={planSystemPrompt}
-                  onChange={(e) => setPlanSystemPrompt(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={resetPlanSystemPrompt}
-                  className="mt-2 text-xs text-teal-700 underline hover:text-teal-900"
-                >
-                  Сбросить к шаблону
-                </button>
-              </div>
-            </details>
-
-            <div className="rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-2.5">
-              <p className="text-xs font-medium text-slate-800">Режим генерации плана</p>
-              <div
-                className="mt-2 flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-inner"
-                role="group"
-                aria-label="Режим генерации плана"
-              >
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => setGenerationVersion(1)}
-                  className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition ${
-                    generationVersion === 1
-                      ? "bg-teal-700 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  Версия 1
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => setGenerationVersion(2)}
-                  className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition ${
-                    generationVersion === 2
-                      ? "bg-teal-700 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  Версия 2
-                </button>
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
-                <span className="font-medium text-slate-700">1</span> — один запрос к модели.{" "}
-                <span className="font-medium text-slate-700">2</span> — сначала JSON-проект (этапы, минуты, пробное
-                действие, продукт), затем полный сценарий; дольше по времени, структура задаётся явно.
-              </p>
-            </div>
 
             <button
               type="button"
@@ -626,61 +514,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               {loading ? "Генерация…" : "Сформировать план"}
             </button>
 
-            {generateStep ? (
-              <div
-                role="status"
-                aria-live="polite"
-                className="flex items-start gap-2 rounded-md border border-sky-200 bg-sky-50 px-2 py-2 text-xs text-sky-950"
-              >
-                <span
-                  className="mt-1 inline-block h-2 w-2 shrink-0 animate-pulse rounded-full bg-sky-600"
-                  aria-hidden
-                />
-                <span>{generateStep}</span>
-              </div>
-            ) : null}
-
-            {error ? (
-              <div
-                role="alert"
-                className="rounded-md border border-red-200 bg-red-50 px-2 py-2 text-xs text-red-900"
-              >
-                <p className="font-semibold">Ошибка генерации</p>
-                <p className="mt-1 whitespace-pre-wrap break-words">{error}</p>
-              </div>
-            ) : null}
-
-            {generateSuccessInfo && !loading ? (
-              <div
-                role="status"
-                className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-2 text-xs text-emerald-900"
-              >
-                <p className="font-semibold">Итог</p>
-                <p className="mt-1">{generateSuccessInfo}</p>
-              </div>
-            ) : null}
-
-            {editorDiagnosticsLine ? (
-              <p className="rounded-md border border-slate-200 bg-slate-50 px-2 py-2 text-[11px] text-slate-700">
-                <span className="font-medium">Сверка: </span>
-                {editorDiagnosticsLine}
-              </p>
-            ) : null}
-
-            {homework.trim() ? (
-              <p className="rounded-md bg-amber-50 px-2 py-2 text-[11px] leading-relaxed text-amber-900">
-                Учтём ваш текст или запрос о ДЗ: готовые формулировки передаются в план; пожелания (число заданий,
-                сложность и т.д.) разворачиваются в конкретные предметные задания на этапе «Информация о домашнем
-                задании», если этап включён.
-              </p>
-            ) : null}
-
             <div className="border-t border-slate-100 pt-3">
               <h3 className="text-xs font-semibold text-slate-700">Минуты по этапам</h3>
               {timing.length === 0 ? (
-                <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                  Здесь появится сводка по этапам из сгенерированного плана (удобно сверить с выбранной длительностью).
-                </p>
+                <p className="mt-1 text-xs text-slate-500">Появятся после генерации.</p>
               ) : (
                 <>
                   <table className="mt-2 w-full text-left text-xs">
@@ -707,14 +544,14 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   </p>
                   {timingWasRescaled ? (
                     <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                      В черновике плана сумма минут была {timingRawSum} — в сводке ниже она приведена к {duration} мин,
-                      чтобы совпадать с длительностью урока.
+                      Минуты приведены к {duration} мин.
                     </p>
                   ) : null}
                 </>
               )}
             </div>
-          </section>
+            </section>
+          ) : null}
 
           {/* Column 2: шапка + редактор; прокрутка только у текста в PlanEditor */}
           <section className="order-2 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden xl:max-h-full">
@@ -733,10 +570,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   </button>
                 </div>
               </div>
-              {(generateStep ||
-                (generateSuccessInfo && !loading) ||
-                error ||
-                editorDiagnosticsLine) ? (
+              {(generateStep || (generateSuccessInfo && !loading) || error) ? (
                 <div className="border-t border-slate-100 bg-slate-50/80 px-3 py-2 text-[11px] leading-snug text-slate-700">
                   {generateStep ? (
                     <p className="text-sky-900">
@@ -754,12 +588,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                     <p className="mt-1 text-emerald-900">
                       <span className="font-medium">Итог: </span>
                       {generateSuccessInfo}
-                    </p>
-                  ) : null}
-                  {editorDiagnosticsLine ? (
-                    <p className="mt-1 text-slate-600">
-                      <span className="font-medium">Сверка: </span>
-                      {editorDiagnosticsLine}
                     </p>
                   ) : null}
                 </div>
