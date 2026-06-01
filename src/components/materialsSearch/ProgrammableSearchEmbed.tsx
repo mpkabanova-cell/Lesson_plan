@@ -6,7 +6,7 @@ const GCSE_SCRIPT_FLAG = "__lessonPlanGcseScript";
 const GCSE_INNER_ID = "lesson-plan-gcse-widget";
 
 const FALLBACK_GNAMES = ["standard", "search", "two-column", "searchresults-only0", "searchresults-only1"];
-const MAX_EXTRACTED_CANDIDATES = 30;
+const MAX_EXTRACTED_RESULTS = 10;
 
 export type ProgrammableSearchResult = {
   title: string;
@@ -63,7 +63,7 @@ function hasCseAnywhere(root: HTMLElement | null): boolean {
 }
 
 /** Выдача уже отрисована (есть карточки или явное «пусто»). */
-function cseResultsAppeared(host: ParentNode | null): boolean {
+function cseResultsAppeared(host: HTMLElement | null): boolean {
   if (!host) return false;
   return Boolean(
     host.querySelector(
@@ -156,7 +156,7 @@ function canonicalUrl(href: string): string {
   }
 }
 
-function extractCseResults(host: ParentNode | null): ProgrammableSearchResult[] {
+function extractCseResults(host: HTMLElement | null): ProgrammableSearchResult[] {
   if (!host) return [];
   const nodes = Array.from(
     host.querySelectorAll(".gsc-webResult, .gs-webResult, .gsc-result, .gs-result, .gsc-table-result"),
@@ -190,10 +190,10 @@ function extractCseResults(host: ParentNode | null): ProgrammableSearchResult[] 
       normalizeText(node.querySelector(".gsc-table-cell-snippet-close")?.textContent);
 
     out.push({ title, url, snippet });
-    if (out.length >= MAX_EXTRACTED_CANDIDATES) break;
+    if (out.length >= MAX_EXTRACTED_RESULTS) break;
   }
 
-  return out.slice(0, MAX_EXTRACTED_CANDIDATES);
+  return out;
 }
 
 type GoGetter = () => HTMLElement | null;
@@ -284,8 +284,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     };
 
     const publishResults = () => {
-      const ownResults = extractCseResults(hostRef.current);
-      onResultsChangeRef.current?.(ownResults.length > 0 ? ownResults : extractCseResults(document));
+      onResultsChangeRef.current?.(extractCseResults(hostRef.current));
     };
 
     const startWaitForResultsDom = () => {
@@ -294,7 +293,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       const maxTicks = 55;
       searchResultWaitRef.current = setInterval(() => {
         ticks += 1;
-        if (cseResultsAppeared(hostRef.current) || cseResultsAppeared(document) || ticks >= maxTicks) {
+        if (cseResultsAppeared(hostRef.current) || ticks >= maxTicks) {
           publishResults();
           settleSearchBusy();
         }
@@ -340,7 +339,6 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       gcse.id = GCSE_INNER_ID;
       gcse.className = "lesson-plan-cse-root gcse-search";
       gcse.setAttribute("data-as_sitesearch", "urok.1sept.ru");
-      gcse.setAttribute("data-sort_by", "date");
       gcse.setAttribute("data-linktarget", "_self");
       gcse.setAttribute("data-autosearchonload", "false");
       host.appendChild(gcse);

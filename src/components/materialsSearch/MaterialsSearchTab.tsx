@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { firstAvailableGrade, formatGradeRange, isSubjectGradeCompatible } from "@/config/subjectClassMap";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
-import { rankAndLimitMaterials, type MaterialSearchResult } from "@/lib/materialsSearchRanking";
 import { MaterialsSearchForm } from "./MaterialsSearchForm";
 import {
   ProgrammableSearchEmbed,
@@ -22,13 +21,17 @@ type Props = {
   onToast?: (message: string) => void;
 };
 
-type SearchResult = MaterialSearchResult;
+type SearchResult = {
+  title: string;
+  url: string;
+  snippet: string;
+};
 
 const MAX_VISIBLE_RESULTS = 10;
 const PUBLICATIONS_PORTAL_URL = "https://urok.1sept.ru/";
 
 function limitResults(results: SearchResult[]): SearchResult[] {
-  return rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS);
+  return results.slice(0, MAX_VISIBLE_RESULTS);
 }
 
 function friendlySearchError(message: string): string {
