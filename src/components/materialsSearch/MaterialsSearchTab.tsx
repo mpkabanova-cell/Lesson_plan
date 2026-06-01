@@ -27,11 +27,8 @@ type SearchResult = MaterialSearchResult;
 const MAX_VISIBLE_RESULTS = 10;
 const PUBLICATIONS_PORTAL_URL = "https://urok.1sept.ru/";
 
-function limitResults(
-  results: SearchResult[],
-  context: { query: string; subject: string; grade: string },
-): SearchResult[] {
-  return rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS, context);
+function limitResults(results: SearchResult[]): SearchResult[] {
+  return rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS);
 }
 
 function friendlySearchError(message: string): string {
@@ -74,7 +71,7 @@ async function searchMaterials(body: {
   }
 
   return {
-    results: limitResults(Array.isArray(data.results) ? data.results : [], body),
+    results: limitResults(Array.isArray(data.results) ? data.results : []),
   };
 }
 
@@ -139,7 +136,7 @@ export function MaterialsSearchTab({
   );
 
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
-    const limited = limitResults(next, { query, subject, grade });
+    const limited = limitResults(next);
     setResults(limited);
     setError(null);
   };

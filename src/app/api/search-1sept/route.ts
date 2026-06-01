@@ -137,11 +137,6 @@ export async function POST(req: Request) {
       snippet: (it.snippet ?? "").trim(),
     })),
     10,
-    {
-      query: rawQ,
-      subject: body.subject,
-      grade: body.grade,
-    },
   );
 
   return NextResponse.json({ results });
