@@ -5,6 +5,7 @@ import { firstAvailableGrade, formatGradeRange, isSubjectGradeCompatible } from 
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
 import { rankAndLimitMaterials, type MaterialSearchResult } from "@/lib/materialsSearchRanking";
+import { SUBJECT_OPTIONS } from "@/lib/options";
 import { MaterialsSearchForm } from "./MaterialsSearchForm";
 import {
   ProgrammableSearchEmbed,
@@ -13,11 +14,7 @@ import {
 } from "./ProgrammableSearchEmbed";
 
 type Props = {
-  /** Когда true — вкладка видима (для синхронизации фильтров с формой урока). */
   active: boolean;
-  lessonSubject: string;
-  lessonGrade: string;
-  lessonTopic: string;
   programmableSearchCx?: string;
   onToast?: (message: string) => void;
 };
@@ -88,16 +85,12 @@ function hostnameFromUrl(url: string): string {
 
 export function MaterialsSearchTab({
   active,
-  lessonSubject,
-  lessonGrade,
-  lessonTopic,
   programmableSearchCx,
   onToast,
 }: Props) {
-  const [subject, setSubject] = useState(lessonSubject);
-  const [grade, setGrade] = useState(lessonGrade);
-  const [query, setQuery] = useState(lessonTopic);
-  const [queryEdited, setQueryEdited] = useState(false);
+  const [subject, setSubject] = useState(SUBJECT_OPTIONS[0] ?? "");
+  const [grade, setGrade] = useState("5");
+  const [query, setQuery] = useState("");
   const [searchPending, setSearchPending] = useState(false);
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -106,17 +99,6 @@ export function MaterialsSearchTab({
 
   useEffect(() => {
     if (!active) return;
-    setSubject(lessonSubject);
-    setGrade(lessonGrade);
-    if (!queryEdited) {
-      setQuery(lessonTopic);
-      setSearched(false);
-      setResults([]);
-      setError(null);
-    }
-  }, [active, lessonSubject, lessonGrade, lessonTopic, queryEdited]);
-
-  useEffect(() => {
     if (isSubjectGradeCompatible(subject, grade)) return;
     const nextGrade = firstAvailableGrade(subject);
     if (!nextGrade) return;
@@ -128,7 +110,7 @@ export function MaterialsSearchTab({
         ? `Для предмета “${subject}” доступны только ${range}`
         : `Для предмета “${subject}” выбран доступный класс`,
     );
-  }, [subject, grade, onToast]);
+  }, [active, subject, grade, onToast]);
 
   const fallbackUrl = useMemo(
     () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
@@ -194,7 +176,6 @@ export function MaterialsSearchTab({
           query={query}
           onQueryChange={(value) => {
             setQuery(value);
-            setQueryEdited(true);
             setError(null);
           }}
           subject={subject}
