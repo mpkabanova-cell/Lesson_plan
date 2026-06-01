@@ -324,6 +324,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [exporting, setExporting] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<"lesson" | "materials">("lesson");
+  const [materialsWorkspaceMounted, setMaterialsWorkspaceMounted] = useState(false);
   const [planNoticeCollapsed, setPlanNoticeCollapsed] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -847,8 +848,12 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             <div className="sticky top-0 z-20 shrink-0 rounded-t-3xl border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">Результат</p>
-                  <h2 className="text-xl font-semibold text-slate-950">План урока</h2>
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">
+                    {activeWorkspace === "lesson" ? "Результат" : "Материалы"}
+                  </p>
+                  <h2 className="text-xl font-semibold text-slate-950">
+                    {activeWorkspace === "lesson" ? "План урока" : "Поиск материалов"}
+                  </h2>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <div
@@ -858,14 +863,19 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   >
                     {[
                       { id: "lesson" as const, label: "✍ План урока" },
-                      { id: "materials" as const, label: "📚 Материалы" },
+                      { id: "materials" as const, label: "📚 Поиск материалов" },
                     ].map((tab) => (
                       <button
                         key={tab.id}
                         type="button"
                         role="tab"
                         aria-selected={activeWorkspace === tab.id}
-                        onClick={() => setActiveWorkspace(tab.id)}
+                        onClick={() => {
+                          setActiveWorkspace(tab.id);
+                          if (tab.id === "materials") {
+                            setMaterialsWorkspaceMounted(true);
+                          }
+                        }}
                         className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition ${
                           activeWorkspace === tab.id
                             ? "bg-violet-600 text-white shadow-lg shadow-violet-200"
@@ -967,18 +977,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                             ))}
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const exampleTopic = topicSuggestions[0] ?? UNIVERSAL_TOPIC_SUGGESTIONS[0];
-                            setTopic(exampleTopic);
-                            setSelectedSuggestion(exampleTopic);
-                            setGoal(`Ученики откроют новый способ работы с темой «${exampleTopic}» и применят его по эталону.`);
-                          }}
-                          className="rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 hover:-translate-y-0.5"
-                        >
-                          Создать пример
-                        </button>
                       </div>
                       <div key={`empty-${suggestionsKey}`} className="suggestions-fade mt-4 flex flex-wrap items-center gap-2">
                         <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -1007,13 +1005,15 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                 className={activeWorkspace === "materials" ? "block" : "hidden"}
                 aria-hidden={activeWorkspace !== "materials"}
               >
-                <MaterialsSearchTab
-                  active={activeWorkspace === "materials"}
-                  lessonSubject={subject}
-                  lessonGrade={grade}
-                  lessonTopic={topic}
-                  programmableSearchCx={googleProgrammableSearchCx}
-                />
+                {materialsWorkspaceMounted ? (
+                  <MaterialsSearchTab
+                    active={activeWorkspace === "materials"}
+                    lessonSubject={subject}
+                    lessonGrade={grade}
+                    lessonTopic={topic}
+                    programmableSearchCx={googleProgrammableSearchCx}
+                  />
+                ) : null}
               </div>
             </div>
           </section>

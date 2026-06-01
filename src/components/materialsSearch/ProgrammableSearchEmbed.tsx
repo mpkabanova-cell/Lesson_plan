@@ -29,21 +29,24 @@ function debugCse(label: string, payload?: unknown) {
   console.debug(`[CSE] ${label}`, payload ?? "");
 }
 
-function getCseElement() {
+function getCseElements() {
   const api = window.google?.search?.cse?.element;
-  if (!api?.getElement) return null;
+  if (!api?.getElement) return [];
+  const elements: Array<{ execute: (q: string) => void }> = [];
   for (const name of FALLBACK_GNAMES) {
     const el = api.getElement(name);
-    if (el && typeof el.execute === "function") return el;
+    if (el && typeof el.execute === "function") elements.push(el);
   }
   const all = api.getAllElements?.();
   if (all && typeof all === "object") {
     for (const key of Object.keys(all)) {
       const el = all[key] as { execute?: (q: string) => void };
-      if (el && typeof el.execute === "function") return el as { execute: (q: string) => void };
+      if (el && typeof el.execute === "function" && !elements.includes(el as { execute: (q: string) => void })) {
+        elements.push(el as { execute: (q: string) => void });
+      }
     }
   }
-  return null;
+  return elements;
 }
 
 function hasCseMarkup(root: HTMLElement | null): boolean {
@@ -65,7 +68,7 @@ function hasCseAnywhere(root: HTMLElement | null): boolean {
 }
 
 /** Выдача уже отрисована (есть карточки или явное «пусто»). */
-function cseResultsAppeared(host: HTMLElement | null): boolean {
+function cseResultsAppeared(host: ParentNode | null): boolean {
   if (!host) return false;
   return Boolean(
     host.querySelector(
@@ -158,7 +161,7 @@ function canonicalUrl(href: string): string {
   }
 }
 
-function extractCseResults(host: HTMLElement | null): ProgrammableSearchResult[] {
+function extractCseResults(host: ParentNode | null): ProgrammableSearchResult[] {
   if (!host) return [];
   const nodes = Array.from(
     host.querySelectorAll(".gsc-webResult, .gs-webResult, .gsc-result, .gs-result, .gsc-table-result"),
@@ -286,7 +289,8 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     };
 
     const publishResults = () => {
-      onResultsChangeRef.current?.(extractCseResults(hostRef.current));
+      const ownResults = extractCseResults(hostRef.current);
+      onResultsChangeRef.current?.(ownResults.length > 0 ? ownResults : extractCseResults(document));
     };
 
     const startWaitForResultsDom = () => {
@@ -295,7 +299,7 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       const maxTicks = 55;
       searchResultWaitRef.current = setInterval(() => {
         ticks += 1;
-        if (cseResultsAppeared(hostRef.current) || ticks >= maxTicks) {
+        if (cseResultsAppeared(hostRef.current) || cseResultsAppeared(document) || ticks >= maxTicks) {
           publishResults();
           settleSearchBusy();
         }
@@ -434,11 +438,11 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
           setShowLoadIssue(false);
 
           const run = (): boolean => {
-            const el = getCseElement();
-            if (!el) return false;
+            const elements = getCseElements();
+            if (elements.length === 0) return false;
             try {
-              el.execute(q);
-              debugCse("execute", { len: q.length });
+              elements.forEach((el) => el.execute(q));
+              debugCse("execute", { len: q.length, elements: elements.length });
               startWaitForResultsDom();
               return true;
             } catch (e) {

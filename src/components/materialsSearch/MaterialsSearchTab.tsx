@@ -110,30 +110,10 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
     programmableSearchCx?.trim() || process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim(),
   );
 
-  const handleCseResults = async (next: ProgrammableSearchResult[]) => {
+  const handleCseResults = (next: ProgrammableSearchResult[]) => {
     const limited = limitResults(next);
-    if (limited.length > 0) {
-      setResults(limited);
-      setError(null);
-      return;
-    }
-
-    const q = query.trim();
-    if (!q) {
-      setResults([]);
-      setError(null);
-      return;
-    }
-
-    try {
-      const data = await searchMaterials({ query: q, subject, grade });
-      setResults(data.results);
-      setError(null);
-    } catch (e) {
-      setResults([]);
-      const msg = e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`;
-      setError(friendlySearchError(msg));
-    }
+    setResults(limited);
+    setError(null);
   };
 
   const runSearch = async () => {
@@ -244,14 +224,18 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">Поиск материалов</h3>
+            <h3 className="text-sm font-semibold text-slate-900">
+              {searched && results.length > 0 ? "Подобранные материалы" : "Поиск материалов"}
+            </h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              Показаны до {MAX_VISIBLE_RESULTS} свежих и релевантных ссылок, если они доступны.
+              {searched && results.length > 0
+                ? `Показаны первые ${MAX_VISIBLE_RESULTS} наиболее релевантных ссылок, если они доступны.`
+                : `Показаны до ${MAX_VISIBLE_RESULTS} свежих и релевантных ссылок, если они доступны.`}
             </p>
           </div>
-          {searched && !searchPending ? (
+          {searched && !searchPending && !error ? (
             <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
               Показано: {results.length}
             </span>
@@ -301,7 +285,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
         ) : null}
 
         {results.length > 0 ? (
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-4 space-y-3">
             {results.map((item, index) => {
               const host = hostnameFromUrl(item.url);
               return (
@@ -310,10 +294,10 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
                     href={item.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="group block rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+                    className="group block rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
                   >
                     <div className="flex items-start gap-3">
-                      <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-teal-50 text-xs font-semibold text-teal-800 ring-1 ring-teal-100">
+                      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-xs font-semibold text-teal-800 ring-1 ring-teal-100">
                         {index + 1}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -329,7 +313,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
                           {host || item.url}
                         </p>
                       </div>
-                      <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500 group-hover:bg-teal-50 group-hover:text-teal-800">
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 group-hover:bg-teal-50 group-hover:text-teal-800">
                         открыть
                       </span>
                     </div>
@@ -340,7 +324,7 @@ export function MaterialsSearchTab({ active, lessonSubject, lessonGrade, lessonT
           </ul>
         ) : null}
 
-        {searched && !searchPending ? (
+        {searched && !searchPending && !error ? (
           <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs leading-relaxed text-slate-600">
             <p>
               Если нужно больше материалов, откройте этот же запрос в Google или перейдите на портал «Открытый урок» и
