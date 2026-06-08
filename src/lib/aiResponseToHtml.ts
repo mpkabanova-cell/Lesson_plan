@@ -1,5 +1,5 @@
 import { marked } from "marked";
-import { consolidateAnswerKeys } from "./consolidateAnswerKeys";
+import { embedAnswerKeysInStages } from "./embedAnswerKeysInStages";
 import { convertAllMathToSpans } from "./convertInlineMathToSpans";
 import { applyLessonPlanTimingNormalization } from "./normalizeLessonPlanTimingHtml";
 import { prepareLessonPlanHtmlForEditor } from "./prepareEditorHtml";
@@ -17,7 +17,7 @@ export async function aiResponseToHtml(
   const trimmed = raw.trim();
   if (!trimmed) return "<p></p>";
 
-  const withKeys = consolidateAnswerKeys(trimmed);
+  const withKeys = embedAnswerKeysInStages(trimmed);
 
   /** До marked: иначе `\\(` теряется/ломается и KaTeX не получает формулы. */
   const withMathSpans = convertAllMathToSpans(withKeys);

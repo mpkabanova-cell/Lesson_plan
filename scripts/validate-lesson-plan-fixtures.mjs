@@ -17,7 +17,7 @@ const { buildFrpSystemPromptBlock, shouldSkipLegacyInformaticsStub } = await imp
   "../src/lib/knowledge/frpUsage.ts"
 );
 const { convertAllMathToSpans } = await import("../src/lib/convertInlineMathToSpans.ts");
-const { consolidateAnswerKeys } = await import("../src/lib/consolidateAnswerKeys.ts");
+const { embedAnswerKeysInStages } = await import("../src/lib/embedAnswerKeysInStages.ts");
 
 // --- subject mode ---
 assert.equal(resolveSubjectGenerationMode("История", "8"), "humanities");
@@ -180,18 +180,23 @@ const mathHtml = convertAllMathToSpans("Теорема: a^2 + b^2 = c^2, при�
 assert.ok(mathHtml.includes('data-latex="a^2 + b^2 = c^2"'));
 assert.ok(mathHtml.includes('data-latex="x^2"'));
 
-// --- answer keys consolidation ---
-const inlineKeys = consolidateAnswerKeys(`
-## Этап
-Задание 3.1
-Найдите c.
-Ответ: 5 см
+// --- answer keys embedded in stages ---
+const endKeys = embedAnswerKeysInStages(`
+## Этап 6
+Задание 6.1
+Постройте треугольники.
 
 **Ключи к заданиям**
-Задание 3.1
-Ответ: 5 см
+Задание 6.1
+Ответ: Треугольники равны.
 `);
-assert.ok(!inlineKeys.includes("Найдите c.\nОтвет:"));
-assert.ok(inlineKeys.includes("**Ключи к заданиям**"));
+assert.ok(!endKeys.includes("**Ключи к заданиям**"));
+assert.ok(endKeys.includes("Ответ: Треугольники равны."));
+
+const endKeysFail = validateLessonPlan(
+  `## Этап\nЗадание 3.1\nНайдите c.\n\n**Ключи к заданиям**\nЗадание 3.1\nОтвет: 5 см`,
+  { subject: "Математика", grade: "8", topic: "T", mode: "mathematics", selectedStages: [] },
+);
+assert.ok(endKeysFail.issues.some((i) => i.code === "answer_keys_at_end"));
 
 console.log("All fixture checks passed.");

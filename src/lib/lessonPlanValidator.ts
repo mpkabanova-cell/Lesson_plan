@@ -239,17 +239,48 @@ export function validateLessonPlan(
 
   const { body, keys } = splitScenarioAndKeys(text);
   const bodyTaskIds = extractNumberedTaskIds(body);
-  const keyTaskIds = keys ? extractNumberedTaskIds(keys) : new Set<string>();
 
-  if (keyTaskIds.size > 0) {
+  if (keys) {
+    issues.push({
+      code: "answer_keys_at_end",
+      message:
+        "Ответы вынесены в раздел «Ключи к заданиям» в конце — перенеси «Ответ:» / «Разбор:» сразу под каждое «Задание N.M» в соответствующем этапе и убери отдельный раздел в конце.",
+      severity: "error",
+    });
+    const keyTaskIds = extractNumberedTaskIds(keys);
     const orphanKeys = [...keyTaskIds].filter((id) => !bodyTaskIds.has(id));
     if (orphanKeys.length > 0) {
       issues.push({
         code: "orphan_answer_keys",
-        message: `В «Ключи к заданиям» указаны номера без заданий в сценарии: ${orphanKeys.join(", ")}. Каждый ключ должен соответствовать «Задание N.M» в этапе.`,
+        message: `В ключах указаны номера без заданий в сценарии: ${orphanKeys.join(", ")}.`,
         severity: "error",
       });
     }
+  }
+
+  const bodyLines = body.split("\n");
+  const tasksWithoutAnswer: string[] = [];
+  for (let i = 0; i < bodyLines.length; i++) {
+    const m = bodyLines[i].match(/^\s*(?:\*\*)?задание\s+(\d+\.\d+)/i);
+    if (!m) continue;
+    const id = m[1];
+    let hasAnswer = false;
+    for (let j = i + 1; j < Math.min(bodyLines.length, i + 16); j++) {
+      const line = bodyLines[j];
+      if (/^\s*(?:\*\*)?задание\s+\d+\.\d+/i.test(line) || /^#{1,3}\s/.test(line.trim())) break;
+      if (/^\s*(?:\*\*)?(ответ|разбор)(?:\*\*)?:/i.test(line)) {
+        hasAnswer = true;
+        break;
+      }
+    }
+    if (!hasAnswer) tasksWithoutAnswer.push(id);
+  }
+  if (tasksWithoutAnswer.length > 0 && tasksWithoutAnswer.length <= 8) {
+    issues.push({
+      code: "missing_inline_answer",
+      message: `Нет ответа сразу под заданием в этапе: ${tasksWithoutAnswer.join(", ")}. Добавь «Ответ:» под каждым заданием.`,
+      severity: "error",
+    });
   }
 
   for (const pattern of DEFERRED_MATERIAL_PATTERNS) {
@@ -329,7 +360,7 @@ export function buildValidationFixInstructions(
     ...errors.map((e) => `● ${e.message}`),
     "",
     "Исправь сценарий: добавь недостающие элементы, усиль предметное содержание, сократи пустые обсуждения.",
-    "Если ошибка про ключи к заданиям — либо добавь в этапы задания с теми же номерами «Задание N.M», либо убери лишние ключи.",
+    "Если ошибка про ключи — перенеси «Ответ:» / «Разбор:» под задание в том же этапе; не выноси ответы в конец плана.",
     "Если ошибка про «дам эталон» — напечатай эталон/материал в том же этапе, где на него ссылаются.",
     "Сохрани этапы, тайминг и формат Markdown.",
   ];
