@@ -215,6 +215,13 @@ const TOPIC_SUGGESTIONS_BY_SUBJECT: Record<string, Partial<Record<string, string
 const DRAFT_STORAGE_KEY = "lesson-plan-wizard-draft";
 const FINGERPRINTS_STORAGE_KEY = "lesson-plan-recent-fingerprints";
 
+/** Чистый URL без query-параметров (например ?debugMaterials=1). */
+function stripUrlSearchParams(): void {
+  if (typeof window === "undefined") return;
+  if (!window.location.search) return;
+  window.history.replaceState(null, "", window.location.pathname);
+}
+
 function loadRecentFingerprints(): LessonFingerprint[] {
   if (typeof window === "undefined") return [];
   try {
@@ -451,8 +458,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [goal, setGoal] = useState("");
   const [homework, setHomework] = useState("");
 
-  const [planHtml, setPlanHtml] = useState("<p></p>");
+  const [planHtml, setPlanHtml] = useState("");
   const [contentKey, setContentKey] = useState(0);
+  const [materialsSessionKey, setMaterialsSessionKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [goalSuggesting, setGoalSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -499,6 +507,33 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   useEffect(() => {
     setStageFlags(stageDefs.map(() => true));
   }, [lessonTypeId, stageDefs]);
+
+  const resetWorkspaceResults = useCallback(() => {
+    stripUrlSearchParams();
+    setPlanHtml("");
+    setContentKey((k) => k + 1);
+    setGenerateSuccessInfo(null);
+    setError(null);
+    setGenerateStep(null);
+    setGenerateStartedAt(null);
+    setLoading(false);
+    setActiveWorkspace("lesson");
+    setMaterialsWorkspaceMounted(false);
+    setMaterialsSessionKey((k) => k + 1);
+  }, []);
+
+  useLayoutEffect(() => {
+    resetWorkspaceResults();
+  }, [resetWorkspaceResults]);
+
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      resetWorkspaceResults();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [resetWorkspaceResults]);
 
   const effectiveStageFlags = useMemo(() => {
     if (stageFlags.length !== stages.length) return stages.map(() => true);
@@ -1193,6 +1228,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               >
                 {materialsWorkspaceMounted ? (
                   <MaterialsSearchTab
+                    key={materialsSessionKey}
                     programmableSearchCx={googleProgrammableSearchCx}
                   />
                 ) : null}
