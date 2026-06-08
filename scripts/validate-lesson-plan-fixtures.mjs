@@ -10,6 +10,12 @@ const { compareFingerprints, extractLessonFingerprint } = await import(
   "../src/lib/lessonPlanDiversity.ts"
 );
 const { SUBJECT_OPTIONS } = await import("../src/config/subjectClassMap.ts");
+const { resolveFrpKnowledgeContext, resolveFrpCanonicalSubject } = await import(
+  "../src/lib/knowledge/frpResolve.ts"
+);
+const { buildFrpSystemPromptBlock, shouldSkipLegacyInformaticsStub } = await import(
+  "../src/lib/knowledge/frpUsage.ts"
+);
 
 // --- subject mode ---
 assert.equal(resolveSubjectGenerationMode("История", "8"), "humanities");
@@ -108,5 +114,23 @@ const fp2 = extractLessonFingerprint(
 );
 const { maxSimilarity } = compareFingerprints(fp1, [fp2]);
 assert.ok(maxSimilarity > 0.3);
+
+// --- FRP knowledge ---
+assert.equal(resolveFrpCanonicalSubject("Алгебра"), "Математика");
+assert.equal(resolveFrpCanonicalSubject("Физика"), null);
+
+const frpInfo = resolveFrpKnowledgeContext("Информатика", "8", "Условный оператор");
+assert.equal(frpInfo.available, true);
+if (frpInfo.available) {
+  assert.equal(frpInfo.canonicalSubject, "Информатика");
+  assert.ok(frpInfo.excerpt.length > 200);
+  assert.ok(["topic", "topic_partial", "grade", "program"].includes(frpInfo.matchQuality));
+  const block = buildFrpSystemPromptBlock(frpInfo);
+  assert.ok(block && block.includes("ФЕДЕРАЛЬНАЯ РАБОЧАЯ ПРОГРАММА"));
+  assert.equal(shouldSkipLegacyInformaticsStub(frpInfo, "Информатика", "8"), true);
+}
+
+const frpHist = resolveFrpKnowledgeContext("История", "8", "Отечественная война 1812 года");
+assert.equal(frpHist.available, true);
 
 console.log("All fixture checks passed.");

@@ -253,17 +253,24 @@ export function validateLessonPlan(
   };
 }
 
-export function buildValidationFixInstructions(issues: ValidationIssue[]): string {
+export function buildValidationFixInstructions(
+  issues: ValidationIssue[],
+  opts?: { frpHint?: string },
+): string {
   const errors = issues.filter((i) => i.severity === "error");
   if (!errors.length) return "";
 
-  return [
+  const lines = [
     "ПРЕДЫДУЩИЙ СЦЕНАРИЙ НЕ ПРОШЁЛ АВТОПРОВЕРКУ:",
     ...errors.map((e) => `● ${e.message}`),
     "",
     "Исправь сценарий: добавь недостающие элементы, усиль предметное содержание, сократи пустые обсуждения.",
     "Сохрани этапы, тайминг и формат Markdown.",
-  ].join("\n");
+  ];
+  if (opts?.frpHint?.trim()) {
+    lines.push("", `Подсказка по ФРП: ${opts.frpHint.trim()}`);
+  }
+  return lines.join("\n");
 }
 
 export const MAX_VALIDATION_ATTEMPTS = 2;

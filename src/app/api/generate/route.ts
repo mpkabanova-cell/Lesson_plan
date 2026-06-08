@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { aiResponseToHtml } from "@/lib/aiResponseToHtml";
 import { buildSystemPromptForGeneration } from "@/lib/knowledge/lessonMethodology";
+import {
+  buildFrpPlannerUserBlock,
+  buildFrpValidationHint,
+  resolveFrpForLesson,
+  toFrpApiMeta,
+  type FrpKnowledgeContext,
+} from "@/lib/knowledge/frpUsage";
 import type { LessonTypeId } from "@/lib/lessonTypes";
 import { lessonTypeForPrompt } from "@/lib/lessonTypes";
 import {
@@ -100,10 +107,11 @@ function buildUserPayload(b: Body, fixBlock?: string): string {
   return parts.join("\n");
 }
 
-function buildPlannerUserPayload(b: Body): string {
+function buildPlannerUserPayload(b: Body, frpCtx: FrpKnowledgeContext): string {
   const mode = resolveSubjectGenerationMode(b.subject, b.grade);
   const stagesList = b.selectedStages.map((s, i) => `${i + 1}. ${s}`).join("\n");
-  return [
+  const frpBlock = buildFrpPlannerUserBlock(frpCtx);
+  const parts = [
     "Входные данные урока (JSON):",
     JSON.stringify(
       {
@@ -129,7 +137,11 @@ function buildPlannerUserPayload(b: Body): string {
     stagesList,
     "",
     "Верни только JSON по инструкции из системного сообщения.",
-  ].join("\n");
+  ];
+  if (frpBlock) {
+    parts.push("", frpBlock);
+  }
+  return parts.join("\n");
 }
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -238,6 +250,7 @@ async function generateOnce(
   generationVersion: GenerationVersion,
   systemContent: string,
   userContent: string,
+  frpCtx: FrpKnowledgeContext,
   key: string,
   model: string,
   headers: Record<string, string>,
@@ -262,7 +275,7 @@ async function generateOnce(
     return { ok: true, raw: out.content };
   }
 
-  const plannerUser = buildPlannerUserPayload(body);
+  const plannerUser = buildPlannerUserPayload(body, frpCtx);
   const plannerOut = await openRouterCompletion(
     key,
     model,
@@ -396,6 +409,8 @@ export async function POST(req: Request) {
   const extraBlocks = diversityPreHint ? [diversityPreHint] : [];
 
   const subjectMode = resolveSubjectGenerationMode(body.subject, body.grade);
+  const frpCtx = resolveFrpForLesson(body.subject, body.grade, body.topic);
+  const frpValidationHint = buildFrpValidationHint(frpCtx);
   const systemContent = buildSystemPromptForGeneration(body.systemPrompt, {
     subject: body.subject,
     grade: body.grade,
@@ -418,6 +433,7 @@ export async function POST(req: Request) {
       generationVersion,
       systemContent,
       userContent,
+      frpCtx,
       key,
       model,
       headers,
@@ -459,7 +475,11 @@ export async function POST(req: Request) {
 
     const parts: string[] = [];
     if (!validation.ok) {
-      parts.push(buildValidationFixInstructions(validation.issues));
+      parts.push(
+        buildValidationFixInstructions(validation.issues, {
+          frpHint: frpValidationHint ?? undefined,
+        }),
+      );
     }
     if (diversityHint) {
       parts.push(diversityHint);
@@ -477,6 +497,7 @@ export async function POST(req: Request) {
       validationAttempts: number;
       validationIssues: ValidationIssue[];
       subjectMode: string;
+      frp?: ReturnType<typeof toFrpApiMeta>;
     } = {
       html,
       raw,
@@ -484,6 +505,7 @@ export async function POST(req: Request) {
       validationAttempts,
       validationIssues: allValidationIssues,
       subjectMode,
+      frp: toFrpApiMeta(frpCtx) ?? undefined,
     };
     if (plannerRaw !== undefined) {
       json.plannerRaw = plannerRaw;

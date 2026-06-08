@@ -36,29 +36,68 @@ function cleanRawFrpText(text) {
   return normalizeWhitespace(t);
 }
 
-function findSectionStart(text, patterns) {
+function findAllSectionStarts(text, patterns) {
+  const indices = [];
   for (const p of patterns) {
-    const m = p.exec(text);
-    if (m && m.index >= 0) return m.index;
+    const re = new RegExp(p.source, p.flags.includes("g") ? p.flags : `${p.flags}g`);
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      indices.push(m.index);
+    }
   }
-  return -1;
+  return [...new Set(indices)].sort((a, b) => a - b);
+}
+
+function findAllMarkerHits(text) {
+  const hits = [];
+  for (const marker of SECTION_MARKERS) {
+    for (const idx of findAllSectionStarts(text, marker.patterns)) {
+      hits.push({ ...marker, index: idx });
+    }
+  }
+  return hits.sort((a, b) => a.index - b.index);
+}
+
+function chunkSizeForHit(text, allHits, hitIndex) {
+  const start = allHits[hitIndex].index;
+  let end = text.length;
+  for (let j = hitIndex + 1; j < allHits.length; j++) {
+    if (allHits[j].index > start) {
+      end = allHits[j].index;
+      break;
+    }
+  }
+  return end - start;
 }
 
 function splitSections(text) {
-  const hits = [];
-  for (const marker of SECTION_MARKERS) {
-    const idx = findSectionStart(text, marker.patterns);
-    if (idx >= 0) hits.push({ ...marker, index: idx });
-  }
-  hits.sort((a, b) => a.index - b.index);
-
+  const allHits = findAllMarkerHits(text);
   const sections = {};
-  for (let i = 0; i < hits.length; i++) {
-    const start = hits[i].index;
-    const end = i + 1 < hits.length ? hits[i + 1].index : text.length;
+  const MIN_SECTION_CHARS = 400;
+
+  for (const marker of SECTION_MARKERS) {
+    const candidates = allHits.filter((h) => h.key === marker.key);
+    if (!candidates.length) continue;
+
+    let best = candidates[0];
+    let bestSize = 0;
+    for (const c of candidates) {
+      const hitIndex = allHits.findIndex((h) => h.key === c.key && h.index === c.index);
+      const size = chunkSizeForHit(text, allHits, hitIndex);
+      if (size > bestSize) {
+        bestSize = size;
+        best = c;
+      }
+    }
+    if (bestSize < MIN_SECTION_CHARS) continue;
+
+    const hitIndex = allHits.findIndex((h) => h.key === best.key && h.index === best.index);
+    const start = best.index;
+    const end =
+      hitIndex + 1 < allHits.length ? allHits[hitIndex + 1].index : text.length;
     let chunk = text.slice(start, end).trim();
-    chunk = chunk.replace(new RegExp(`^##?\\s*${hits[i].title}[^\\n]*`, "i"), "").trim();
-    sections[hits[i].key] = normalizeWhitespace(chunk);
+    chunk = chunk.replace(new RegExp(`^##?\\s*${best.title}[^\\n]*`, "i"), "").trim();
+    sections[best.key] = normalizeWhitespace(chunk);
   }
   return sections;
 }

@@ -3,7 +3,11 @@ import path from "node:path";
 
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
-import { resolveFrpExcerpt } from "@/lib/knowledge/frpResolve";
+import {
+  buildFrpSystemPromptBlock,
+  resolveFrpForLesson,
+  shouldSkipLegacyInformaticsStub,
+} from "@/lib/knowledge/frpUsage";
 import { buildSubjectModePromptBlock } from "@/lib/subjectGenerationMode";
 
 const DEFAULT_MAX_METHODOLOGY_CHARS = 120_000;
@@ -114,6 +118,12 @@ function shouldAppendInformaticsProgram(ctx?: KnowledgePromptContext): boolean {
 
 function appendInformaticsSubjectKnowledge(base: string, ctx?: KnowledgePromptContext): string {
   if (!shouldAppendInformaticsProgram(ctx)) return base;
+  const frpCtx = resolveFrpForLesson(
+    ctx?.subject?.trim() ?? "",
+    ctx?.grade?.trim() ?? "",
+    ctx?.topic?.trim() ?? "",
+  );
+  if (shouldSkipLegacyInformaticsStub(frpCtx, ctx?.subject, ctx?.grade)) return base;
   const sk = getSubjectKnowledgeForApi(INFORMATICS_PROGRAM_FILE);
   if (!sk.trim()) return base;
   return `${base}
@@ -190,16 +200,16 @@ function appendFrpSubjectKnowledge(base: string, ctx?: KnowledgePromptContext): 
   const grade = ctx?.grade?.trim();
   if (!subject || !grade) return base;
 
-  const frp = resolveFrpExcerpt(subject, grade, ctx?.topic?.trim() ?? "");
-  if (!frp?.excerpt.trim()) return base;
+  const frpBlock = buildFrpSystemPromptBlock(
+    resolveFrpForLesson(subject, grade, ctx?.topic?.trim() ?? ""),
+  );
+  if (!frpBlock) return base;
 
   return `${base}
 
 ---
 
-${frp.header}
-
-${frp.excerpt}`;
+${frpBlock}`;
 }
 
 function appendSubjectModeAndExtras(base: string, ctx?: KnowledgePromptContext): string {
