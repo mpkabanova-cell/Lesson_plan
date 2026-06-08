@@ -611,6 +611,48 @@ function rankWithMode<T extends MaterialSearchResult>(
   return sortScoredEntries(filtered);
 }
 
+function materialUrlKey(url: string): string {
+  try {
+    const u = new URL(url);
+    u.hash = "";
+    return u.href;
+  } catch {
+    return url;
+  }
+}
+
+function isRelevantForBackfill<T extends MaterialSearchResult>(
+  entry: ScoredEntry<T>,
+  context: MaterialRankingContext,
+): boolean {
+  const query = normalizeText(context.query ?? "").toLowerCase();
+  const title = entry.result.title.toLowerCase();
+  const snippet = (entry.result.snippet ?? "").toLowerCase();
+  const tokens = tokenizeForMatch(context.query ?? "");
+  if (query.length >= 3 && title.includes(query)) return true;
+  return countTopicTokensInText(tokens, title, snippet, entry.result.url) >= 1;
+}
+
+function backfillRankedEntries<T extends MaterialSearchResult>(
+  primary: ScoredEntry<T>[],
+  pool: ScoredEntry<T>[],
+  limit: number,
+  context: MaterialRankingContext,
+): ScoredEntry<T>[] {
+  if (primary.length >= limit) return primary.slice(0, limit);
+  const seen = new Set(primary.map((entry) => materialUrlKey(entry.result.url)));
+  const out = [...primary];
+  for (const entry of pool) {
+    const key = materialUrlKey(entry.result.url);
+    if (seen.has(key)) continue;
+    if (!isRelevantForBackfill(entry, context)) continue;
+    out.push(entry);
+    seen.add(key);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 function sortByFreshnessThenIndex<T extends MaterialSearchResult>(results: T[]): T[] {
   return results
     .map((result, index) => ({
@@ -649,16 +691,16 @@ export function rankAndLimitMaterials<T extends MaterialSearchResult>(
     debug,
   });
 
-  let chosen = strictRanked;
+  const relaxedRanked = rankWithMode(results, ctx, {
+    penaltyMultiplier: 0.5,
+    applyGate: false,
+    debug,
+  });
 
-  if (strictRanked.length < minStrict) {
-    const relaxedRanked = rankWithMode(results, ctx, {
-      penaltyMultiplier: 0.5,
-      applyGate: false,
-      debug,
-    });
-    chosen = relaxedRanked;
-  }
+  const chosen =
+    strictRanked.length < minStrict
+      ? relaxedRanked
+      : backfillRankedEntries(strictRanked, relaxedRanked, limit, ctx);
 
   return chosen.slice(0, limit).map((entry) => attachMetaToResult(entry, debug));
 }

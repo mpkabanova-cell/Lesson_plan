@@ -266,6 +266,9 @@ function tryExplicitRender(divId: string): { ok: boolean } {
 
 export type ProgrammableSearchEmbedHandle = {
   executeSearch: (query: string) => void;
+  executeSearchAsync: (query: string) => Promise<ProgrammableSearchResult[]>;
+  isReady: () => boolean;
+  whenReady: (timeoutMs?: number) => Promise<boolean>;
 };
 
 type Props = {
@@ -286,6 +289,9 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     const loadWatchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const onSearchBusyChangeRef = useRef(onSearchBusyChange);
     const onResultsChangeRef = useRef(onResultsChange);
+    const searchResolveRef = useRef<((results: ProgrammableSearchResult[]) => void) | null>(null);
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const readyRef = useRef(false);
 
     useEffect(() => {
       onSearchBusyChangeRef.current = onSearchBusyChange;
@@ -309,9 +315,28 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       onSearchBusyChangeRef.current?.(false);
     };
 
+    const finishAsyncSearch = (results: ProgrammableSearchResult[]) => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+      const resolve = searchResolveRef.current;
+      searchResolveRef.current = null;
+      resolve?.(results);
+    };
+
     const publishResults = () => {
       const ownResults = extractCseResults(hostRef.current);
-      onResultsChangeRef.current?.(ownResults.length > 0 ? ownResults : extractCseResults(document));
+      const results = ownResults.length > 0 ? ownResults : extractCseResults(document);
+      onResultsChangeRef.current?.(results);
+      finishAsyncSearch(results);
+    };
+
+    const markReadyIfPossible = () => {
+      if (!cx) return;
+      if (getCseElement() && hasCseAnywhere(hostRef.current)) {
+        readyRef.current = true;
+      }
     };
 
     const startWaitForResultsDom = (previousSignature: string) => {
@@ -402,8 +427,9 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       const getPreferInner = () => innerGcseRef.current ?? hostRef.current;
 
       const afterReady = () => {
-        scheduleGo(getPreferInner);
-        setTimeout(() => scheduleGo(getHost), 120);
+        scheduleGo(getPreferInner, markReadyIfPossible);
+        setTimeout(() => scheduleGo(getHost, markReadyIfPossible), 120);
+        [500, 1200, 2500].forEach((ms) => setTimeout(markReadyIfPossible, ms));
       };
 
       const maybeRenderFallback = () => {
@@ -451,61 +477,106 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
       };
     }, [cx]);
 
+    const runExecuteSearch = (q: string): boolean => {
+      const el = getCseElement();
+      if (!el) return false;
+      const beforeResults = extractCseResults(hostRef.current);
+      const previousSignature = resultsSignature(
+        beforeResults.length > 0 ? beforeResults : extractCseResults(document),
+      );
+      try {
+        el.execute(q);
+        debugCse("execute", { len: q.length });
+        startWaitForResultsDom(previousSignature);
+        return true;
+      } catch (e) {
+        debugCse("execute error", e);
+        settleSearchBusy();
+        finishAsyncSearch([]);
+        return true;
+      }
+    };
+
+    const startExecuteSearch = (query: string) => {
+      const q = query.trim();
+      if (!q || !cx) {
+        finishAsyncSearch([]);
+        return;
+      }
+
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      clearResultWait();
+      onSearchBusyChangeRef.current?.(true);
+      setShowLoadIssue(false);
+
+      if (runExecuteSearch(q)) {
+        return;
+      }
+
+      if (pollRef.current) clearInterval(pollRef.current);
+      let attempts = 0;
+      const maxAttempts = 200;
+      pollRef.current = setInterval(() => {
+        attempts += 1;
+        if (runExecuteSearch(q)) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+        } else if (attempts >= maxAttempts) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+          setShowLoadIssue(true);
+          settleSearchBusy();
+          finishAsyncSearch([]);
+          debugCse("execute: не найден элемент после опроса");
+        }
+      }, 100);
+    };
+
     useImperativeHandle(
       ref,
       () => ({
         executeSearch: (query: string) => {
-          const q = query.trim();
-          if (!q || !cx) return;
-
-          if (pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
-          clearResultWait();
-          onSearchBusyChangeRef.current?.(true);
-          setShowLoadIssue(false);
-
-          const run = (): boolean => {
-            const el = getCseElement();
-            if (!el) return false;
-            const beforeResults = extractCseResults(hostRef.current);
-            const previousSignature = resultsSignature(
-              beforeResults.length > 0 ? beforeResults : extractCseResults(document),
-            );
-            try {
-              el.execute(q);
-              debugCse("execute", { len: q.length });
-              startWaitForResultsDom(previousSignature);
-              return true;
-            } catch (e) {
-              debugCse("execute error", e);
-              settleSearchBusy();
-              return true;
-            }
-          };
-
-          if (run()) {
-            return;
-          }
-
-          if (pollRef.current) clearInterval(pollRef.current);
-          let attempts = 0;
-          const maxAttempts = 200;
-          pollRef.current = setInterval(() => {
-            attempts += 1;
-            if (run()) {
-              if (pollRef.current) clearInterval(pollRef.current);
-              pollRef.current = null;
-            } else if (attempts >= maxAttempts) {
-              if (pollRef.current) clearInterval(pollRef.current);
-              pollRef.current = null;
-              setShowLoadIssue(true);
-              settleSearchBusy();
-              debugCse("execute: не найден элемент после опроса");
-            }
-          }, 100);
+          startExecuteSearch(query);
         },
+        executeSearchAsync: (query: string) =>
+          new Promise<ProgrammableSearchResult[]>((resolve) => {
+            searchResolveRef.current = resolve;
+            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+            searchTimeoutRef.current = setTimeout(() => {
+              if (searchResolveRef.current !== resolve) return;
+              searchResolveRef.current = null;
+              searchTimeoutRef.current = null;
+              resolve([]);
+            }, 16_000);
+            startExecuteSearch(query);
+          }),
+        isReady: () => readyRef.current || Boolean(getCseElement() && hasCseAnywhere(hostRef.current)),
+        whenReady: (timeoutMs = 12_000) =>
+          new Promise<boolean>((resolve) => {
+            if (readyRef.current || Boolean(getCseElement() && hasCseAnywhere(hostRef.current))) {
+              readyRef.current = true;
+              resolve(true);
+              return;
+            }
+            const started = Date.now();
+            const tick = () => {
+              markReadyIfPossible();
+              if (readyRef.current || Boolean(getCseElement() && hasCseAnywhere(hostRef.current))) {
+                readyRef.current = true;
+                resolve(true);
+                return;
+              }
+              if (Date.now() - started >= timeoutMs) {
+                resolve(false);
+                return;
+              }
+              setTimeout(tick, 100);
+            };
+            tick();
+          }),
       }),
       [cx],
     );
@@ -513,7 +584,9 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     useEffect(
       () => () => {
         if (pollRef.current) clearInterval(pollRef.current);
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
         clearResultWait();
+        finishAsyncSearch([]);
         onSearchBusyChangeRef.current?.(false);
       },
       [],

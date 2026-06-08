@@ -554,6 +554,26 @@ const strictRanked = rankAndLimitMaterials(strictPool, 10, rankCtx);
 assert.ok(!strictRanked.some((r) => r.title.includes("Общая методическая")));
 assert.ok(strictRanked[0].title.toLowerCase().includes("дроби"));
 
+const backfillPool = [
+  ...Array.from({ length: 8 }, (_, i) => ({
+    title: `Дроби конспект ${i} 5 класс`,
+    snippet: "математика 2024",
+    url: `https://urok.1sept.ru/publication/strict${i}`,
+  })),
+  {
+    title: "Дроби старый материал 2008",
+    snippet: "общее",
+    url: "https://urok.1sept.ru/publication/old-fill-1",
+  },
+  {
+    title: "Дроби старый материал 2009",
+    snippet: "общее",
+    url: "https://urok.1sept.ru/publication/old-fill-2",
+  },
+];
+const backfilled = rankAndLimitMaterials(backfillPool, 10, rankCtx);
+assert.equal(backfilled.length, 10);
+
 const g5 = {
   title: "Дроби 5 класс конспект урока",
   snippet: "математика задания",

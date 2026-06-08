@@ -20,7 +20,30 @@ type Props = {
 type SearchResult = MaterialSearchResult;
 
 const MAX_VISIBLE_RESULTS = 10;
+const MAX_EMPTY_SEARCH_ATTEMPTS = 3;
+const SEARCH_RETRY_DELAY_MS = 900;
 const PUBLICATIONS_PORTAL_URL = "https://urok.1sept.ru/";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function resultsCaption(count: number): string {
+  if (count <= 0) {
+    return `Показаны до ${MAX_VISIBLE_RESULTS} наиболее релевантных ссылок, если они доступны.`;
+  }
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  const noun =
+    mod10 === 1 && mod100 !== 11
+      ? "ссылка"
+      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+        ? "ссылки"
+        : "ссылок";
+  return `Показано ${count} наиболее релевантных ${noun}.`;
+}
 
 function isDebugMaterialsEnabled(): boolean {
   if (typeof window === "undefined") return false;
@@ -145,13 +168,7 @@ export function MaterialsSearchTab({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const embedRef = useRef<ProgrammableSearchEmbedHandle>(null);
-  const activeSearchRef = useRef<{
-    query: string;
-    subject: string;
-    grade: string;
-    cseAttempts: number;
-    serverAttempted: boolean;
-  } | null>(null);
+  const searchGenerationRef = useRef(0);
 
   const fallbackUrl = useMemo(
     () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
@@ -163,59 +180,46 @@ export function MaterialsSearchTab({
 
   const debugMaterials = useMemo(() => isDebugMaterialsEnabled(), []);
 
-  const settleCseSearch = (next: ProgrammableSearchResult[]) => {
-    void (async () => {
-      const ctx = activeSearchRef.current;
-      if (!ctx) return;
+  const tryServerSearch = async (ctx: {
+    query: string;
+    subject: string;
+    grade: string;
+  }): Promise<SearchResult[]> => {
+    try {
+      const data = await searchMaterials(ctx);
+      return data.results;
+    } catch {
+      return [];
+    }
+  };
 
-      try {
-        const limited = await limitResults(next, ctx, debugMaterials);
+  const tryCseSearch = async (ctx: {
+    query: string;
+    subject: string;
+    grade: string;
+  }): Promise<SearchResult[]> => {
+    if (!canUseProgrammableSearch) return [];
+    const embed = embedRef.current;
+    if (!embed) return [];
 
-        if (limited.length === 0 && ctx.cseAttempts < 1) {
-          ctx.cseAttempts += 1;
-          const embed = embedRef.current;
-          if (embed) {
-            setSearchPending(true);
-            embed.executeSearch(
-              build1septSearchQuery(ctx.query, { subject: ctx.subject, grade: ctx.grade }),
-            );
-            return;
-          }
-        }
+    const ready = await embed.whenReady(12_000);
+    if (!ready) return [];
 
-        if (limited.length === 0 && !ctx.serverAttempted) {
-          try {
-            setSearchPending(true);
-            ctx.serverAttempted = true;
-            const data = await searchMaterials({
-              query: ctx.query,
-              subject: ctx.subject,
-              grade: ctx.grade,
-            });
-            if (data.results.length > 0) {
-              setResults(data.results);
-              setError(null);
-              activeSearchRef.current = null;
-              setSearchPending(false);
-              return;
-            }
-          } catch {
-            /* серверный поиск не настроен или недоступен — показываем пустую выдачу */
-          }
-        }
+    const raw = await embed.executeSearchAsync(
+      build1septSearchQuery(ctx.query, { subject: ctx.subject, grade: ctx.grade }),
+    );
+    if (raw.length === 0) return [];
+    return limitResults(raw as ProgrammableSearchResult[], ctx, debugMaterials);
+  };
 
-        setResults(limited);
-        setError(null);
-        activeSearchRef.current = null;
-        setSearchPending(false);
-      } catch (e) {
-        setResults([]);
-        const msg = e instanceof Error ? e.message : String(e);
-        setError(friendlySearchError(msg));
-        activeSearchRef.current = null;
-        setSearchPending(false);
-      }
-    })();
+  const runSearchAttempt = async (ctx: {
+    query: string;
+    subject: string;
+    grade: string;
+  }): Promise<SearchResult[]> => {
+    const fromServer = await tryServerSearch(ctx);
+    if (fromServer.length > 0) return fromServer;
+    return tryCseSearch(ctx);
   };
 
   const handleSubjectChange = (nextSubject: string) => {
@@ -237,53 +241,39 @@ export function MaterialsSearchTab({
       return;
     }
 
+    const generation = searchGenerationRef.current + 1;
+    searchGenerationRef.current = generation;
+    const ctx = { query: q, subject, grade };
+
     setSearchPending(true);
     setError(null);
     setSearched(true);
     setResults([]);
-    const ctx = { query: q, subject, grade, cseAttempts: 0, serverAttempted: false };
-    activeSearchRef.current = ctx;
 
-    let serverError: string | null = null;
     try {
-      ctx.serverAttempted = true;
-      const data = await searchMaterials({ query: q, subject, grade });
-      if (activeSearchRef.current !== ctx) return;
-      if (data.results.length > 0) {
-        setResults(data.results);
-        activeSearchRef.current = null;
-        setSearchPending(false);
-        return;
+      let found: SearchResult[] = [];
+      for (let attempt = 0; attempt < MAX_EMPTY_SEARCH_ATTEMPTS; attempt += 1) {
+        if (searchGenerationRef.current !== generation) return;
+        if (attempt > 0) {
+          await sleep(SEARCH_RETRY_DELAY_MS * attempt);
+        }
+        found = await runSearchAttempt(ctx);
+        if (found.length > 0) break;
       }
+
+      if (searchGenerationRef.current !== generation) return;
+      setResults(found);
+      setError(null);
     } catch (e) {
-      if (activeSearchRef.current !== ctx) return;
-      serverError = e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`;
-    }
-
-    if (canUseProgrammableSearch) {
-      const embed = embedRef.current;
-      if (!embed) {
-        activeSearchRef.current = null;
+      if (searchGenerationRef.current !== generation) return;
+      setResults([]);
+      const msg = e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`;
+      setError(friendlySearchError(msg));
+    } finally {
+      if (searchGenerationRef.current === generation) {
         setSearchPending(false);
-        setError(
-          friendlySearchError(
-            serverError ?? "Поиск ещё загружается. Попробуйте нажать «Найти» ещё раз через несколько секунд.",
-          ),
-        );
-        return;
       }
-      embed.executeSearch(build1septSearchQuery(q, { subject, grade }));
-      return;
     }
-
-    if (serverError) {
-      setResults([]);
-      setError(friendlySearchError(serverError));
-    } else {
-      setResults([]);
-    }
-    activeSearchRef.current = null;
-    setSearchPending(false);
   };
 
   return (
@@ -347,12 +337,7 @@ export function MaterialsSearchTab({
       <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-3 shadow-sm">
         {canUseProgrammableSearch ? (
           <div className="pointer-events-none fixed left-0 top-0 h-[480px] w-[720px] overflow-hidden opacity-0">
-            <ProgrammableSearchEmbed
-              ref={embedRef}
-              cx={programmableSearchCx}
-              onSearchBusyChange={setSearchPending}
-              onResultsChange={settleCseSearch}
-            />
+            <ProgrammableSearchEmbed ref={embedRef} cx={programmableSearchCx} />
           </div>
         ) : null}
 
@@ -361,11 +346,7 @@ export function MaterialsSearchTab({
             <h3 className="text-sm font-semibold text-slate-900">
               {searched && results.length > 0 ? "Подобранные материалы" : "Поиск материалов"}
             </h3>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {searched && results.length > 0
-                ? `Показаны первые ${MAX_VISIBLE_RESULTS} наиболее релевантных ссылок, если они доступны.`
-                : `Показаны до ${MAX_VISIBLE_RESULTS} наиболее релевантных ссылок, если они доступны.`}
-            </p>
+            <p className="mt-0.5 text-xs text-slate-500">{resultsCaption(searched ? results.length : 0)}</p>
           </div>
           {searched && !searchPending && !error ? (
             <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
