@@ -107,6 +107,43 @@ function extractStageSection(text: string, stageName: string): string {
   return buf.join("\n");
 }
 
+function splitScenarioAndKeys(text: string): { body: string; keys: string | null } {
+  const patterns = [
+    /\*\*ключи к заданиям\*\*/i,
+    /^#{1,3}\s*ключи к заданиям\s*$/im,
+    /^ключи к заданиям\s*$/im,
+  ];
+  for (const pattern of patterns) {
+    const match = pattern.exec(text);
+    if (match && match.index >= 0) {
+      return {
+        body: text.slice(0, match.index),
+        keys: text.slice(match.index),
+      };
+    }
+  }
+  return { body: text, keys: null };
+}
+
+function extractNumberedTaskIds(section: string): Set<string> {
+  const ids = new Set<string>();
+  const re = /задание\s+(\d+)\.(\d+)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(section)) !== null) {
+    ids.add(`${m[1]}.${m[2]}`);
+  }
+  return ids;
+}
+
+const DEFERRED_MATERIAL_PATTERNS = [
+  /котор(?:ый|ую|ое)\s+я\s+(?:вам\s+)?дам/i,
+  /дам\s+(?:вам\s+)?(?:эталон|таблиц|текст|схем|материал|карточ)/i,
+  /(?:эталон|таблиц[уа]|текст|схем[уа]|материал),?\s+котор(?:ый|ую|ое)\s+я/i,
+  /сравните\s+(?:сво[иё]\s+)?ответы?\s+с\s+эталоном,?\s+котор/i,
+  /раздам\s+(?:вам\s+)?/i,
+  /покажу\s+(?:вам\s+)?(?:эталон|таблиц|текст|схем)/i,
+];
+
 function countTasks(text: string): number {
   const t = normalize(text);
   const patterns = [
@@ -200,6 +237,33 @@ export function validateLessonPlan(
     });
   }
 
+  const { body, keys } = splitScenarioAndKeys(text);
+  const bodyTaskIds = extractNumberedTaskIds(body);
+  const keyTaskIds = keys ? extractNumberedTaskIds(keys) : new Set<string>();
+
+  if (keyTaskIds.size > 0) {
+    const orphanKeys = [...keyTaskIds].filter((id) => !bodyTaskIds.has(id));
+    if (orphanKeys.length > 0) {
+      issues.push({
+        code: "orphan_answer_keys",
+        message: `В «Ключи к заданиям» указаны номера без заданий в сценарии: ${orphanKeys.join(", ")}. Каждый ключ должен соответствовать «Задание N.M» в этапе.`,
+        severity: "error",
+      });
+    }
+  }
+
+  for (const pattern of DEFERRED_MATERIAL_PATTERNS) {
+    if (pattern.test(text)) {
+      issues.push({
+        code: "deferred_material",
+        message:
+          "В сценарии есть отсылка к материалу или эталону «который дам / раздам / покажу» — текст, эталон или задание должны быть в том же этапе, а не обещаны устно.",
+        severity: "error",
+      });
+      break;
+    }
+  }
+
   const taskCount = countTasks(text);
   if (taskCount < MIN_TASK_COUNT) {
     issues.push({
@@ -265,6 +329,8 @@ export function buildValidationFixInstructions(
     ...errors.map((e) => `● ${e.message}`),
     "",
     "Исправь сценарий: добавь недостающие элементы, усиль предметное содержание, сократи пустые обсуждения.",
+    "Если ошибка про ключи к заданиям — либо добавь в этапы задания с теми же номерами «Задание N.M», либо убери лишние ключи.",
+    "Если ошибка про «дам эталон» — напечатай эталон/материал в том же этапе, где на него ссылаются.",
     "Сохрани этапы, тайминг и формат Markdown.",
   ];
   if (opts?.frpHint?.trim()) {

@@ -101,6 +101,46 @@ const richResult = validateLessonPlan(rich, {
 });
 assert.equal(richResult.ok, true);
 
+// --- validator: orphan answer keys fail ---
+const orphanKeysPlan = `
+## Реализация построенного проекта
+Время: 10 мин
+Задание / материал:
+Задание 3.1. Найдите гипотенузу.
+
+**Ключи к заданиям**
+Задание 2.1
+Ответ: 5 см
+Задание 6.1
+Ответ: 13 см
+`;
+const orphanKeysResult = validateLessonPlan(orphanKeysPlan, {
+  subject: "Математика",
+  grade: "8",
+  topic: "Тест",
+  mode: "mathematics",
+  selectedStages: [],
+});
+assert.equal(orphanKeysResult.ok, false);
+assert.ok(orphanKeysResult.issues.some((i) => i.code === "orphan_answer_keys"));
+
+// --- validator: deferred material fails ---
+const deferredPlan = `
+## Первичное закрепление
+Время: 10 мин
+Учитель: «Сравните свои ответы с эталоном, который я вам дам».
+Эталон
+1. Шаг один.
+`;
+const deferredResult = validateLessonPlan(deferredPlan, {
+  subject: "Математика",
+  grade: "8",
+  topic: "Тест",
+  mode: "mathematics",
+  selectedStages: [],
+});
+assert.ok(deferredResult.issues.some((i) => i.code === "deferred_material"));
+
 // --- diversity ---
 const fp1 = extractLessonFingerprint(
   "## Актуализация\nУченики: читают текст и заполняют таблицу\nЗадание 1",
