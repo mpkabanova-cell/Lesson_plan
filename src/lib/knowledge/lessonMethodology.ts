@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
+import { buildSubjectModePromptBlock } from "@/lib/subjectGenerationMode";
 
 const DEFAULT_MAX_METHODOLOGY_CHARS = 120_000;
 const DEFAULT_MAX_SUBJECT_KNOWLEDGE_CHARS = 120_000;
@@ -11,6 +12,9 @@ const DEFAULT_MAX_SUBJECT_KNOWLEDGE_CHARS = 120_000;
 export type KnowledgePromptContext = {
   subject?: string;
   grade?: string;
+  topic?: string;
+  /** Дополнительные блоки (антишаблон и т.п.) */
+  extraBlocks?: string[];
 };
 
 const INFORMATICS_SUBJECT = "Информатика";
@@ -177,7 +181,30 @@ ${GOAL_METHODOLOGY_HEADER}
 
 ${section}`;
 
-  return appendInformaticsSubjectKnowledge(merged, ctx);
+  return appendSubjectModeAndExtras(appendInformaticsSubjectKnowledge(merged, ctx), ctx);
+}
+
+function appendSubjectModeAndExtras(base: string, ctx?: KnowledgePromptContext): string {
+  let result = base;
+  const subject = ctx?.subject?.trim();
+  const grade = ctx?.grade?.trim();
+  if (subject && grade) {
+    const { block } = buildSubjectModePromptBlock(subject, grade, ctx?.topic?.trim() ?? "");
+    result = `${result}
+
+---
+
+${block}`;
+  }
+  const extras = ctx?.extraBlocks?.filter((b) => b.trim().length > 0) ?? [];
+  for (const extra of extras) {
+    result = `${result}
+
+---
+
+${extra.trim()}`;
+  }
+  return result;
 }
 
 /**
@@ -193,7 +220,9 @@ export function buildSystemPromptForGeneration(
 ): string {
   const instructions = userInstructions.trim() || DEFAULT_SYSTEM_PROMPT;
   const kb = getMethodologyKnowledgeForApi();
-  if (!kb) return appendInformaticsSubjectKnowledge(instructions, ctx);
+  if (!kb) {
+    return appendSubjectModeAndExtras(appendInformaticsSubjectKnowledge(instructions, ctx), ctx);
+  }
 
   const merged = `${instructions}
 
@@ -203,5 +232,5 @@ ${METHODOLOGY_HEADER}
 
 ${kb}`;
 
-  return appendInformaticsSubjectKnowledge(merged, ctx);
+  return appendSubjectModeAndExtras(appendInformaticsSubjectKnowledge(merged, ctx), ctx);
 }

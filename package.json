@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "extract:knowledge": "node scripts/extract-pdf-knowledge.cjs"
+    "extract:knowledge": "node scripts/extract-pdf-knowledge.cjs",
+    "test:fixtures": "npx tsx scripts/validate-lesson-plan-fixtures.mjs"
   },
   "dependencies": {
     "@tiptap/extension-character-count": "^2.11.5",

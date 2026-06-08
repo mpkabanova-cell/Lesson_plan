@@ -4,10 +4,25 @@ import { buildSystemPromptForGeneration } from "@/lib/knowledge/lessonMethodolog
 import type { LessonTypeId } from "@/lib/lessonTypes";
 import { lessonTypeForPrompt } from "@/lib/lessonTypes";
 import {
+  buildDiversityHint,
+  buildDiversityHintIfSimilar,
+  type LessonFingerprint,
+} from "@/lib/lessonPlanDiversity";
+import {
+  buildValidationFixInstructions,
+  MAX_VALIDATION_ATTEMPTS,
+  validateLessonPlan,
+  type ValidationIssue,
+} from "@/lib/lessonPlanValidator";
+import {
   buildPipelineWriterUserPayload,
   LESSON_PLANNER_SYSTEM_PROMPT,
   parseAndNormalizeLessonPlanner,
 } from "@/lib/lessonPlanner";
+import {
+  getSubjectModePlannerHints,
+  resolveSubjectGenerationMode,
+} from "@/lib/subjectGenerationMode";
 
 export const runtime = "nodejs";
 export const maxDuration = 240;
@@ -23,14 +38,9 @@ type Body = {
   durationMinutes: number;
   lessonType: LessonTypeId;
   homework?: string;
-  /** Этапы, которые нужно включить в план (порядок сохраняется). */
   selectedStages: string[];
-  /**
-   * 1 — один запрос к модели (как раньше).
-   * 2 — два шага: JSON-планировщик, затем полный сценарий Markdown.
-   * С клиента может прийти число или строка (JSON).
-   */
   generationVersion?: GenerationVersion | string | number;
+  recentLessonFingerprints?: LessonFingerprint[];
 };
 
 function parseGenerationVersion(v: unknown): GenerationVersion {
@@ -50,9 +60,9 @@ function parseOpenRouterErrorBody(bodyText: string): string {
   }
 }
 
-function buildUserPayload(b: Body): string {
+function buildUserPayload(b: Body, fixBlock?: string): string {
   const stagesList = b.selectedStages.map((s, i) => `${i + 1}. ${s}`).join("\n");
-  return [
+  const parts = [
     "Входные данные урока (JSON):",
     JSON.stringify(
       {
@@ -64,6 +74,7 @@ function buildUserPayload(b: Body): string {
         lessonType: lessonTypeForPrompt(b.lessonType),
         homework: b.homework?.trim() || null,
         selectedStages: b.selectedStages,
+        subjectMode: resolveSubjectGenerationMode(b.subject, b.grade),
       },
       null,
       2,
@@ -82,10 +93,15 @@ function buildUserPayload(b: Body): string {
     "Каждый этап наполни конкретикой под тему и предмет из JSON: готовая речь учителя, действия учеников, материалы и проверяемые задания там, где нужен продукт — чтобы по сценарию можно было вести урок, а не восстанавливать его из намёков.",
     "Если в системном промпте предусмотрен раздел **Ключи к заданиям** (жирный заголовок в Markdown), выведи ответы к проверяемым заданиям только там; не перегружай ход урока лишними разборами.",
     "Поле homework в JSON — запрос учителя о домашнем задании: если там не готовый текст, а пожелание (например, число заданий, уровни сложности), разверни его в реальные предметные задания по теме и типу урока в этапе про ДЗ; не ограничивайся повтором формулировки учителя без содержания.",
-  ].join("\n");
+  ];
+  if (fixBlock?.trim()) {
+    parts.push("", fixBlock.trim());
+  }
+  return parts.join("\n");
 }
 
 function buildPlannerUserPayload(b: Body): string {
+  const mode = resolveSubjectGenerationMode(b.subject, b.grade);
   const stagesList = b.selectedStages.map((s, i) => `${i + 1}. ${s}`).join("\n");
   return [
     "Входные данные урока (JSON):",
@@ -99,10 +115,13 @@ function buildPlannerUserPayload(b: Body): string {
         lessonType: lessonTypeForPrompt(b.lessonType),
         homework: b.homework?.trim() || null,
         selectedStages: b.selectedStages,
+        subjectMode: mode,
       },
       null,
       2,
     ),
+    "",
+    getSubjectModePlannerHints(mode, b.subject),
     "",
     `durationMinutes (сумма minutes по stages должна быть равна этому числу): ${b.durationMinutes}`,
     "",
@@ -210,6 +229,106 @@ function jsonOpenRouterFailure(
   return NextResponse.json({ error, detail }, { status: 502 });
 }
 
+type GenerateOnceResult =
+  | { ok: true; raw: string; plannerRaw?: string }
+  | { ok: false; response: NextResponse };
+
+async function generateOnce(
+  body: Body,
+  generationVersion: GenerationVersion,
+  systemContent: string,
+  userContent: string,
+  key: string,
+  model: string,
+  headers: Record<string, string>,
+): Promise<GenerateOnceResult> {
+  if (generationVersion === 1) {
+    const out = await openRouterCompletion(
+      key,
+      model,
+      headers,
+      [
+        { role: "system", content: systemContent },
+        { role: "user", content: userContent },
+      ],
+      0.4,
+    );
+    if (!out.ok) {
+      return {
+        ok: false,
+        response: jsonOpenRouterFailure(out.status, out.detail, { network: out.network }),
+      };
+    }
+    return { ok: true, raw: out.content };
+  }
+
+  const plannerUser = buildPlannerUserPayload(body);
+  const plannerOut = await openRouterCompletion(
+    key,
+    model,
+    headers,
+    [
+      { role: "system", content: LESSON_PLANNER_SYSTEM_PROMPT },
+      { role: "user", content: plannerUser },
+    ],
+    0.25,
+  );
+
+  if (!plannerOut.ok) {
+    return {
+      ok: false,
+      response: jsonOpenRouterFailure(plannerOut.status, plannerOut.detail, {
+        network: plannerOut.network,
+        stepLabel: "Версия 2, шаг 1 (планировщик)",
+      }),
+    };
+  }
+
+  const parsed = parseAndNormalizeLessonPlanner(
+    plannerOut.content,
+    body.selectedStages,
+    body.durationMinutes,
+  );
+
+  if (!parsed.ok) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Шаг планировщика (версия 2): некорректный ответ.",
+          detail: parsed.error,
+          plannerRaw: plannerOut.content.slice(0, 8000),
+        },
+        { status: 422 },
+      ),
+    };
+  }
+
+  const writerUser = buildPipelineWriterUserPayload(userContent, parsed.plan);
+  const writerOut = await openRouterCompletion(
+    key,
+    model,
+    headers,
+    [
+      { role: "system", content: systemContent },
+      { role: "user", content: writerUser },
+    ],
+    0.4,
+  );
+
+  if (!writerOut.ok) {
+    return {
+      ok: false,
+      response: jsonOpenRouterFailure(writerOut.status, writerOut.detail, {
+        network: writerOut.network,
+        stepLabel: "Версия 2, шаг 2 (сценарий)",
+      }),
+    };
+  }
+
+  return { ok: true, raw: writerOut.content, plannerRaw: plannerOut.content };
+}
+
 export async function POST(req: Request) {
   const key = process.env.OPENROUTER_API_KEY?.trim();
   const modelRaw = process.env.OPENROUTER_MODEL?.trim();
@@ -270,83 +389,82 @@ export async function POST(req: Request) {
   if (referer) headers["HTTP-Referer"] = referer;
   if (title) headers["X-Title"] = title;
 
+  const recentFingerprints = Array.isArray(body.recentLessonFingerprints)
+    ? body.recentLessonFingerprints
+    : [];
+  const diversityPreHint = buildDiversityHint(recentFingerprints);
+  const extraBlocks = diversityPreHint ? [diversityPreHint] : [];
+
+  const subjectMode = resolveSubjectGenerationMode(body.subject, body.grade);
   const systemContent = buildSystemPromptForGeneration(body.systemPrompt, {
     subject: body.subject,
     grade: body.grade,
+    topic: body.topic,
+    extraBlocks,
   });
-  const baseUserContent = buildUserPayload(body);
 
-  let raw: string;
+  let raw = "";
   let plannerRaw: string | undefined;
+  let validationAttempts = 0;
+  const allValidationIssues: ValidationIssue[] = [];
+  let fixBlock = "";
 
-  if (generationVersion === 1) {
-    const out = await openRouterCompletion(key, model, headers, [
-      { role: "system", content: systemContent },
-      { role: "user", content: baseUserContent },
-    ], 0.4);
+  for (let attempt = 0; attempt <= MAX_VALIDATION_ATTEMPTS; attempt++) {
+    validationAttempts = attempt;
+    const userContent = buildUserPayload(body, fixBlock);
 
-    if (!out.ok) {
-      return jsonOpenRouterFailure(out.status, out.detail, { network: out.network });
-    }
-    raw = out.content;
-  } else {
-    const plannerUser = buildPlannerUserPayload(body);
-    const plannerOut = await openRouterCompletion(
+    const generated = await generateOnce(
+      body,
+      generationVersion,
+      systemContent,
+      userContent,
       key,
       model,
       headers,
-      [
-        { role: "system", content: LESSON_PLANNER_SYSTEM_PROMPT },
-        { role: "user", content: plannerUser },
-      ],
-      0.25,
     );
 
-    if (!plannerOut.ok) {
-      return jsonOpenRouterFailure(plannerOut.status, plannerOut.detail, {
-        network: plannerOut.network,
-        stepLabel: "Версия 2, шаг 1 (планировщик)",
-      });
+    if (!generated.ok) {
+      return generated.response;
     }
 
-    plannerRaw = plannerOut.content;
-    const parsed = parseAndNormalizeLessonPlanner(
-      plannerOut.content,
-      body.selectedStages,
-      body.durationMinutes,
+    raw = generated.raw;
+    if (generated.plannerRaw) {
+      plannerRaw = generated.plannerRaw;
+    }
+
+    const validation = validateLessonPlan(raw, {
+      subject: body.subject,
+      grade: body.grade,
+      topic: body.topic,
+      mode: subjectMode,
+      selectedStages: body.selectedStages,
+    });
+
+    allValidationIssues.push(...validation.issues);
+
+    const diversityHint = buildDiversityHintIfSimilar(
+      raw,
+      body.subject,
+      body.topic,
+      recentFingerprints,
     );
 
-    if (!parsed.ok) {
-      return NextResponse.json(
-        {
-          error: "Шаг планировщика (версия 2): некорректный ответ.",
-          detail: parsed.error,
-          plannerRaw: plannerOut.content.slice(0, 8000),
-        },
-        { status: 422 },
-      );
+    if (validation.ok && !diversityHint) {
+      break;
     }
 
-    const writerUser = buildPipelineWriterUserPayload(baseUserContent, parsed.plan);
-    const writerOut = await openRouterCompletion(
-      key,
-      model,
-      headers,
-      [
-        { role: "system", content: systemContent },
-        { role: "user", content: writerUser },
-      ],
-      0.4,
-    );
-
-    if (!writerOut.ok) {
-      return jsonOpenRouterFailure(writerOut.status, writerOut.detail, {
-        network: writerOut.network,
-        stepLabel: "Версия 2, шаг 2 (сценарий)",
-      });
+    if (attempt >= MAX_VALIDATION_ATTEMPTS) {
+      break;
     }
 
-    raw = writerOut.content;
+    const parts: string[] = [];
+    if (!validation.ok) {
+      parts.push(buildValidationFixInstructions(validation.issues));
+    }
+    if (diversityHint) {
+      parts.push(diversityHint);
+    }
+    fixBlock = parts.filter(Boolean).join("\n\n");
   }
 
   try {
@@ -356,7 +474,17 @@ export async function POST(req: Request) {
       raw: string;
       generationVersion: GenerationVersion;
       plannerRaw?: string;
-    } = { html, raw, generationVersion };
+      validationAttempts: number;
+      validationIssues: ValidationIssue[];
+      subjectMode: string;
+    } = {
+      html,
+      raw,
+      generationVersion,
+      validationAttempts,
+      validationIssues: allValidationIssues,
+      subjectMode,
+    };
     if (plannerRaw !== undefined) {
       json.plannerRaw = plannerRaw;
     }

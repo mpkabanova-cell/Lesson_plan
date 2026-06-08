@@ -11,6 +11,11 @@ import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { LESSON_STAGES, LESSON_TYPE_LABELS } from "@/lib/lessonTypes";
 import { DURATION_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
+import {
+  extractLessonFingerprint,
+  getMaxRecentFingerprints,
+  type LessonFingerprint,
+} from "@/lib/lessonPlanDiversity";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
@@ -175,6 +180,49 @@ const TOPIC_SUGGESTIONS_BY_SUBJECT: Record<string, Partial<Record<string, string
   },
 };
 const DRAFT_STORAGE_KEY = "lesson-plan-wizard-draft";
+const FINGERPRINTS_STORAGE_KEY = "lesson-plan-recent-fingerprints";
+
+function loadRecentFingerprints(): LessonFingerprint[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(FINGERPRINTS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as LessonFingerprint[];
+    return Array.isArray(parsed) ? parsed.slice(0, getMaxRecentFingerprints()) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentFingerprint(fp: LessonFingerprint): void {
+  try {
+    const existing = loadRecentFingerprints();
+    const next = [fp, ...existing].slice(0, getMaxRecentFingerprints());
+    window.localStorage.setItem(FINGERPRINTS_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+}
+
+type GenerateApiResponse = {
+  html?: string;
+  raw?: string;
+  validationAttempts?: number;
+  validationIssues?: Array<{ code: string; message: string }>;
+  subjectMode?: string;
+  detail?: string;
+  error?: string;
+};
+
+async function requestLessonPlan(
+  payload: Record<string, unknown>,
+  onStep?: (step: string) => void,
+): Promise<GenerateApiResponse> {
+  onStep?.("Проектирование каркаса урока…");
+  const data = await postJson<GenerateApiResponse>("/api/generate", payload, 220_000);
+  onStep?.("Проверка содержательности сценария…");
+  return data;
+}
 
 /** Запрос с таймаутом; тело всегда читается как текст, затем JSON — так видны не-JSON и пустые ответы. */
 async function postJson<T>(url: string, body: unknown, timeoutMs = 130_000): Promise<T> {
@@ -463,11 +511,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     setLoading(true);
     setGenerateStep("Отправка запроса на сервер…");
     try {
-      setGenerateStep("Ожидание ответа от OpenRouter (обычно 20–90 с, максимум ~2 мин)…");
-      const data = await postJson<{
-        html?: string;
-        raw?: string;
-      }>("/api/generate", {
+      const basePayload = {
         systemPrompt: DEFAULT_SYSTEM_PROMPT,
         subject,
         grade,
@@ -477,8 +521,31 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         lessonType: LESSON_TYPE_ID,
         homework: homework.trim() || undefined,
         selectedStages,
-        generationVersion: 1,
-      });
+        recentLessonFingerprints: loadRecentFingerprints(),
+      };
+
+      let data: GenerateApiResponse;
+      try {
+        setGenerateStep("Проектирование каркаса и написание сценария (версия 2)…");
+        data = await requestLessonPlan(
+          { ...basePayload, generationVersion: 2 },
+          setGenerateStep,
+        );
+      } catch (v2Error) {
+        const msg = v2Error instanceof Error ? v2Error.message : String(v2Error);
+        const isPlannerFailure =
+          msg.includes("422") ||
+          msg.includes("планировщик") ||
+          msg.includes("версия 2");
+        if (!isPlannerFailure) {
+          throw v2Error;
+        }
+        setGenerateStep("Планировщик недоступен, генерация в один шаг (версия 1)…");
+        data = await requestLessonPlan(
+          { ...basePayload, generationVersion: 1 },
+          setGenerateStep,
+        );
+      }
 
       setGenerateStep("Обработка ответа и загрузка в редактор…");
 
@@ -498,8 +565,17 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         setGenerateSuccessInfo(null);
       } else {
         setError(null);
-        setGenerateSuccessInfo(null);
-        setToast("План урока готов");
+        const attempts = data.validationAttempts ?? 0;
+        const refined = attempts > 0 ? ` (доработок: ${attempts})` : "";
+        setGenerateSuccessInfo(
+          attempts > 0
+            ? `План прошёл проверку содержательности${refined}.`
+            : null,
+        );
+        setToast(`План урока готов${refined}`);
+        if (typeof data.raw === "string" && data.raw.trim()) {
+          saveRecentFingerprint(extractLessonFingerprint(data.raw, subject, topic));
+        }
       }
       setPlanHtml(prepared);
       setContentKey((k) => k + 1);

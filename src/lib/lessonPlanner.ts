@@ -21,6 +21,8 @@ export type LessonPlannerResult = {
   trialActionIdea: string;
   /** Где и в чём затруднение после пробного действия. */
   difficultyPlace: string;
+  /** Какие предметные материалы нужны для открытия нового знания (текст, задачи, источник и т.д.). */
+  subjectMaterials: string;
 };
 
 export const LESSON_PLANNER_SYSTEM_PROMPT = `Ты — методист. Твоя задача — спроектировать каркас урока открытия нового знания перед написанием полного сценария.
@@ -41,13 +43,15 @@ export const LESSON_PLANNER_SYSTEM_PROMPT = `Ты — методист. Твоя
   "knowledgeType": "…",
   "learningProduct": "…",
   "trialActionIdea": "…",
-  "difficultyPlace": "…"
+  "difficultyPlace": "…",
+  "subjectMaterials": "какие конкретные материалы нужны: текст, задачи, источник, схема, данные эксперимента и т.д."
 }
 
 Правила:
 - В массиве stages столько элементов и в том же порядке, сколько этапов передал пользователь; в поле stageTitle укажи ту же строку, что в списке этапов (посимвольно, если можешь — сервер при необходимости подставит канонические названия).
 - Сумма minutes по всем stages должна равняться durationMinutes из входа. Проверь арифметику перед ответом.
 - trialActionIdea не должен раскрывать новое знание и не должен содержать готовый вывод урока — только замысел пробного действия.
+- keyActivity и subjectMaterials должны опираться на предметный режим из запроса пользователя: не планируй урок из одних обсуждений без фактов, текстов, задач или данных.
 - Будь краток в строковых полях: по 1–3 предложения.`;
 
 function stripJsonFence(raw: string): string {
@@ -136,8 +140,16 @@ export function parseAndNormalizeLessonPlanner(
   const learningProduct = str("learningProduct");
   const trialActionIdea = str("trialActionIdea");
   const difficultyPlace = str("difficultyPlace");
+  const subjectMaterials = str("subjectMaterials");
 
-  if (!whatStudentsOpen || !knowledgeType || !learningProduct || !trialActionIdea || !difficultyPlace) {
+  if (
+    !whatStudentsOpen ||
+    !knowledgeType ||
+    !learningProduct ||
+    !trialActionIdea ||
+    !difficultyPlace ||
+    !subjectMaterials
+  ) {
     return { ok: false, error: "Заполните все строковые поля проекта урока в JSON (не пустые строки)." };
   }
 
@@ -158,6 +170,7 @@ export function parseAndNormalizeLessonPlanner(
       learningProduct,
       trialActionIdea,
       difficultyPlace,
+      subjectMaterials,
     },
   };
 }
