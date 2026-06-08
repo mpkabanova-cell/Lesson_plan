@@ -11,6 +11,7 @@ type Body = {
     url: string;
     snippet?: string;
     articleSection?: string;
+    articlePublishedTime?: string;
   }>;
 };
 

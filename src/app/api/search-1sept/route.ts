@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { build1septSearchQuery, PUBLICATIONS_SITE_OPERATOR } from "@/lib/build1septSearchQuery";
 import {
   enrichMaterialArticleSections,
+  extractArticlePublishedTimeFromPagemap,
   extractArticleSectionFromPagemap,
 } from "@/lib/materialPageMeta";
 import { rankAndLimitMaterials } from "@/lib/materialsSearchRanking";
@@ -140,6 +141,7 @@ export async function POST(req: Request) {
     url: it.link ?? "",
     snippet: (it.snippet ?? "").trim(),
     articleSection: extractArticleSectionFromPagemap(it.pagemap),
+    articlePublishedTime: extractArticlePublishedTimeFromPagemap(it.pagemap),
   }));
   const enriched = await enrichMaterialArticleSections(candidates);
   const results = rankAndLimitMaterials(enriched, 10, {

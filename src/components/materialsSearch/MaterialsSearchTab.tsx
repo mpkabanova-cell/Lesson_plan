@@ -32,7 +32,11 @@ function isDebugMaterialsEnabled(): boolean {
 
 async function enrichArticleSections(results: SearchResult[]): Promise<SearchResult[]> {
   if (results.length === 0) return results;
-  const needsEnrich = results.some((r) => !r.articleSection?.trim() && r.url.includes("urok.1sept.ru"));
+  const needsEnrich = results.some(
+    (r) =>
+      (!r.articleSection?.trim() || !r.articlePublishedTime?.trim()) &&
+      r.url.includes("urok.1sept.ru"),
+  );
   if (!needsEnrich) return results;
 
   try {
@@ -146,6 +150,7 @@ export function MaterialsSearchTab({
     subject: string;
     grade: string;
     cseAttempts: number;
+    serverAttempted: boolean;
   } | null>(null);
 
   const fallbackUrl = useMemo(
@@ -178,9 +183,10 @@ export function MaterialsSearchTab({
           }
         }
 
-        if (limited.length === 0) {
+        if (limited.length === 0 && !ctx.serverAttempted) {
           try {
             setSearchPending(true);
+            ctx.serverAttempted = true;
             const data = await searchMaterials({
               query: ctx.query,
               subject: ctx.subject,
@@ -235,31 +241,49 @@ export function MaterialsSearchTab({
     setError(null);
     setSearched(true);
     setResults([]);
-    activeSearchRef.current = { query: q, subject, grade, cseAttempts: 0 };
+    const ctx = { query: q, subject, grade, cseAttempts: 0, serverAttempted: false };
+    activeSearchRef.current = ctx;
+
+    let serverError: string | null = null;
+    try {
+      ctx.serverAttempted = true;
+      const data = await searchMaterials({ query: q, subject, grade });
+      if (activeSearchRef.current !== ctx) return;
+      if (data.results.length > 0) {
+        setResults(data.results);
+        activeSearchRef.current = null;
+        setSearchPending(false);
+        return;
+      }
+    } catch (e) {
+      if (activeSearchRef.current !== ctx) return;
+      serverError = e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`;
+    }
 
     if (canUseProgrammableSearch) {
       const embed = embedRef.current;
       if (!embed) {
         activeSearchRef.current = null;
         setSearchPending(false);
-        setError("Поиск ещё загружается. Попробуйте нажать «Найти» ещё раз через несколько секунд.");
+        setError(
+          friendlySearchError(
+            serverError ?? "Поиск ещё загружается. Попробуйте нажать «Найти» ещё раз через несколько секунд.",
+          ),
+        );
         return;
       }
       embed.executeSearch(build1septSearchQuery(q, { subject, grade }));
       return;
     }
 
-    try {
-      const data = await searchMaterials({ query: q, subject, grade });
-      setResults(data.results);
-    } catch (e) {
+    if (serverError) {
       setResults([]);
-      const msg = e instanceof Error ? e.message : `Неизвестная ошибка: ${String(e)}`;
-      setError(friendlySearchError(msg));
-    } finally {
-      activeSearchRef.current = null;
-      setSearchPending(false);
+      setError(friendlySearchError(serverError));
+    } else {
+      setResults([]);
     }
+    activeSearchRef.current = null;
+    setSearchPending(false);
   };
 
   return (
@@ -322,7 +346,7 @@ export function MaterialsSearchTab({
 
       <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-3 shadow-sm">
         {canUseProgrammableSearch ? (
-          <div className="pointer-events-none fixed left-0 top-0 z-[-1] h-px w-px overflow-hidden opacity-0">
+          <div className="pointer-events-none fixed left-0 top-0 h-[480px] w-[720px] overflow-hidden opacity-0">
             <ProgrammableSearchEmbed
               ref={embedRef}
               cx={programmableSearchCx}

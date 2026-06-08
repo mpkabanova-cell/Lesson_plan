@@ -21,6 +21,8 @@ export type MaterialSearchResult = {
   snippet?: string;
   /** Предмет со страницы: meta property="article:section" (Google pagemap или fetch). */
   articleSection?: string;
+  /** Дата публикации со страницы: meta property="article:published_time" (Google pagemap или fetch). */
+  articlePublishedTime?: string;
   meta?: MaterialSearchMeta;
   _breakdown?: MaterialScoreBreakdown;
 };
@@ -116,7 +118,7 @@ function normalizeText(value: string): string {
 
 function haystack(result: MaterialSearchResult): string {
   return normalizeText(
-    `${result.title} ${result.snippet ?? ""} ${result.articleSection ?? ""} ${result.url}`,
+    `${result.title} ${result.snippet ?? ""} ${result.articleSection ?? ""} ${result.articlePublishedTime ?? ""} ${result.url}`,
   ).toLowerCase();
 }
 

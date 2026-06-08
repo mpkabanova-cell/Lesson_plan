@@ -8,6 +8,12 @@ const ARTICLE_SECTION_PATTERNS = [
   /<meta\s+[^>]*name\s*=\s*["']article:section["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>/i,
 ];
 
+const ARTICLE_PUBLISHED_TIME_PATTERNS = [
+  /<meta\s+[^>]*property\s*=\s*["']article:published_time["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>/i,
+  /<meta\s+[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']article:published_time["'][^>]*>/i,
+  /<meta\s+[^>]*name\s*=\s*["']article:published_time["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>/i,
+];
+
 export function extractArticleSectionFromHtml(html: string): string | undefined {
   const head = html.slice(0, 120_000);
   for (const re of ARTICLE_SECTION_PATTERNS) {
@@ -15,6 +21,27 @@ export function extractArticleSectionFromHtml(html: string): string | undefined 
     if (m?.[1]?.trim()) return m[1].trim();
   }
   return undefined;
+}
+
+export function extractArticlePublishedTimeFromHtml(html: string): string | undefined {
+  const head = html.slice(0, 120_000);
+  for (const re of ARTICLE_PUBLISHED_TIME_PATTERNS) {
+    const m = re.exec(head);
+    if (m?.[1]?.trim()) return m[1].trim();
+  }
+  return undefined;
+}
+
+export type MaterialPageMeta = {
+  articleSection?: string;
+  articlePublishedTime?: string;
+};
+
+export function extractMaterialPageMetaFromHtml(html: string): MaterialPageMeta {
+  return {
+    articleSection: extractArticleSectionFromHtml(html),
+    articlePublishedTime: extractArticlePublishedTimeFromHtml(html),
+  };
 }
 
 type PagemapMetatags = Record<string, string | undefined>;
@@ -31,6 +58,18 @@ export function extractArticleSectionFromPagemap(
   return undefined;
 }
 
+export function extractArticlePublishedTimeFromPagemap(
+  pagemap?: { metatags?: PagemapMetatags[] },
+): string | undefined {
+  const tags = pagemap?.metatags;
+  if (!Array.isArray(tags) || tags.length === 0) return undefined;
+  for (const block of tags) {
+    const publishedTime = block?.["article:published_time"]?.trim();
+    if (publishedTime) return publishedTime;
+  }
+  return undefined;
+}
+
 function isUrokPublicationUrl(url: string): boolean {
   try {
     const u = new URL(url);
@@ -40,8 +79,8 @@ function isUrokPublicationUrl(url: string): boolean {
   }
 }
 
-export async function fetchArticleSectionFromUrl(url: string): Promise<string | undefined> {
-  if (!isUrokPublicationUrl(url)) return undefined;
+export async function fetchMaterialPageMetaFromUrl(url: string): Promise<MaterialPageMeta> {
+  if (!isUrokPublicationUrl(url)) return {};
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -56,14 +95,19 @@ export async function fetchArticleSectionFromUrl(url: string): Promise<string | 
       },
       cache: "no-store",
     });
-    if (!res.ok) return undefined;
+    if (!res.ok) return {};
     const html = await res.text();
-    return extractArticleSectionFromHtml(html);
+    return extractMaterialPageMetaFromHtml(html);
   } catch {
-    return undefined;
+    return {};
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function fetchArticleSectionFromUrl(url: string): Promise<string | undefined> {
+  const meta = await fetchMaterialPageMetaFromUrl(url);
+  return meta.articleSection;
 }
 
 async function mapPool<T, R>(
@@ -90,30 +134,37 @@ async function mapPool<T, R>(
 export type MaterialWithSection = {
   url: string;
   articleSection?: string;
+  articlePublishedTime?: string;
 };
 
-/** Дозагружает article:section для результатов без метаданных (CSE embed и т.п.). */
+/** Дозагружает meta со страницы публикации для результатов без метаданных (CSE embed и т.п.). */
 export async function enrichMaterialArticleSections<T extends MaterialWithSection>(
   results: T[],
 ): Promise<T[]> {
   const pending = results
     .map((r, index) => ({ r, index }))
-    .filter(({ r }) => !r.articleSection?.trim() && isUrokPublicationUrl(r.url));
+    .filter(
+      ({ r }) =>
+        (!r.articleSection?.trim() || !r.articlePublishedTime?.trim()) &&
+        isUrokPublicationUrl(r.url),
+    );
 
   if (pending.length === 0) return results;
 
-  const sections = await mapPool(
+  const metas = await mapPool(
     pending,
     MAX_PARALLEL_FETCHES,
-    async ({ r }) => fetchArticleSectionFromUrl(r.url),
+    async ({ r }) => fetchMaterialPageMetaFromUrl(r.url),
   );
 
   const out = [...results];
   pending.forEach(({ index }, i) => {
-    const section = sections[i];
-    if (section) {
-      out[index] = { ...out[index], articleSection: section };
-    }
+    const meta = metas[i];
+    out[index] = {
+      ...out[index],
+      ...(meta.articleSection ? { articleSection: meta.articleSection } : {}),
+      ...(meta.articlePublishedTime ? { articlePublishedTime: meta.articlePublishedTime } : {}),
+    };
   });
   return out;
 }

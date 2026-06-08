@@ -470,11 +470,17 @@ assert.ok(Array.isArray(assembledVal.failedStageIds));
 const { rankAndLimitMaterials, scoreMaterial, extractYear, detectExplicitSubject } = await import(
   "../src/lib/materialsSearchRanking.ts"
 );
-const { extractArticleSectionFromHtml } = await import("../src/lib/materialPageMeta.ts");
+const { extractArticlePublishedTimeFromHtml, extractArticleSectionFromHtml } = await import(
+  "../src/lib/materialPageMeta.ts"
+);
 
 const articleSectionHtml =
   '<html><head><meta property="article:section" content="Русский язык"></head><body></body></html>';
 assert.equal(extractArticleSectionFromHtml(articleSectionHtml), "Русский язык");
+const articlePublishedTimeHtml =
+  '<html><head><meta property="article:published_time" content="2010-06-21T23:07:43+04:00"></head></html>';
+assert.equal(extractArticlePublishedTimeFromHtml(articlePublishedTimeHtml), "2010-06-21T23:07:43+04:00");
+assert.equal(extractYear(extractArticlePublishedTimeFromHtml(articlePublishedTimeHtml)), 2010);
 
 const pravopisanieMaterial = {
   title: "Правописание приставок при- и пре-. 5-й класс - Открытый урок",
