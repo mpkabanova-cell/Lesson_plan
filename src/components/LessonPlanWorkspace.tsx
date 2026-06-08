@@ -825,9 +825,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-500">AI-мастер урока</p>
             <h1 className="text-lg font-semibold text-slate-950">Конструктор плана урока</h1>
           </div>
-          <div className="hidden rounded-full bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800 ring-1 ring-violet-100 sm:block">
-            Создайте план урока за 1 минуту
-          </div>
         </div>
       </header>
 

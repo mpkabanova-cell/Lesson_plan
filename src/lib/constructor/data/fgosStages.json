@@ -162,9 +162,8 @@
         "allowedTeacher": ["рефлексия", "итог", "самооценка"],
         "allowedStudent": ["рефлексия", "самооценка"],
         "forbidden": ["новое объяснение", "домашнее задание"],
-        "requiredOutputs": ["рефлексия", "итог"],
-        "templateOnly": true,
-        "avgGenerationMs": 2000
+        "requiredOutputs": ["рефлексия", "итог", "методический приём", "речь учителя", "ответы учеников", "ожидаемый результат"],
+        "avgGenerationMs": 18000
       }
     ]
   },
@@ -266,9 +265,8 @@
         "allowedTeacher": ["рефлексия"],
         "allowedStudent": ["самооценка"],
         "forbidden": ["новое объяснение"],
-        "requiredOutputs": ["рефлексия", "итог"],
-        "templateOnly": true,
-        "avgGenerationMs": 2000
+        "requiredOutputs": ["рефлексия", "итог", "методический приём", "речь учителя", "ответы учеников", "ожидаемый результат"],
+        "avgGenerationMs": 18000
       }
     ]
   },
@@ -409,9 +407,8 @@
         "allowedTeacher": ["рефлексия"],
         "allowedStudent": ["самооценка"],
         "forbidden": ["новое объяснение"],
-        "requiredOutputs": ["рефлексия", "итог"],
-        "templateOnly": true,
-        "avgGenerationMs": 2000
+        "requiredOutputs": ["рефлексия", "итог", "методический приём", "речь учителя", "ответы учеников", "ожидаемый результат"],
+        "avgGenerationMs": 18000
       }
     ]
   }

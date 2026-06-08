@@ -1,0 +1,80 @@
+{
+  "phases": {
+    "motivation": {
+      "label": "Мотивация и целеполагание",
+      "techniques": [
+        { "id": "surprise", "name": "Удивляй", "description": "Неожиданный факт, парадокс или наглядный пример, вызывающий интерес к теме." },
+        { "id": "delayed_guess", "name": "Отсроченная отгадка", "description": "Загадка или вопрос в начале урока; ответ раскрывается в конце этапа или урока." },
+        { "id": "idea_basket", "name": "Корзина идей", "description": "Учащиеся предлагают ассоциации и гипотезы по теме; учитель фиксирует на доске." },
+        { "id": "problem_question", "name": "Проблемный вопрос", "description": "Вопрос, ставящий ученика в ситуацию незнания или противоречия." }
+      ]
+    },
+    "activation": {
+      "label": "Актуализация знаний",
+      "techniques": [
+        { "id": "true_false", "name": "Верные и неверные утверждения", "description": "Серия утверждений: ученики отмечают верные/неверные и обосновывают." },
+        { "id": "blitz_poll", "name": "Блиц-опрос", "description": "Короткие вопросы по опорным знаниям с быстрой фиксацией ответов." },
+        { "id": "error_work", "name": "Работа с ошибкой", "description": "Готовый пример с типичной ошибкой; ученики находят и исправляют." },
+        { "id": "cluster", "name": "Кластер", "description": "Ключевое слово в центре; ученики дополняют ассоциациями и связями." }
+      ]
+    },
+    "difficulty": {
+      "label": "Выявление затруднения",
+      "techniques": [
+        { "id": "problem_situation", "name": "Проблемная ситуация", "description": "Ситуация, где известные способы не работают; возникает познавательное затруднение." },
+        { "id": "contradiction", "name": "Противоречие", "description": "Два факта или результата, которые нельзя объяснить старым знанием." },
+        { "id": "trial_action", "name": "Пробное действие", "description": "Задание на известных знаниях, приводящее к тупику или ошибке." }
+      ]
+    },
+    "acquisition": {
+      "label": "Открытие нового знания",
+      "techniques": [
+        { "id": "leading_dialogue", "name": "Подводящий диалог", "description": "Цепочка вопросов, ведущих к формулировке правила или вывода." },
+        { "id": "research", "name": "Исследование", "description": "Самостоятельный поиск закономерности по примерам или опыту." },
+        { "id": "example_analysis", "name": "Анализ примеров", "description": "Сравнение нескольких примеров с выводом общего правила." },
+        { "id": "source_work", "name": "Работа с источником", "description": "Извлечение нового знания из текста, документа, схемы или данных." },
+        { "id": "observation", "name": "Наблюдение", "description": "Фиксация признаков, закономерностей по наглядности или демонстрации." }
+      ]
+    },
+    "consolidation": {
+      "label": "Закрепление и применение",
+      "techniques": [
+        { "id": "training_tasks", "name": "Тренировочные задания", "description": "Серия задач с нарастающей сложностью на новом способе." },
+        { "id": "pair_check", "name": "Взаимопроверка", "description": "Ученики сверяют решения по эталону в парах." },
+        { "id": "creative_apply", "name": "Творческое применение", "description": "Задание в нестандартной или жизненной ситуации." }
+      ]
+    },
+    "reflection": {
+      "label": "Рефлексия",
+      "techniques": [
+        { "id": "traffic_light", "name": "Светофор", "description": "Самооценка: зелёный — понял, жёлтый — частично, красный — затруднение." },
+        { "id": "cinquain", "name": "Синквейн", "description": "Короткая рефлексия в форме синквейна по теме урока." },
+        { "id": "backpack", "name": "Рюкзак", "description": "Что взял с урока, что оставил, что не хватило." },
+        { "id": "pops", "name": "ПОПС", "description": "Понравилось — Оказалось — Понял — Сложилось." }
+      ]
+    },
+    "general": {
+      "label": "Общие приёмы",
+      "techniques": [
+        { "id": "insert", "name": "Инсёрт", "description": "Маркеры «знаю / хочу узнать / узнал» при работе с текстом или темой." },
+        { "id": "venn", "name": "Диаграмма Венна", "description": "Сравнение понятий, явлений, способов в пересекающихся кругах." }
+      ]
+    }
+  },
+  "stagePhaseMap": {
+    "organizational_moment": "motivation",
+    "problem_situation_goal": "difficulty",
+    "goal_setting_motivation": "motivation",
+    "knowledge_activation": "activation",
+    "primary_acquisition": "acquisition",
+    "primary_comprehension_check": "consolidation",
+    "primary_consolidation": "consolidation",
+    "creative_application": "consolidation",
+    "apply_new_situation": "consolidation",
+    "generalization_systematization": "general",
+    "comprehension_control": "consolidation",
+    "homework_check": "activation",
+    "homework_info": "general",
+    "reflection": "reflection"
+  }
+}

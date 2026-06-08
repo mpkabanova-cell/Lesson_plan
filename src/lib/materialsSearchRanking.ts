@@ -140,6 +140,9 @@ function subjectHints(subject: string): string[] {
   return [...hints];
 }
 
+const RUSSIAN_MONTH_PATTERN =
+  "янв(?:ар(?:ь|я)?)?|февр(?:аль|а)?|мар(?:т)?|апр(?:ель)?|ма[йя]|июн(?:ь|я)?|июл(?:ь|я)?|авг(?:уст)?|сен(?:т(?:ябрь|ября)?)?|окт(?:ябрь|ября)?|ноя(?:брь|ября)?|дек(?:абрь|ября)?";
+
 export function extractYear(text: string): number | undefined {
   const normalized = text.toLowerCase();
   const iso = normalized.match(/\b(20\d{2}|19\d{2})[-/.](\d{1,2})[-/.](\d{1,2})\b/);
@@ -147,6 +150,14 @@ export function extractYear(text: string): number | undefined {
 
   const dotted = normalized.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2}|19\d{2})\b/);
   if (dotted) return Number(dotted[3]);
+
+  const russianDate = normalized.match(
+    new RegExp(
+      `\\b\\d{1,2}\\s+(?:${RUSSIAN_MONTH_PATTERN})\\.?\\s+(20\\d{2}|19\\d{2})\\s*г?\\.?`,
+      "i",
+    ),
+  );
+  if (russianDate) return Number(russianDate[1]);
 
   const years = [...normalized.matchAll(/\b(19|20)\d{2}\b/g)].map((m) => Number(m[0]));
   if (years.length > 0) return Math.max(...years);
@@ -436,6 +447,42 @@ function sortScoredEntries<T extends MaterialSearchResult>(
   });
 }
 
+function attachMetaFromHaystack<T extends MaterialSearchResult>(
+  result: T,
+  context: MaterialRankingContext = {},
+): T {
+  const hay = haystack(result);
+  const materialTypeHit = detectMaterialType(hay);
+  const mentioned = [...gradesMentionedInHay(hay)];
+  const subject = context.subject ?? "";
+  const subjectInfo = detectSubjectInMaterial(hay, subject);
+  const gradeMatch = detectGrade(hay, context.grade ?? "");
+
+  let detectedGrade: string | undefined;
+  if (gradeMatch === "exact" || gradeMatch === "range") {
+    detectedGrade = context.grade;
+  } else if (mentioned.length === 1) {
+    detectedGrade = mentioned[0];
+  }
+
+  let detectedSubject: string | undefined;
+  if (subjectInfo.other) {
+    detectedSubject = subjectInfo.detectedName;
+  } else if (subjectInfo.selected && subject) {
+    detectedSubject = subject;
+  }
+
+  return {
+    ...result,
+    meta: {
+      year: extractYear(hay),
+      detectedGrade,
+      detectedSubject,
+      materialType: materialTypeHit?.label,
+    },
+  };
+}
+
 function attachMetaToResult<T extends MaterialSearchResult>(
   entry: ScoredEntry<T>,
   debug: boolean,
@@ -496,7 +543,9 @@ export function rankAndLimitMaterials<T extends MaterialSearchResult>(
   const ctx = context ?? {};
 
   if (!hasRankingContext(context)) {
-    return sortByFreshnessThenIndex(results).slice(0, limit);
+    return sortByFreshnessThenIndex(results)
+      .slice(0, limit)
+      .map((result) => attachMetaFromHaystack(result));
   }
 
   const strictRanked = rankWithMode(results, ctx, {

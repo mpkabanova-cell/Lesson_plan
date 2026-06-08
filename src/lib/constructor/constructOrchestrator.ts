@@ -9,6 +9,7 @@ import {
   buildStageFixInstructions,
   MAX_STAGE_ATTEMPTS,
   validateStageMarkdown,
+  type StageValidationContext,
 } from "./stageValidators";
 import { openRouterCompletion, openRouterHeaders } from "./openRouter";
 import type { ConstructSessionPayload, StageResult } from "./constructSession";
@@ -19,6 +20,8 @@ import {
   getStageDefinition,
   type LessonTypeId,
 } from "./stageRegistry";
+import { collectPreviousTaskConditions } from "./stageTaskDiversity";
+import { collectUsedTechniques, pickTechniqueForStage } from "./stageTechniques";
 
 export async function generateStageForSession(
   session: ConstructSessionPayload,
@@ -39,6 +42,16 @@ export async function generateStageForSession(
   const previousSummaries = buildStageSummaries(session);
   const minutes = session.stageMinutes[stageId] ?? 5;
 
+  const priorMarkdowns = session.stageResults.map((r) => r.markdown);
+  const previousTaskConditions = collectPreviousTaskConditions(priorMarkdowns);
+  const previousTechniques = collectUsedTechniques(priorMarkdowns);
+  const requiredTechnique = pickTechniqueForStage(
+    stageId,
+    stageIndex,
+    session.topic,
+    previousTechniques,
+  );
+
   const baseInput: StageGenerationInput = {
     stage,
     stageIndex,
@@ -53,10 +66,21 @@ export async function generateStageForSession(
     frpContext,
     subjectProfile,
     previousSummaries,
+    requiredTechnique,
+    previousTechniques,
+    previousTaskConditions,
+  };
+
+  const validationContext: StageValidationContext = {
+    requiredTechnique,
+    previousTaskConditions,
+    topic: session.topic,
+    isTemplateStage: isTemplateStage(stage),
   };
 
   if (isTemplateStage(stage)) {
     const { markdown, summary } = generateTemplateStage(baseInput);
+    const validation = validateStageMarkdown(markdown, stage, subjectProfile, validationContext);
     const result: StageResult = {
       stageId,
       title: stage.title,
@@ -64,6 +88,9 @@ export async function generateStageForSession(
       summary,
       attempts: 1,
     };
+    if (!validation.ok) {
+      // template should always pass; keep result anyway
+    }
     return { session: upsertStageResult(session, result), result };
   }
 
@@ -88,7 +115,7 @@ export async function generateStageForSession(
     }
 
     markdown = out.content;
-    const validation = validateStageMarkdown(markdown, stage, subjectProfile);
+    const validation = validateStageMarkdown(markdown, stage, subjectProfile, validationContext);
     if (validation.ok) break;
     fixInstructions = buildStageFixInstructions(validation.issues);
     if (attempt === MAX_STAGE_ATTEMPTS) {

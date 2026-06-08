@@ -3,6 +3,9 @@ import type { ConstructorFrpContext } from "./frpContext";
 import { getStageFrpSlice } from "./frpContext";
 import type { SubjectProfile } from "./subjectProfiles";
 import { getStageSubjectHint } from "./subjectProfiles";
+import { STAGE_BLOCK_LABELS } from "./stageBlockSchema";
+import { getStageLogicForPrompt } from "./stageContentRules";
+import type { StageTechnique } from "./stageTechniques";
 
 export type StageGenerationInput = {
   stage: StageDefinition;
@@ -18,46 +21,83 @@ export type StageGenerationInput = {
   frpContext: ConstructorFrpContext;
   subjectProfile: SubjectProfile;
   previousSummaries: Record<string, string>;
+  requiredTechnique: StageTechnique;
+  previousTechniques: string[];
+  previousTaskConditions: string[];
   fixInstructions?: string;
 };
 
-const STAGE_SYSTEM_PROMPT = `Ты — методист, пишешь ОДИН этап урока по ФГОС в формате Markdown-карточки.
-Правила:
-- Заголовок этапа: ## {название этапа}
-- Обязательные поля: Время: N мин; Учитель: (конкретные действия); Ученики: (конкретные действия)
-- Нумерация заданий: Задание {номер_этапа}.{подномер} (номер этапа = порядковый в сценарии)
-- Каждое задание ОБЯЗАНО содержать: (1) условие (текст задачи/материала), (2) строку «Ответ:» с непустым ожидаемым ответом
-- Опционально под заданием: «Пояснение для учителя:» (краткая методическая подсказка)
-- Запрещены плейсхолдеры: ..., TBD, TODO, null; пустые блоки Учитель/Ученики
-- Содержание этапа должно соответствовать его цели FGOS (см. forbidden в данных этапа)
-- Не выноси ответы в конец; не обещай материал «который дам» — печатай в этапе
-- Пиши по-русски, конкретно, с предметным содержанием
+const STAGE_SYSTEM_PROMPT = `Ты — опытный методист. Пишешь ОДИН этап урока по ФГОС как полноценный методический сценарный блок в Markdown.
+
+ОБЯЗАТЕЛЬНАЯ СТРУКТУРА (все поля обязательны):
+## {название этапа}
+Время: N мин
+${STAGE_BLOCK_LABELS.goal} {цель этапа — 1–2 предложения}
+${STAGE_BLOCK_LABELS.technique} {название приёма из requiredTechnique}
+${STAGE_BLOCK_LABELS.teacherSpeech} «Готовая речь учителя: 2–6 предложений с конкретными вопросами, формулировками, инструкциями. Обязательно в кавычках «…».»
+${STAGE_BLOCK_LABELS.studentAnswers}
+- {вариант ответа 1}
+- {вариант ответа 2}
+- {типичное затруднение или ошибка}
+${STAGE_BLOCK_LABELS.students} {конкретные действия: читают, записывают, обсуждают, сравнивают…}
+Задание {номер_этапа}.{подномер}: {условие с предметным содержанием}
+Ответ: {ожидаемый ответ}
+${STAGE_BLOCK_LABELS.expectedResult} {к чему приходят ученики}
+${STAGE_BLOCK_LABELS.comment} {на что обратить внимание учителю}
+
+ПЛОХО (речь учителя):
+Учитель организует обсуждение.
+
+ХОРОШО (речь учителя):
+${STAGE_BLOCK_LABELS.teacherSpeech} «Посмотрите на рисунок. Мы можем измерить стороны треугольника, но как узнать длину диагонали, если измерить её напрямую нельзя? Запишите в тетради, что вы уже знаете об этом треугольнике.»
+
+ПРАВИЛА:
+- Нумерация заданий: Задание {номер_этапа}.{подномер} (номер этапа = stageIndex из данных)
+- Каждое задание: условие + строка «Ответ:» сразу под ним
+- Не повторяй задания из previousTasks — другое содержание, другой угол
+- Соблюдай stageLogic: forbidden запрещено, requiredPatterns желательно отразить
+- На этапе проблемной ситуации НЕ давай готовый способ решения новой темы
+- На этапе закрепления НЕ вводи новый материал
+- На рефлексии НЕ изучай новое
+- Предметное содержание обязательно: задачи, факты, тексты, алгоритмы — по subjectProfile
+- Запрещены плейсхолдеры: ..., TBD, TODO, null
+- Пиши по-русски, конкретно
 - Не добавляй другие этапы урока`;
 
 function buildTemplateStage(input: StageGenerationInput): string {
-  const { stage, minutes, topic, goal, subject, grade } = input;
+  const { stage, minutes, topic, subject, grade, requiredTechnique } = input;
   const n = input.stageIndex + 1;
+  const stageGoal = stage.goal;
 
   if (stage.id === "organizational_moment") {
     return `## ${stage.title}
 Время: ${minutes} мин
-Учитель: Приветствует класс, проверяет готовность (учебники, тетради, инвентарь). Настраивает на урок по теме «${topic}» (${subject}, ${grade} класс).
-Ученики: Приветствуют учителя, готовят рабочее место, настраиваются на работу.`;
-  }
-
-  if (stage.id === "reflection") {
-    return `## ${stage.title}
-Время: ${minutes} мин
-Учитель: Подводит итог: соответствие цели «${goal || topic}» и результата. Организует рефлексию (лист самооценки / «светофор» / 2 вопроса).
-Ученики: Фиксируют, что узнали нового; отмечают затруднения; выставляют самооценку за урок.
-Задание ${n}.1: Заполнить строку в листе достижений: «Сегодня я научился…», «Мне было трудно…»
-Ответ: Критерий — конкретная формулировка нового знания и одно затруднение.`;
+${STAGE_BLOCK_LABELS.goal} ${stageGoal}
+${STAGE_BLOCK_LABELS.technique} ${requiredTechnique.name}
+${STAGE_BLOCK_LABELS.teacherSpeech} «Здравствуйте! Сегодня мы продолжим изучать тему «${topic}» (${subject}, ${grade} класс). Проверьте, пожалуйста, готовность: учебник, тетрадь, ручка. Настройтесь на работу — впереди интересные задания.»
+${STAGE_BLOCK_LABELS.studentAnswers}
+- «Готовы к уроку»
+- «Нужно достать тетрадь»
+- Типичное затруднение: шум, задержка с подготовкой места
+${STAGE_BLOCK_LABELS.students} Приветствуют учителя, проверяют рабочее место, достают учебные материалы, настраиваются на урок.
+${STAGE_BLOCK_LABELS.expectedResult} Класс готов к работе, внимание сосредоточено на теме урока.
+${STAGE_BLOCK_LABELS.comment} ${requiredTechnique.description} Организационный момент — кратко, без объяснения нового материала.`;
   }
 
   return `## ${stage.title}
 Время: ${minutes} мин
-Учитель: (шаблон)
-Ученики: (шаблон)`;
+${STAGE_BLOCK_LABELS.goal} ${stageGoal}
+${STAGE_BLOCK_LABELS.technique} ${requiredTechnique.name}
+${STAGE_BLOCK_LABELS.teacherSpeech} «(шаблон)»
+${STAGE_BLOCK_LABELS.studentAnswers}
+- вариант 1
+- вариант 2
+- типичное затруднение
+${STAGE_BLOCK_LABELS.students} (шаблон)
+Задание ${n}.1: (шаблон)
+Ответ: (шаблон)
+${STAGE_BLOCK_LABELS.expectedResult} (шаблон)
+${STAGE_BLOCK_LABELS.comment} (шаблон)`;
 }
 
 function buildStageUserPrompt(input: StageGenerationInput): string {
@@ -68,10 +108,11 @@ function buildStageUserPrompt(input: StageGenerationInput): string {
 
   const prev = Object.entries(input.previousSummaries)
     .slice(-3)
-    .map(([id, s]) => `${id}: ${s.slice(0, 300)}`)
+    .map(([id, s]) => `${id}: ${s.slice(0, 400)}`)
     .join("\n");
 
   const subjectHint = getStageSubjectHint(input.subjectProfile, input.stage.id);
+  const stageLogic = getStageLogicForPrompt(input.stage.id);
 
   return JSON.stringify(
     {
@@ -81,9 +122,17 @@ function buildStageUserPrompt(input: StageGenerationInput): string {
         title: input.stage.title,
         goal: input.stage.goal,
         tasks: input.stage.tasks,
+        successIndicators: input.stage.successIndicators,
+        allowedTeacher: input.stage.allowedTeacher,
+        allowedStudent: input.stage.allowedStudent,
         forbidden: input.stage.forbidden,
         requiredOutputs: input.stage.requiredOutputs,
       },
+      requiredTechnique: {
+        name: input.requiredTechnique.name,
+        description: input.requiredTechnique.description,
+      },
+      stageLogic,
       lesson: {
         subject: input.subject,
         grade: input.grade,
@@ -101,6 +150,8 @@ function buildStageUserPrompt(input: StageGenerationInput): string {
         stageHint: subjectHint || undefined,
       },
       previousStages: prev || undefined,
+      previousTechniques: input.previousTechniques.length ? input.previousTechniques : undefined,
+      previousTasks: input.previousTaskConditions.length ? input.previousTaskConditions : undefined,
       fixInstructions: input.fixInstructions || undefined,
     },
     null,
@@ -120,7 +171,8 @@ export function generateTemplateStage(input: StageGenerationInput): {
   summary: string;
 } {
   const markdown = buildTemplateStage(input);
-  const summary = `${input.stage.title}: ${input.minutes} мин. ${input.stage.goal.slice(0, 120)}`;
+  const technique = input.requiredTechnique.name;
+  const summary = `${input.stage.title}: ${input.minutes} мин, приём «${technique}». ${input.stage.goal.slice(0, 100)}`;
   return { markdown, summary };
 }
 
@@ -129,11 +181,17 @@ export function isTemplateStage(stage: StageDefinition): boolean {
 }
 
 export function extractStageSummary(markdown: string, stageTitle: string): string {
+  const block = markdown.match(/^\s*(?:\*\*)?методический\s+при[её]м(?:\*\*)?\s*:\s*(.+)$/im);
+  const technique = block ? block[1].trim() : "";
+  const tasks = markdown.match(/^\s*(?:\*\*)?задание\s+\d+\.\d+/gim);
+  const taskHint = tasks?.length ? ` Заданий: ${tasks.length}.` : "";
+
   const plain = markdown
     .replace(/^#+\s+/gm, "")
     .replace(/\*\*/g, "")
     .replace(/\s+/g, " ")
     .trim();
-  const snippet = plain.slice(0, 350);
-  return `${stageTitle}: ${snippet}`;
+  const snippet = plain.slice(0, 280);
+  const techPart = technique ? `Приём: ${technique}.` : "";
+  return `${stageTitle}: ${techPart}${taskHint} ${snippet}`;
 }

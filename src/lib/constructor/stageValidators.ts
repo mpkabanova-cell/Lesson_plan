@@ -1,5 +1,16 @@
+import {
+  GENERIC_TEACHER_PHRASES,
+  MIN_EXPECTED_RESULT_CHARS,
+  MIN_STUDENT_ANSWER_BULLETS,
+  MIN_TEACHER_SPEECH_QUOTED_CHARS,
+  STAGE_BLOCK_LABELS,
+  STAGES_REQUIRING_STUDENT_ANSWERS,
+  type StageMethodologicalBlock,
+} from "./stageBlockSchema";
 import { getStageContentRule } from "./stageContentRules";
 import type { StageDefinition } from "./stageRegistry";
+import { normalizeTechniqueName, type StageTechnique } from "./stageTechniques";
+import { findDuplicateTasksInStage } from "./stageTaskDiversity";
 import type { SubjectProfile } from "./subjectProfiles";
 
 export type StageValidationIssue = {
@@ -18,11 +29,33 @@ export type ParsedStageTask = {
   answer: string | null;
 };
 
+export type StageValidationContext = {
+  requiredTechnique?: StageTechnique;
+  previousTaskConditions?: string[];
+  topic?: string;
+  isTemplateStage?: boolean;
+};
+
 const TASK_LINE_RE = /^\s*(?:\*\*)?задание\s+(\d+\.\d+)(?:\*\*)?[:\s]*(.*)$/i;
 const MATERIAL_HEADER_RE = /^\s*(?:\*\*)?задание\s*\/\s*материал(?:\*\*)?\s*:?\s*(.*)$/i;
 const ANSWER_LINE_RE = /^\s*(?:\*\*)?(?:ответ|разбор)(?:\*\*)?\s*:\s*(.*)$/i;
 const TEACHER_NOTE_RE = /^\s*(?:\*\*)?(?:пояснение(?:\s+для\s+учителя)?|для\s+учителя)(?:\*\*)?\s*:/i;
-const STAGE_BREAK_RE = /^(?:#{1,3}\s|время\s*:|учитель\s*:|ученик)/i;
+
+const STAGE_BREAK_RE =
+  /^(?:#{1,3}\s|время\s*:|цель\s*:|методический\s+при|речь\s+учител|предполагаемые\s+ответ|ученик|ожидаемый\s+результат|методический\s+коммент)/i;
+
+const BLOCK_FIELD_RES: Array<{ key: keyof StageMethodologicalBlock; re: RegExp }> = [
+  { key: "goal", re: /^\s*(?:\*\*)?цель(?:\*\*)?\s*:\s*(.*)$/i },
+  { key: "technique", re: /^\s*(?:\*\*)?методический\s+при[её]м(?:\*\*)?\s*:\s*(.*)$/i },
+  { key: "teacherSpeech", re: /^\s*(?:\*\*)?речь\s+учителя(?:\*\*)?\s*:\s*(.*)$/i },
+  {
+    key: "studentAnswers",
+    re: /^\s*(?:\*\*)?предполагаемые\s+ответы\s+учеников(?:\*\*)?\s*:\s*(.*)$/i,
+  },
+  { key: "students", re: /^\s*(?:\*\*)?ученики(?:\*\*)?\s*:\s*(.*)$/i },
+  { key: "expectedResult", re: /^\s*(?:\*\*)?ожидаемый\s+результат(?:\*\*)?\s*:\s*(.*)$/i },
+  { key: "comment", re: /^\s*(?:\*\*)?методический\s+комментарий(?:\*\*)?\s*:\s*(.*)$/i },
+];
 
 const PLACEHOLDER_VALUES = new Set([
   "...",
@@ -60,13 +93,61 @@ function isPlaceholderText(text: string): boolean {
   return false;
 }
 
-function extractActivityValue(text: string, label: "учитель" | "ученик"): string | null {
-  const re = new RegExp(
-    `^\\s*(?:\\*\\*)?${label}(?:и)?(?:\\*\\*)?\\s*:\\s*(.+)$`,
-    "im",
-  );
-  const m = re.exec(text);
-  return m ? m[1].trim() : null;
+function isFieldHeaderLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (/^#{1,3}\s/.test(trimmed)) return true;
+  if (/^время\s*:/i.test(trimmed)) return true;
+  if (TASK_LINE_RE.test(trimmed) || MATERIAL_HEADER_RE.test(trimmed)) return true;
+  return BLOCK_FIELD_RES.some(({ re }) => re.test(trimmed));
+}
+
+export function parseStageBlock(markdown: string): Partial<StageMethodologicalBlock> {
+  const lines = markdown.split(/\r?\n/);
+  const block: Partial<StageMethodologicalBlock> = {};
+  let currentKey: keyof StageMethodologicalBlock | null = null;
+  const parts: Partial<Record<keyof StageMethodologicalBlock, string[]>> = {};
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    let matched = false;
+    for (const { key, re } of BLOCK_FIELD_RES) {
+      const m = trimmed.match(re);
+      if (m) {
+        currentKey = key;
+        parts[key] = [];
+        const inline = m[1]?.trim();
+        if (inline) parts[key]!.push(inline);
+        matched = true;
+        break;
+      }
+    }
+
+    if (matched) continue;
+
+    if (currentKey) {
+      if (isFieldHeaderLine(trimmed) && !trimmed.startsWith("-") && !trimmed.startsWith("•")) {
+        const isTask = TASK_LINE_RE.test(trimmed) || MATERIAL_HEADER_RE.test(trimmed);
+        if (isTask) {
+          currentKey = null;
+        } else {
+          continue;
+        }
+      } else if (TASK_LINE_RE.test(trimmed) || MATERIAL_HEADER_RE.test(trimmed)) {
+        currentKey = null;
+      } else {
+        parts[currentKey]!.push(trimmed);
+      }
+    }
+  }
+
+  for (const key of Object.keys(parts) as Array<keyof StageMethodologicalBlock>) {
+    block[key] = parts[key]!.join("\n").trim();
+  }
+
+  return block;
 }
 
 export function parseStageTasks(markdown: string): ParsedStageTask[] {
@@ -145,28 +226,96 @@ export function parseStageTasks(markdown: string): ParsedStageTask[] {
   return tasks;
 }
 
-function validateActivityBlocks(
-  text: string,
-  issues: StageValidationIssue[],
-): void {
-  const teacher = extractActivityValue(text, "учитель");
-  const students = extractActivityValue(text, "ученик");
+function extractQuotedSpeech(text: string): string | null {
+  const matches = [...text.matchAll(/«([^»]+)»/g)].map((m) => m[1].trim());
+  if (matches.length === 0) return null;
+  return matches.join(" ");
+}
 
-  if (teacher === null) {
-    issues.push({ code: "missing_teacher", message: "Укажи блок «Учитель:»." });
-  } else if (isPlaceholderText(teacher)) {
-    issues.push({
-      code: "empty_teacher_activity",
-      message: "Блок «Учитель:» пустой или содержит плейсхолдер (... / TBD / TODO / null).",
-    });
+function countStudentAnswerBullets(text: string): number {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  let count = 0;
+  for (const line of lines) {
+    if (/^[-•*]\s+/.test(line) || /^\d+[.)]\s+/.test(line)) count += 1;
+    else if (line.includes(";") && line.length > 10) count += line.split(";").filter((p) => p.trim().length > 3).length;
+    else if (line.length > 8) count += 1;
+  }
+  return count;
+}
+
+function validateMethodologicalBlock(
+  block: Partial<StageMethodologicalBlock>,
+  stage: StageDefinition,
+  issues: StageValidationIssue[],
+  context?: StageValidationContext,
+): void {
+  const isTemplate = context?.isTemplateStage ?? false;
+
+  for (const key of Object.keys(STAGE_BLOCK_LABELS) as Array<keyof typeof STAGE_BLOCK_LABELS>) {
+    const label = STAGE_BLOCK_LABELS[key];
+    const value = block[key]?.trim();
+    if (!value || isPlaceholderText(value)) {
+      issues.push({
+        code: `missing_${key}`,
+        message: `Отсутствует или пустое поле «${label}».`,
+      });
+    }
   }
 
-  if (students === null) {
-    issues.push({ code: "missing_students", message: "Укажи блок «Ученики:»." });
-  } else if (isPlaceholderText(students)) {
+  if (block.technique && context?.requiredTechnique && !isTemplate) {
+    const expected = normalizeTechniqueName(context.requiredTechnique.name);
+    const actual = normalizeTechniqueName(block.technique);
+    if (!actual.includes(expected) && !expected.includes(actual.split(/[—–-]/)[0].trim())) {
+      issues.push({
+        code: "technique_mismatch",
+        message: `Методический приём должен быть «${context.requiredTechnique.name}».`,
+      });
+    }
+  }
+
+  if (block.teacherSpeech && !isTemplate) {
+    const quoted = extractQuotedSpeech(block.teacherSpeech);
+    if (!quoted || quoted.length < MIN_TEACHER_SPEECH_QUOTED_CHARS) {
+      issues.push({
+        code: "missing_teacher_speech",
+        message: `«Речь учителя:» должна содержать готовую речь в кавычках «…» (не менее ${MIN_TEACHER_SPEECH_QUOTED_CHARS} символов).`,
+      });
+    }
+
+    const speechLower = block.teacherSpeech.toLowerCase();
+    const onlyGeneric = GENERIC_TEACHER_PHRASES.some(
+      (p) => speechLower.includes(p) && (!quoted || quoted.length < 60),
+    );
+    if (onlyGeneric) {
+      issues.push({
+        code: "generic_teacher_speech",
+        message:
+          "Замени шаблонные формулировки («организует обсуждение», «объясняет тему») на конкретную готовую речь с вопросами и инструкциями.",
+      });
+    }
+  }
+
+  if (STAGES_REQUIRING_STUDENT_ANSWERS.has(stage.id) && block.studentAnswers) {
+    const bullets = countStudentAnswerBullets(block.studentAnswers);
+    if (bullets < MIN_STUDENT_ANSWER_BULLETS) {
+      issues.push({
+        code: "missing_student_answers",
+        message: `«Предполагаемые ответы учеников:» — минимум ${MIN_STUDENT_ANSWER_BULLETS} варианта (маркированный список).`,
+      });
+    }
+    const hasDifficulty = hasAny(block.studentAnswers, ["затруднен", "ошибк", "не знаю", "сомнен", "типичн"]);
+    if (!hasDifficulty) {
+      issues.push({
+        code: "missing_typical_difficulty",
+        message: "В ответах учеников укажи типичное затруднение или ошибку.",
+      });
+    }
+  }
+
+  if (block.expectedResult && block.expectedResult.length < MIN_EXPECTED_RESULT_CHARS) {
     issues.push({
-      code: "empty_student_activity",
-      message: "Блок «Ученики:» пустой или содержит плейсхолдер (... / TBD / TODO / null).",
+      code: "short_expected_result",
+      message: `«Ожидаемый результат:» слишком короткий (минимум ${MIN_EXPECTED_RESULT_CHARS} символов).`,
     });
   }
 }
@@ -259,21 +408,89 @@ function validateStageContentRules(
       });
     }
   }
+
+  if (rule.requiredPatterns?.length) {
+    if (!hasAny(text, rule.requiredPatterns)) {
+      issues.push({
+        code: "stage_logic_required",
+        message: `Этап «${stage.title}»: нужны маркеры методической логики (${rule.requiredPatterns.slice(0, 3).join(", ")}).`,
+      });
+    }
+  }
 }
 
-function countTasks(text: string): number {
-  return parseStageTasks(text).length;
+function validateProblemSituationTask(
+  text: string,
+  stage: StageDefinition,
+  context: StageValidationContext | undefined,
+  issues: StageValidationIssue[],
+): void {
+  if (stage.id !== "problem_situation_goal") return;
+  const topic = context?.topic?.trim().toLowerCase();
+  if (!topic || topic.length < 3) return;
+
+  const topicMarkers = topic
+    .split(/\s+/)
+    .filter((w) => w.length >= 4)
+    .flatMap((w) => [w, w.slice(0, 5)]);
+
+  const tasks = parseStageTasks(text);
+  for (const task of tasks) {
+    const cond = task.condition.toLowerCase();
+    const appliesNewMethod =
+      hasAny(cond, ["найд", "вычисл", "примен", "реш", "определ"]) &&
+      hasAny(cond, topicMarkers) &&
+      !hasAny(cond, ["пробн", "попроб", "известн", "ранее", "раньше", "без нового", "не используя"]);
+
+    if (
+      appliesNewMethod &&
+      task.answer &&
+      !hasAny(task.answer, ["затруднен", "не получ", "разные", "ошибк", "не знаю", "не могу"])
+    ) {
+      issues.push({
+        code: "premature_solution",
+        message:
+          "Проблемная ситуация: задание не должно требовать ещё не открытого способа решения. Создай затруднение, а не эталонный ответ.",
+      });
+    }
+  }
+}
+
+function validateSubjectContent(
+  text: string,
+  stage: StageDefinition,
+  profile: SubjectProfile,
+  issues: StageValidationIssue[],
+): void {
+  const keyStages = [
+    "problem_situation_goal",
+    "knowledge_activation",
+    "primary_acquisition",
+    "primary_consolidation",
+    "primary_comprehension_check",
+  ];
+  if (!keyStages.includes(stage.id)) return;
+
+  const materialHits = profile.requiredMaterials.filter((m) => hasAny(text, [m]));
+  const taskCount = parseStageTasks(text).length;
+  if (materialHits.length < 1 && taskCount < 1) {
+    issues.push({
+      code: "subject_content_missing",
+      message: `Добавь предметное содержание (${profile.requiredMaterials.slice(0, 4).join(", ")}).`,
+    });
+  }
 }
 
 export function validateStageMarkdown(
   markdown: string,
   stage: StageDefinition,
   profile: SubjectProfile,
+  context?: StageValidationContext,
 ): StageValidationResult {
   const text = markdown.trim();
   const issues: StageValidationIssue[] = [];
 
-  if (text.length < 80) {
+  if (text.length < 120) {
     issues.push({ code: "too_short", message: "Этап слишком короткий." });
   }
 
@@ -281,7 +498,8 @@ export function validateStageMarkdown(
     issues.push({ code: "missing_time", message: "Укажи строку «Время: N мин»." });
   }
 
-  validateActivityBlocks(text, issues);
+  const block = parseStageBlock(text);
+  validateMethodologicalBlock(block, stage, issues, context);
   validatePlaceholdersInBody(text, issues);
 
   for (const forbidden of stage.forbidden) {
@@ -304,67 +522,23 @@ export function validateStageMarkdown(
 
   validateStageContentRules(text, stage, issues);
   validateTasks(text, stage, issues);
+  validateProblemSituationTask(text, stage, context, issues);
+  validateSubjectContent(text, stage, profile, issues);
 
-  const needsTrial = stage.id === "knowledge_activation";
-  const needsDifficulty =
-    stage.id === "knowledge_activation" || stage.id === "problem_situation_goal";
-  const needsBenchmark =
-    stage.id === "primary_acquisition" ||
-    stage.id === "primary_consolidation" ||
-    stage.id === "primary_comprehension_check";
+  const prevTasks = context?.previousTaskConditions ?? [];
+  const duplicate = findDuplicateTasksInStage(text, prevTasks);
+  if (duplicate) {
+    issues.push({
+      code: "duplicate_task",
+      message: `Задание повторяет предыдущий этап по сути: «${duplicate.slice(0, 80)}…». Сформулируй другое задание.`,
+    });
+  }
+
   const needsHomework = stage.id === "homework_info";
-  const needsReflection = stage.id === "reflection";
-
-  if (needsTrial && !hasAny(text, ["пробн", "попроб", "выполн"])) {
-    issues.push({
-      code: "missing_trial",
-      message: "Актуализация: нужно пробное учебное действие.",
-    });
-  }
-
-  if (
-    needsDifficulty &&
-    !hasAny(text, ["затруднен", "не получ", "ошибк", "разные ответ", "сомнен"])
-  ) {
-    issues.push({
-      code: "missing_difficulty",
-      message: "Зафиксируй затруднение учащихся.",
-    });
-  }
-
-  if (
-    needsBenchmark &&
-    !hasAny(text, ["эталон", "правил", "алгоритм", "схем", "модел", "формул"])
-  ) {
-    issues.push({
-      code: "missing_benchmark",
-      message: "Нужен эталон: правило, алгоритм, схема или модель.",
-    });
-  }
-
   if (needsHomework && !hasAny(text, ["домашн", "дз", "задани"])) {
     issues.push({
       code: "missing_homework",
       message: "Укажи конкретные задания домашней работы.",
-    });
-  }
-
-  if (needsReflection && !hasAny(text, ["рефлекс", "итог", "самооцен", "лист"])) {
-    issues.push({
-      code: "missing_reflection",
-      message: "Рефлексия: укажи приём рефлексии или итог урока.",
-    });
-  }
-
-  const materialHits = profile.requiredMaterials.filter((m) => hasAny(text, [m]));
-  if (
-    ["primary_acquisition", "primary_consolidation", "knowledge_activation"].includes(stage.id) &&
-    materialHits.length < 1 &&
-    countTasks(text) < 1
-  ) {
-    issues.push({
-      code: "subject_materials",
-      message: `Добавь предметный материал (${profile.requiredMaterials.slice(0, 3).join(", ")}).`,
     });
   }
 
@@ -377,12 +551,20 @@ export function buildStageFixInstructions(issues: StageValidationIssue[]): strin
     "ЭТАП НЕ ПРОШЁЛ ПРОВЕРКУ:",
     ...issues.map((i) => `● ${i.message}`),
     "",
-    "Исправь только этот этап. Сохрани формат Markdown-карточки.",
-    "Каждое «Задание N.M» обязано содержать: (1) условие, (2) строку «Ответ:» с непустым ожидаемым ответом.",
-    "Опционально под заданием: «Пояснение для учителя:».",
-    "Запрещены плейсхолдеры: ..., TBD, TODO, null. Блоки «Учитель:» и «Ученики:» — с конкретным содержанием.",
-    "Содержание этапа должно соответствовать его цели FGOS (без запрещённых приёмов для этого этапа).",
-    "Ответы — inline под «Задание N.M», не в конце плана.",
+    "Исправь только этот этап. Сохрани формат методического блока:",
+    "## {название этапа}",
+    "Время: N мин",
+    "Цель: …",
+    "Методический приём: …",
+    "Речь учителя: «конкретная готовая речь с вопросами»",
+    "Предполагаемые ответы учеников:",
+    "- вариант 1; - вариант 2; - типичное затруднение",
+    "Ученики: …",
+    "Задание N.M: …",
+    "Ответ: …",
+    "Ожидаемый результат: …",
+    "Методический комментарий: …",
+    "Не повторяй задания предыдущих этапов. Запрещены плейсхолдеры: ..., TBD, TODO, null.",
   ].join("\n");
 }
 

@@ -5,6 +5,8 @@
 export type StageContentRule = {
   /** Подстроки, недопустимые на этом этапе. */
   forbidden: string[];
+  /** Подстроки, которые должны присутствовать (методическая логика). */
+  requiredPatterns?: string[];
   /** Этап должен содержать нумерованные задания с ответами. */
   requiresTasks?: boolean;
   minTasks?: number;
@@ -12,17 +14,35 @@ export type StageContentRule = {
 
 export const STAGE_CONTENT_RULES: Partial<Record<string, StageContentRule>> = {
   problem_situation_goal: {
-    forbidden: ["рефлексия", "домашнее задание", "готовый вывод правила", "эталонное решение"],
+    forbidden: [
+      "рефлексия",
+      "домашнее задание",
+      "готовый вывод правила",
+      "эталонное решение",
+      "алгоритм решения",
+      "готовое правило",
+      "формула для решения",
+    ],
+    requiredPatterns: ["затруднен", "проблем", "вопрос", "противореч", "не получ", "сомнен"],
     requiresTasks: true,
     minTasks: 1,
   },
   knowledge_activation: {
-    forbidden: ["рефлексия", "объяснение нового материала", "итог урока", "самооценк"],
+    forbidden: [
+      "рефлексия",
+      "объяснение нового материала",
+      "итог урока",
+      "самооценк",
+      "эталонное правило",
+      "готовый алгоритм",
+    ],
+    requiredPatterns: ["пробн", "попроб", "выполн", "затруднен"],
     requiresTasks: true,
     minTasks: 1,
   },
   primary_acquisition: {
     forbidden: ["рефлексия", "фронтальный опрос", "опрос класса", "проектная работа", "групповой проект"],
+    requiredPatterns: ["эталон", "правил", "алгоритм", "вывод", "схем", "формул"],
     requiresTasks: true,
     minTasks: 1,
   },
@@ -44,7 +64,11 @@ export const STAGE_CONTENT_RULES: Partial<Record<string, StageContentRule>> = {
       "самооценк",
       "итог урока",
       "подведение итог",
+      "новое правило",
+      "открытие нового",
+      "объяснение темы",
     ],
+    requiredPatterns: ["примен", "реши", "выполн", "тренир", "задач", "упражнен"],
     requiresTasks: true,
     minTasks: 1,
   },
@@ -80,12 +104,35 @@ export const STAGE_CONTENT_RULES: Partial<Record<string, StageContentRule>> = {
   },
   goal_setting_motivation: {
     forbidden: ["рефлексия", "домашнее задание", "проверочная работа"],
+    requiredPatterns: ["цел", "мотив", "задач урок"],
   },
   reflection: {
-    forbidden: ["новое объяснение", "первичное усвоение", "эталонное правило"],
+    forbidden: [
+      "новое объяснение",
+      "первичное усвоение",
+      "эталонное правило",
+      "открытие нового",
+      "новая тема",
+      "алгоритм решения",
+    ],
+    requiredPatterns: ["рефлекс", "итог", "самооцен", "понял", "узнал"],
+  },
+  organizational_moment: {
+    forbidden: ["объяснение нового материала", "рефлексия", "домашнее задание"],
   },
 };
 
 export function getStageContentRule(stageId: string): StageContentRule | undefined {
   return STAGE_CONTENT_RULES[stageId];
+}
+
+export function getStageLogicForPrompt(stageId: string): {
+  forbidden: string[];
+  requiredPatterns: string[];
+} {
+  const rule = getStageContentRule(stageId);
+  return {
+    forbidden: rule?.forbidden ?? [],
+    requiredPatterns: rule?.requiredPatterns ?? [],
+  };
 }
