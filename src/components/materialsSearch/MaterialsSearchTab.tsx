@@ -30,12 +30,32 @@ function isDebugMaterialsEnabled(): boolean {
   );
 }
 
-function limitResults(
+async function enrichArticleSections(results: SearchResult[]): Promise<SearchResult[]> {
+  if (results.length === 0) return results;
+  const needsEnrich = results.some((r) => !r.articleSection?.trim() && r.url.includes("urok.1sept.ru"));
+  if (!needsEnrich) return results;
+
+  try {
+    const res = await fetch("/api/enrich-materials", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ results }),
+    });
+    if (!res.ok) return results;
+    const data = (await res.json()) as { results?: SearchResult[] };
+    return Array.isArray(data.results) ? data.results : results;
+  } catch {
+    return results;
+  }
+}
+
+async function limitResults(
   results: SearchResult[],
   context: { query: string; subject: string; grade: string },
   debug: boolean,
-): SearchResult[] {
-  const ranked = rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS, context, {
+): Promise<SearchResult[]> {
+  const enriched = await enrichArticleSections(results);
+  const ranked = rankAndLimitMaterials(enriched, MAX_VISIBLE_RESULTS, context, {
     debug,
     minStrictResults: 3,
   });
@@ -97,13 +117,9 @@ async function searchMaterials(body: {
     throw new Error(friendlySearchError(parts.join("\n\n") || `Ошибка поиска: HTTP ${res.status}`));
   }
 
-  return {
-    results: limitResults(
-      Array.isArray(data.results) ? data.results : [],
-      body,
-      isDebugMaterialsEnabled(),
-    ),
-  };
+  const raw = Array.isArray(data.results) ? data.results : [];
+  const results = await limitResults(raw, body, isDebugMaterialsEnabled());
+  return { results };
 }
 
 function hostnameFromUrl(url: string): string {
@@ -137,13 +153,17 @@ export function MaterialsSearchTab({
   const debugMaterials = useMemo(() => isDebugMaterialsEnabled(), []);
 
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
-    const limited = limitResults(
-      next,
-      { query, subject, grade },
-      debugMaterials,
-    );
-    setResults(limited);
-    setError(null);
+    void (async () => {
+      try {
+        const limited = await limitResults(next, { query, subject, grade }, debugMaterials);
+        setResults(limited);
+        setError(null);
+      } catch (e) {
+        setResults([]);
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(friendlySearchError(msg));
+      }
+    })();
   };
 
   const handleSubjectChange = (nextSubject: string) => {

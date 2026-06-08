@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { build1septSearchQuery, PUBLICATIONS_SITE_OPERATOR } from "@/lib/build1septSearchQuery";
+import {
+  enrichMaterialArticleSections,
+  extractArticleSectionFromPagemap,
+} from "@/lib/materialPageMeta";
 import { rankAndLimitMaterials } from "@/lib/materialsSearchRanking";
 
 export const runtime = "nodejs";
@@ -15,6 +19,7 @@ type GoogleCseItem = {
   title?: string;
   link?: string;
   snippet?: string;
+  pagemap?: { metatags?: Array<Record<string, string | undefined>> };
 };
 
 type GoogleCseResponse = {
@@ -130,19 +135,18 @@ export async function POST(req: Request) {
   }
 
   const items = data.items ?? [];
-  const results = rankAndLimitMaterials(
-    items.map((it) => ({
-      title: (it.title ?? "").replace(/<[^>]+>/g, "").trim() || "Без названия",
-      url: it.link ?? "",
-      snippet: (it.snippet ?? "").trim(),
-    })),
-    10,
-    {
-      query: rawQ,
-      subject: body.subject,
-      grade: body.grade,
-    },
-  );
+  const candidates = items.map((it) => ({
+    title: (it.title ?? "").replace(/<[^>]+>/g, "").trim() || "Без названия",
+    url: it.link ?? "",
+    snippet: (it.snippet ?? "").trim(),
+    articleSection: extractArticleSectionFromPagemap(it.pagemap),
+  }));
+  const enriched = await enrichMaterialArticleSections(candidates);
+  const results = rankAndLimitMaterials(enriched, 10, {
+    query: rawQ,
+    subject: body.subject,
+    grade: body.grade,
+  });
 
   return NextResponse.json({ results });
 }

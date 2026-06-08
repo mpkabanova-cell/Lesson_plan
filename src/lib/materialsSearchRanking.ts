@@ -19,6 +19,8 @@ export type MaterialSearchResult = {
   title: string;
   url: string;
   snippet?: string;
+  /** Предмет со страницы: meta property="article:section" (Google pagemap или fetch). */
+  articleSection?: string;
   meta?: MaterialSearchMeta;
   _breakdown?: MaterialScoreBreakdown;
 };
@@ -55,7 +57,18 @@ const ROMAN_GRADE: Record<string, string> = {
 };
 
 export const SUBJECT_MARKERS: Record<string, string[]> = {
-  "Русский язык": ["русский язык", "орфография", "пунктуация", "морфология", "фонетика", "лексика"],
+  "Русский язык": [
+    "русский язык",
+    "орфография",
+    "пунктуация",
+    "морфология",
+    "фонетика",
+    "лексика",
+    "правописание",
+    "приставк",
+    "корень",
+    "суффикс",
+  ],
   "Литературное чтение": ["литературное чтение", "текст", "чтение", "сказка"],
   Литература: ["литература", "литературный", "стихотворение", "проза", "анализ текста"],
   Математика: ["математика", "математический", "дроби", "уравнение", "арифметика", "геометрия"],
@@ -103,7 +116,22 @@ function normalizeText(value: string): string {
 }
 
 function haystack(result: MaterialSearchResult): string {
-  return normalizeText(`${result.title} ${result.snippet ?? ""} ${result.url}`).toLowerCase();
+  return normalizeText(
+    `${result.title} ${result.snippet ?? ""} ${result.articleSection ?? ""} ${result.url}`,
+  ).toLowerCase();
+}
+
+function subjectFromArticleSection(section?: string): string | undefined {
+  const normalized = (section ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+  if (!normalized) return undefined;
+  const names = Object.keys(SUBJECT_MARKERS).sort((a, b) => b.length - a.length);
+  for (const name of names) {
+    const nl = name.toLowerCase();
+    if (normalized === nl || normalized.startsWith(`${nl}:`) || normalized.includes(nl)) {
+      return name;
+    }
+  }
+  return undefined;
 }
 
 function tokenizeForMatch(text: string): string[] {
@@ -116,6 +144,66 @@ function tokenizeForMatch(text: string): string[] {
         .filter((t) => t.length >= 3 && !STOP_WORDS.has(t)),
     ),
   ];
+}
+
+/** Короткие маркеры, которые нельзя искать подстрокой (право → правописание). */
+const BOUNDARY_MARKERS = new Set([
+  "право",
+  "прав",
+  "текст",
+  "общество",
+  "закон",
+  "опыт",
+  "чтение",
+  "код",
+  "цикл",
+  "правил",
+  "формул",
+  "класс",
+]);
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hayIncludesMarker(hay: string, marker: string): boolean {
+  const m = marker.toLowerCase().trim();
+  if (!m) return false;
+  if (BOUNDARY_MARKERS.has(m) || m.length <= 5) {
+    const re = new RegExp(
+      `(?:^|[^\\p{L}\\p{N}])${escapeRegExp(m)}(?:[^\\p{L}\\p{N}]|$)`,
+      "iu",
+    );
+    return re.test(hay);
+  }
+  return hay.includes(m);
+}
+
+/** Явное название предмета (article:section — приоритет, затем текст). */
+export function detectExplicitSubject(hay: string, articleSection?: string): string | undefined {
+  const fromMeta = subjectFromArticleSection(articleSection);
+  if (fromMeta) return fromMeta;
+
+  const h = hay.toLowerCase();
+  const names = Object.keys(SUBJECT_MARKERS).sort((a, b) => b.length - a.length);
+  for (const name of names) {
+    const nl = name.toLowerCase();
+    if (h.includes(nl)) return name;
+  }
+  return undefined;
+}
+
+function resolveDetectedSubject(
+  hay: string,
+  subject: string,
+  subjectInfo: ReturnType<typeof detectSubjectInMaterial>,
+  articleSection?: string,
+): string | undefined {
+  const explicit = detectExplicitSubject(hay, articleSection);
+  if (explicit) return explicit;
+  if (subjectInfo.other && subjectInfo.detectedName) return subjectInfo.detectedName;
+  if (subjectInfo.selected && subject) return subject;
+  return undefined;
 }
 
 function subjectHints(subject: string): string[] {
@@ -226,15 +314,26 @@ export function detectMaterialType(hay: string): { label: string; score: number 
 export function detectSubjectInMaterial(
   hay: string,
   selectedSubject: string,
+  articleSection?: string,
 ): { selected: boolean; other: boolean; detectedName?: string } {
+  const explicit = detectExplicitSubject(hay, articleSection);
+  if (explicit) {
+    const selected = !selectedSubject.trim() || explicit === selectedSubject;
+    return {
+      selected,
+      other: Boolean(selectedSubject.trim()) && explicit !== selectedSubject,
+      detectedName: explicit,
+    };
+  }
+
   if (!selectedSubject.trim()) return { selected: false, other: false };
 
   const selectedMarkers = subjectHints(selectedSubject);
-  const selected = selectedMarkers.some((m) => hay.includes(m.toLowerCase()));
+  const selected = selectedMarkers.some((m) => hayIncludesMarker(hay, m));
 
   for (const [name, markers] of Object.entries(SUBJECT_MARKERS)) {
     if (name === selectedSubject) continue;
-    if (markers.some((m) => hay.includes(m))) {
+    if (markers.some((m) => hayIncludesMarker(hay, m))) {
       return { selected, other: true, detectedName: name };
     }
   }
@@ -332,22 +431,22 @@ function scoreMaterialInternal<T extends MaterialSearchResult>(
   }
 
   const subject = context.subject ?? "";
-  const subjectInfo = detectSubjectInMaterial(hay, subject);
+  const subjectInfo = detectSubjectInMaterial(hay, subject, result.articleSection);
   let subjectScore = 0;
   let detectedSubject: string | undefined;
 
   if (subject) {
     const markers = subjectHints(subject);
-    if (markers.some((m) => title.includes(m))) subjectScore += 16;
-    else if (markers.some((m) => hay.includes(m))) subjectScore += 8;
-    else penaltyScore -= Math.round(8 * pm);
+    if (markers.some((m) => hayIncludesMarker(title, m))) subjectScore += 16;
+    else if (markers.some((m) => hayIncludesMarker(hay, m))) subjectScore += 8;
+    else if (!result.articleSection) penaltyScore -= Math.round(8 * pm);
 
     if (subjectInfo.other) {
       penaltyScore -= Math.round(25 * pm);
-      detectedSubject = subjectInfo.detectedName;
-    } else if (subjectInfo.selected) {
-      detectedSubject = subject;
     }
+    detectedSubject = resolveDetectedSubject(hay, subject, subjectInfo, result.articleSection);
+  } else if (result.articleSection) {
+    detectedSubject = resolveDetectedSubject(hay, subject, subjectInfo, result.articleSection);
   }
 
   const materialTypeHit = detectMaterialType(hay);
@@ -455,7 +554,7 @@ function attachMetaFromHaystack<T extends MaterialSearchResult>(
   const materialTypeHit = detectMaterialType(hay);
   const mentioned = [...gradesMentionedInHay(hay)];
   const subject = context.subject ?? "";
-  const subjectInfo = detectSubjectInMaterial(hay, subject);
+  const subjectInfo = detectSubjectInMaterial(hay, subject, result.articleSection);
   const gradeMatch = detectGrade(hay, context.grade ?? "");
 
   let detectedGrade: string | undefined;
@@ -465,12 +564,7 @@ function attachMetaFromHaystack<T extends MaterialSearchResult>(
     detectedGrade = mentioned[0];
   }
 
-  let detectedSubject: string | undefined;
-  if (subjectInfo.other) {
-    detectedSubject = subjectInfo.detectedName;
-  } else if (subjectInfo.selected && subject) {
-    detectedSubject = subject;
-  }
+  const detectedSubject = resolveDetectedSubject(hay, subject, subjectInfo, result.articleSection);
 
   return {
     ...result,

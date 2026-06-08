@@ -200,6 +200,13 @@ Fallback-кнопки в Google не затрагиваются.
 
 Из `result.meta`: год, класс, предмет, тип материала (если удалось извлечь из title/snippet).
 
+**Предмет на плашке** — в приоритете `<meta property="article:section" content="…">` со страницы публикации на `urok.1sept.ru`:
+
+1. Google JSON API: `items[].pagemap.metatags[0]['article:section']` (если есть в индексе)
+2. Основной режим (CSE embed): серверный `POST /api/enrich-materials` — лёгкий fetch HTML публикации и парсинг meta (до 4 параллельно, таймаут ~3.5 с)
+
+Значение `article:section` имеет приоритет над эвристиками по словам в сниппете (например, «право» в «правописание»).
+
 Без контекста (пустой query/subject/grade) — сортировка только по году, затем по порядку Google.
 
 Итог: **не более 10** карточек (`MAX_VISIBLE_RESULTS`).

@@ -467,9 +467,39 @@ const assembledVal = validateAssembledLesson(assembled, {
 assert.ok(Array.isArray(assembledVal.failedStageIds));
 
 // --- materials search ranking v2 ---
-const { rankAndLimitMaterials, scoreMaterial, extractYear } = await import(
+const { rankAndLimitMaterials, scoreMaterial, extractYear, detectExplicitSubject } = await import(
   "../src/lib/materialsSearchRanking.ts"
 );
+const { extractArticleSectionFromHtml } = await import("../src/lib/materialPageMeta.ts");
+
+const articleSectionHtml =
+  '<html><head><meta property="article:section" content="Русский язык"></head><body></body></html>';
+assert.equal(extractArticleSectionFromHtml(articleSectionHtml), "Русский язык");
+
+const pravopisanieMaterial = {
+  title: "Правописание приставок при- и пре-. 5-й класс - Открытый урок",
+  snippet:
+    "16 янв. 2013 г. ... Приставка ПРЕ- - дочь приставки ПЕРЕ-. Русский язык: 5 класс. / Сост. Н.В. Егорова.",
+  url: "https://urok.1sept.ru/publication/pravopisanie-pri-pre",
+};
+assert.equal(detectExplicitSubject(pravopisanieMaterial.snippet), "Русский язык");
+const pravScore = scoreMaterial(pravopisanieMaterial, {
+  query: "приставки при и пре",
+  subject: "Русский язык",
+  grade: "5",
+});
+assert.equal(pravScore.meta.detectedSubject, "Русский язык");
+
+const pravFromMetaOnly = scoreMaterial(
+  {
+    title: "Правописание приставок при- и пре-",
+    snippet: "краткое описание без названия предмета",
+    url: "https://urok.1sept.ru/publication/x",
+    articleSection: "Русский язык",
+  },
+  { query: "приставки", subject: "Обществознание", grade: "5" },
+);
+assert.equal(pravFromMetaOnly.meta.detectedSubject, "Русский язык");
 
 assert.equal(extractYear("18 мая 2012 г. Условный оператор"), 2012);
 assert.equal(extractYear("17 февр. 2009 г. материал"), 2009);
