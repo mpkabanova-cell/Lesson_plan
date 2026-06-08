@@ -521,8 +521,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     setGenerateStartedAt(null);
     setLoading(false);
     setActiveWorkspace("lesson");
-    setMaterialsWorkspaceMounted(false);
-    setMaterialsSessionKey((k) => k + 1);
   }, []);
 
   useLayoutEffect(() => {

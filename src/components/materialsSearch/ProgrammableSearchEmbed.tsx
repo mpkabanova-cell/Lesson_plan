@@ -190,6 +190,38 @@ function resultsSignature(results: ProgrammableSearchResult[]): string {
   return results.map((result) => canonicalUrl(result.url)).join("|");
 }
 
+function cseReportsNoResults(host: ParentNode | null): boolean {
+  const roots: ParentNode[] = [];
+  if (host) roots.push(host);
+  if (typeof document !== "undefined") roots.push(document);
+  for (const root of roots) {
+    if (
+      root.querySelector(
+        ".gs-no-results-result, .gsc-no-results, .gsc-result-info-invisible[style*='display: none']",
+      )
+    ) {
+      return true;
+    }
+    const info = root.querySelector(".gsc-result-info");
+    if (info && /ничего не найдено|no results found/i.test(normalizeText(info.textContent))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function cseSearchBusy(host: ParentNode | null): boolean {
+  const roots: ParentNode[] = [];
+  if (host) roots.push(host);
+  if (typeof document !== "undefined") roots.push(document);
+  for (const root of roots) {
+    if (root.querySelector(".gsc-loading, .gsc-loading-results, .gsc-loading-fade")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 type GoGetter = () => HTMLElement | null;
 
 function scheduleGo(getTarget: GoGetter, onGo?: () => void) {
@@ -285,14 +317,19 @@ export const ProgrammableSearchEmbed = forwardRef<ProgrammableSearchEmbedHandle,
     const startWaitForResultsDom = (previousSignature: string) => {
       clearResultWait();
       let ticks = 0;
-      const maxTicks = 55;
+      const maxTicks = 75;
       searchResultWaitRef.current = setInterval(() => {
         ticks += 1;
         const ownResults = extractCseResults(hostRef.current);
         const documentResults = ownResults.length > 0 ? ownResults : extractCseResults(document);
         const nextSignature = resultsSignature(documentResults);
         const hasNewResults = documentResults.length > 0 && nextSignature !== previousSignature;
-        if (hasNewResults || ticks >= maxTicks) {
+        const confirmedEmpty =
+          documentResults.length === 0 &&
+          !cseSearchBusy(hostRef.current) &&
+          cseReportsNoResults(hostRef.current) &&
+          ticks >= 4;
+        if (hasNewResults || confirmedEmpty || ticks >= maxTicks) {
           publishResults();
           settleSearchBusy();
         }
