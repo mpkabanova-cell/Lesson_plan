@@ -22,11 +22,40 @@ type SearchResult = MaterialSearchResult;
 const MAX_VISIBLE_RESULTS = 10;
 const PUBLICATIONS_PORTAL_URL = "https://urok.1sept.ru/";
 
+function isDebugMaterialsEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    process.env.NODE_ENV === "development" ||
+    new URLSearchParams(window.location.search).get("debugMaterials") === "1"
+  );
+}
+
 function limitResults(
   results: SearchResult[],
   context: { query: string; subject: string; grade: string },
+  debug: boolean,
 ): SearchResult[] {
-  return rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS, context);
+  const ranked = rankAndLimitMaterials(results, MAX_VISIBLE_RESULTS, context, {
+    debug,
+    minStrictResults: 3,
+  });
+  if (debug && ranked.length > 0) {
+    console.table(
+      ranked.map((item) => ({
+        title: item.title.slice(0, 60),
+        url: item.url,
+        year: item.meta?.year ?? "—",
+        relevance: item._breakdown?.relevanceScore,
+        subject: item._breakdown?.subjectScore,
+        grade: item._breakdown?.gradeScore,
+        freshness: item._breakdown?.freshnessScore,
+        materialType: item._breakdown?.materialTypeScore,
+        penalty: item._breakdown?.penaltyScore,
+        final: item._breakdown?.finalScore,
+      })),
+    );
+  }
+  return ranked;
 }
 
 function friendlySearchError(message: string): string {
@@ -69,7 +98,11 @@ async function searchMaterials(body: {
   }
 
   return {
-    results: limitResults(Array.isArray(data.results) ? data.results : [], body),
+    results: limitResults(
+      Array.isArray(data.results) ? data.results : [],
+      body,
+      isDebugMaterialsEnabled(),
+    ),
   };
 }
 
@@ -101,8 +134,14 @@ export function MaterialsSearchTab({
     programmableSearchCx?.trim() || process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim(),
   );
 
+  const debugMaterials = useMemo(() => isDebugMaterialsEnabled(), []);
+
   const handleCseResults = (next: ProgrammableSearchResult[]) => {
-    const limited = limitResults(next, { query, subject, grade });
+    const limited = limitResults(
+      next,
+      { query, subject, grade },
+      debugMaterials,
+    );
     setResults(limited);
     setError(null);
   };
@@ -304,6 +343,34 @@ export function MaterialsSearchTab({
                         <p className="text-sm font-semibold leading-snug text-slate-900 group-hover:text-teal-900">
                           {item.title}
                         </p>
+                        {item.meta &&
+                        (item.meta.year ||
+                          item.meta.detectedGrade ||
+                          item.meta.detectedSubject ||
+                          item.meta.materialType) ? (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {item.meta.detectedGrade ? (
+                              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-800 ring-1 ring-indigo-100">
+                                {item.meta.detectedGrade} класс
+                              </span>
+                            ) : null}
+                            {item.meta.detectedSubject ? (
+                              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-800 ring-1 ring-violet-100">
+                                {item.meta.detectedSubject}
+                              </span>
+                            ) : null}
+                            {item.meta.year ? (
+                              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-900 ring-1 ring-amber-100">
+                                {item.meta.year}
+                              </span>
+                            ) : null}
+                            {item.meta.materialType ? (
+                              <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-800 ring-1 ring-teal-100">
+                                {item.meta.materialType}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
                         {item.snippet ? (
                           <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600">
                             {item.snippet}

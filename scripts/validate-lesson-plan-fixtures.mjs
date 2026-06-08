@@ -344,4 +344,111 @@ const assembledVal = validateAssembledLesson(assembled, {
 });
 assert.ok(Array.isArray(assembledVal.failedStageIds));
 
+// --- materials search ranking v2 ---
+const { rankAndLimitMaterials, scoreMaterial } = await import(
+  "../src/lib/materialsSearchRanking.ts"
+);
+
+const rankCtx = { query: "дроби", subject: "Математика", grade: "5" };
+
+const oldIrrelevant = {
+  title: "Общая методическая статья 2010",
+  snippet: "советы педагогам без темы",
+  url: "https://urok.1sept.ru/publication/old1",
+};
+const oldRelevant = {
+  title: "Дроби для начальной школы 2010",
+  snippet: "конспект урока",
+  url: "https://urok.1sept.ru/publication/old2",
+};
+const freshRelevant = {
+  title: "Дроби обыкновенные",
+  snippet: "конспект урока 5 класс математика 2024",
+  url: "https://urok.1sept.ru/publication/new1",
+};
+
+const oldGateBad = scoreMaterial(oldIrrelevant, rankCtx);
+assert.equal(oldGateBad.passesStrictGate, false);
+
+const oldGateGood = scoreMaterial(oldRelevant, rankCtx);
+assert.equal(oldGateGood.passesStrictGate, true);
+
+const strictPool = [
+  oldIrrelevant,
+  oldRelevant,
+  freshRelevant,
+  {
+    title: "Дроби: практикум 2022",
+    snippet: "математика 5 класс конспект",
+    url: "https://urok.1sept.ru/publication/p1",
+  },
+  {
+    title: "Дроби: задания 2023",
+    snippet: "математика 5 класс",
+    url: "https://urok.1sept.ru/publication/p2",
+  },
+];
+const strictRanked = rankAndLimitMaterials(strictPool, 10, rankCtx);
+assert.ok(!strictRanked.some((r) => r.title.includes("Общая методическая")));
+assert.ok(strictRanked[0].title.toLowerCase().includes("дроби"));
+
+const g5 = {
+  title: "Дроби 5 класс конспект урока",
+  snippet: "математика задания",
+  url: "https://urok.1sept.ru/publication/g5",
+};
+const g8 = {
+  title: "Дроби 8 класс конспект урока",
+  snippet: "математика задания",
+  url: "https://urok.1sept.ru/publication/g8",
+};
+const gradeRanked = rankAndLimitMaterials([g8, g5], 2, rankCtx);
+assert.equal(gradeRanked[0].title, g5.title);
+
+const noTopic = {
+  title: "Новости школы",
+  snippet: "объявление мероприятия",
+  url: "https://urok.1sept.ru/publication/news",
+};
+const withTopic = {
+  title: "Дроби конспект",
+  snippet: "урок математика",
+  url: "https://urok.1sept.ru/publication/ok",
+};
+assert.ok(
+  scoreMaterial(withTopic, rankCtx).breakdown.finalScore >
+    scoreMaterial(noTopic, rankCtx).breakdown.finalScore,
+);
+
+const konspekt = {
+  title: "Конспект урока: дроби",
+  snippet: "математика 5 класс",
+  url: "https://urok.1sept.ru/publication/k",
+};
+const news = {
+  title: "Новости образования",
+  snippet: "анонс конкурса",
+  url: "https://urok.1sept.ru/publication/n",
+};
+const typeRanked = rankAndLimitMaterials([news, konspekt], 2, rankCtx);
+assert.ok(typeRanked[0].title.toLowerCase().includes("конспект"));
+
+const sparseCandidates = [
+  { title: "Старый материал 2008", snippet: "общее", url: "https://urok.1sept.ru/publication/s1" },
+  { title: "Старый материал 2009", snippet: "общее", url: "https://urok.1sept.ru/publication/s2" },
+  { title: "Старый материал 2011", snippet: "общее", url: "https://urok.1sept.ru/publication/s3" },
+  { title: "Старый материал 2012", snippet: "общее", url: "https://urok.1sept.ru/publication/s4" },
+  {
+    title: "Дроби конспект 5 класс",
+    snippet: "математика дроби 2024",
+    url: "https://urok.1sept.ru/publication/s5",
+  },
+];
+const relaxedRanked = rankAndLimitMaterials(sparseCandidates, 10, rankCtx, {
+  minStrictResults: 3,
+});
+assert.ok(relaxedRanked.length >= 3);
+
+assert.ok(rankAndLimitMaterials([konspekt], 1, rankCtx)[0].meta?.materialType);
+
 console.log("All fixture checks passed.");
