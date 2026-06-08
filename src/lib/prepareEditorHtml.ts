@@ -1,4 +1,4 @@
-import { convertAsciiLatexDelimitersToMathSpans } from "./latexAsciiDelimitersToHtmlSpans";
+import { convertAllMathToSpans } from "./convertInlineMathToSpans";
 import { sanitizeLessonHtml } from "./sanitizeHtml";
 import { unwrapOuterDivWrappers, unwrapSemanticWrapperTags } from "./unwrapLessonHtml";
 
@@ -8,7 +8,7 @@ import { unwrapOuterDivWrappers, unwrapSemanticWrapperTags } from "./unwrapLesso
  * и чтобы родитель не перезаписался пустым getHTML() после setContent.
  */
 export function prepareLessonPlanHtmlForEditor(dirty: string): string {
-  const withMath = convertAsciiLatexDelimitersToMathSpans(dirty);
+  const withMath = convertAllMathToSpans(dirty);
   const clean = sanitizeLessonHtml(withMath);
   const unwrapped = unwrapSemanticWrapperTags(clean);
   return unwrapOuterDivWrappers(unwrapped);

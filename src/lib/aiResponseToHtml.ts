@@ -1,5 +1,6 @@
 import { marked } from "marked";
-import { convertAsciiLatexDelimitersToMathSpans } from "./latexAsciiDelimitersToHtmlSpans";
+import { consolidateAnswerKeys } from "./consolidateAnswerKeys";
+import { convertAllMathToSpans } from "./convertInlineMathToSpans";
 import { applyLessonPlanTimingNormalization } from "./normalizeLessonPlanTimingHtml";
 import { prepareLessonPlanHtmlForEditor } from "./prepareEditorHtml";
 
@@ -16,8 +17,10 @@ export async function aiResponseToHtml(
   const trimmed = raw.trim();
   if (!trimmed) return "<p></p>";
 
+  const withKeys = consolidateAnswerKeys(trimmed);
+
   /** До marked: иначе `\\(` теряется/ломается и KaTeX не получает формулы. */
-  const withMathSpans = convertAsciiLatexDelimitersToMathSpans(trimmed);
+  const withMathSpans = convertAllMathToSpans(withKeys);
 
   const looksLikeHtml = /<section[\s>]|<h[1-6][\s>]|<table[\s>]|<div[\s>]|<p[\s>]/i.test(
     withMathSpans,

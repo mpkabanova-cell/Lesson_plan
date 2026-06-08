@@ -17,6 +17,7 @@ import {
   type LessonFingerprint,
 } from "@/lib/lessonPlanDiversity";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
+import { GenerationProgressPanel } from "./GenerationProgressPanel";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
 
@@ -373,6 +374,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   }, [goal]);
   /** Текущий этап длинного запроса (пока loading). */
   const [generateStep, setGenerateStep] = useState<string | null>(null);
+  /** Время старта генерации — для оценки прогресса. */
+  const [generateStartedAt, setGenerateStartedAt] = useState<number | null>(null);
   /** Итог успешной генерации (после loading). */
   const [generateSuccessInfo, setGenerateSuccessInfo] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -509,6 +512,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       return;
     }
     setLoading(true);
+    setGenerateStartedAt(Date.now());
     setGenerateStep("Отправка запроса на сервер…");
     try {
       const basePayload = {
@@ -594,6 +598,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     } finally {
       setLoading(false);
       setGenerateStep(null);
+      setGenerateStartedAt(null);
     }
   };
 
@@ -658,7 +663,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const hasPlan = planHtml.replace(/<[^>]+>/g, "").trim().length > 0;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f4ddff_0,#eef2ff_32%,#f8fafc_62%)]">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,#f4ddff_0,#eef2ff_32%,#f8fafc_62%)]">
       <style>{`
         @keyframes suggestionsFade {
           from { opacity: 0; transform: translateY(3px); }
@@ -668,7 +673,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
           animation: suggestionsFade 180ms ease-out;
         }
       `}</style>
-      <header className="sticky top-0 z-20 border-b border-white/70 bg-white/80 px-4 py-3 backdrop-blur-xl">
+      <header className="z-20 shrink-0 border-b border-white/70 bg-white/80 px-4 py-3 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-[1680px] items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-500">AI-мастер урока</p>
@@ -680,7 +685,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col px-3 py-4">
+      <main className="mx-auto flex w-full max-w-[1680px] min-h-0 flex-1 flex-col overflow-hidden px-3 py-4">
         <div
           className={`grid min-h-0 flex-1 grid-cols-1 gap-4 xl:items-stretch xl:overflow-hidden ${
             leftPanelCollapsed ? "xl:grid-cols-[48px_minmax(0,1fr)]" : "xl:grid-cols-[390px_minmax(0,1fr)]"
@@ -702,7 +707,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
           {/* Column 1: параметры + этапы + тайминг — своя прокрутка */}
           {!leftPanelCollapsed ? (
-            <section className="order-1 flex max-h-[calc(100dvh-6rem)] flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/45 p-3 shadow-[0_24px_80px_rgba(99,102,241,0.12)] backdrop-blur-xl">
+            <section className="order-1 flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/45 p-3 shadow-[0_24px_80px_rgba(99,102,241,0.12)] backdrop-blur-xl">
             <div className="flex items-center justify-between gap-2 px-1">
               <div>
                 <p className="text-xs font-medium text-violet-600">Шаги создания</p>
@@ -884,8 +889,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             </section>
           ) : null}
 
-          <section className="order-2 flex min-h-0 flex-1 flex-col rounded-3xl border border-white/70 bg-white/80 shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
-            <div className="sticky top-0 z-20 shrink-0 rounded-t-3xl border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl">
+          <section className="order-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/80 shadow-[0_24px_80px_rgba(99,102,241,0.10)] backdrop-blur-xl">
+            <div className="z-20 shrink-0 rounded-t-3xl border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">
@@ -936,26 +941,34 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   </button>
                 </div>
               </div>
-              {(generateStep || (generateSuccessInfo && !loading) || error) ? (
+              {loading ? (
+                <GenerationProgressPanel
+                  active={loading}
+                  step={generateStep}
+                  startedAt={generateStartedAt}
+                />
+              ) : null}
+              {!loading && (generateSuccessInfo || error) ? (
                 <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-snug text-slate-700">
-                  {generateStep ? <p className="text-violet-900">{generateStep}</p> : null}
-                  {error ? <p className="mt-1 text-red-800">{error}</p> : null}
-                  {generateSuccessInfo && !loading ? <p className="mt-1 text-emerald-900">{generateSuccessInfo}</p> : null}
+                  {error ? <p className="text-red-800">{error}</p> : null}
+                  {generateSuccessInfo ? <p className="text-emerald-900">{generateSuccessInfo}</p> : null}
                 </div>
               ) : null}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-6 sm:px-6 sm:pb-6">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
               <div
                 ref={resultRef}
-                className={`min-h-[360px] scroll-mt-6 ${activeWorkspace === "lesson" ? "block" : "hidden"}`}
+                className={`min-h-0 flex-1 flex-col overflow-hidden ${activeWorkspace === "lesson" ? "flex" : "hidden"}`}
                 aria-hidden={activeWorkspace !== "lesson"}
               >
                   {loading ? (
-                    <LessonSkeleton />
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                      <LessonSkeleton />
+                    </div>
                   ) : hasPlan ? (
-                    <div className="space-y-3">
-                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-2.5 text-sm text-emerald-950">
+                    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+                      <div className="shrink-0 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-2.5 text-sm text-emerald-950">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <button
                             type="button"
@@ -993,7 +1006,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                           </p>
                         ) : null}
                       </div>
-                      <div className="min-h-[560px]">
+                      <div className="min-h-0 flex-1 overflow-hidden">
                         <PlanEditor
                           content={planHtml}
                           contentKey={contentKey}
@@ -1004,11 +1017,15 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                         />
                       </div>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="flex min-h-0 flex-1 items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/60 px-6 text-center text-sm text-slate-500">
+                      Сгенерируйте план урока — текст появится здесь.
+                    </div>
+                  )}
               </div>
 
               <div
-                className={activeWorkspace === "materials" ? "block" : "hidden"}
+                className={`min-h-0 flex-1 overflow-y-auto ${activeWorkspace === "materials" ? "block" : "hidden"}`}
                 aria-hidden={activeWorkspace !== "materials"}
               >
                 {materialsWorkspaceMounted ? (

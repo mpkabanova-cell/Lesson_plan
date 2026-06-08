@@ -16,6 +16,8 @@ const { resolveFrpKnowledgeContext, resolveFrpCanonicalSubject } = await import(
 const { buildFrpSystemPromptBlock, shouldSkipLegacyInformaticsStub } = await import(
   "../src/lib/knowledge/frpUsage.ts"
 );
+const { convertAllMathToSpans } = await import("../src/lib/convertInlineMathToSpans.ts");
+const { consolidateAnswerKeys } = await import("../src/lib/consolidateAnswerKeys.ts");
 
 // --- subject mode ---
 assert.equal(resolveSubjectGenerationMode("История", "8"), "humanities");
@@ -172,5 +174,24 @@ if (frpInfo.available) {
 
 const frpHist = resolveFrpKnowledgeContext("История", "8", "Отечественная война 1812 года");
 assert.equal(frpHist.available, true);
+
+// --- math spans ---
+const mathHtml = convertAllMathToSpans("Теорема: a^2 + b^2 = c^2, пример \\(x^2\\).");
+assert.ok(mathHtml.includes('data-latex="a^2 + b^2 = c^2"'));
+assert.ok(mathHtml.includes('data-latex="x^2"'));
+
+// --- answer keys consolidation ---
+const inlineKeys = consolidateAnswerKeys(`
+## Этап
+Задание 3.1
+Найдите c.
+Ответ: 5 см
+
+**Ключи к заданиям**
+Задание 3.1
+Ответ: 5 см
+`);
+assert.ok(!inlineKeys.includes("Найдите c.\nОтвет:"));
+assert.ok(inlineKeys.includes("**Ключи к заданиям**"));
 
 console.log("All fixture checks passed.");
