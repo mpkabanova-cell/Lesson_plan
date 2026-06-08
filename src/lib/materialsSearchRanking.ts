@@ -99,7 +99,6 @@ const MATERIAL_TYPE_POSITIVE: Array<{ pattern: string; label: string; score: num
   { pattern: "задания", label: "Задания", score: 7 },
   { pattern: "практическая работа", label: "Практическая работа", score: 9 },
   { pattern: "план урока", label: "План урока", score: 9 },
-  { pattern: "открытый урок", label: "Открытый урок", score: 8 },
 ];
 
 const MATERIAL_TYPE_NEGATIVE: Array<{ pattern: string; penalty: number }> = [

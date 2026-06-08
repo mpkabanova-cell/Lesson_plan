@@ -512,6 +512,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     stripUrlSearchParams();
     setPlanHtml("");
     setContentKey((k) => k + 1);
+    setGoal("");
+    setHomework("");
+    setGoalError(null);
     setGenerateSuccessInfo(null);
     setError(null);
     setGenerateStep(null);
@@ -549,8 +552,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         grade: string;
         duration: number;
         topic: string;
-        goal: string;
-        homework: string;
       }>;
       if (draft.subject && SUBJECT_OPTIONS.some((option) => option === draft.subject)) {
         setSubject(draft.subject);
@@ -558,8 +559,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       if (draft.grade) setGrade(draft.grade);
       if (typeof draft.duration === "number") setDuration(draft.duration);
       if (draft.topic) setTopic(draft.topic);
-      if (draft.goal) setGoal(draft.goal);
-      if (draft.homework) setHomework(draft.homework);
     } catch {
       /* ignore broken draft */
     }
@@ -569,12 +568,12 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     try {
       window.localStorage.setItem(
         DRAFT_STORAGE_KEY,
-        JSON.stringify({ subject, grade, duration, topic, goal, homework }),
+        JSON.stringify({ subject, grade, duration, topic }),
       );
     } catch {
       /* ignore storage errors */
     }
-  }, [subject, grade, duration, topic, goal, homework]);
+  }, [subject, grade, duration, topic]);
 
   useEffect(() => {
     if (!toast) return;
