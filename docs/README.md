@@ -1,5 +1,9 @@
 # Методические материалы
 
+## Поиск материалов на портале
+
+Описание работы вкладки **«Поиск материалов»** (Google CSE, API, ранжирование, настройка): [MATERIALS_SEARCH.md](./MATERIALS_SEARCH.md).
+
 ## KONSTRUKTOR_UROKA.pdf
 
 Положите файл **`KONSTRUKTOR_UROKA.pdf`** в эту папку (`docs/KONSTRUKTOR_UROKA.pdf`), затем из корня проекта выполните:

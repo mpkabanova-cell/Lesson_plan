@@ -27,7 +27,9 @@ const {
 } = await import("../src/lib/constructor/stageRegistry.ts");
 const { resolveConstructorFrpContext } = await import("../src/lib/constructor/frpContext.ts");
 const { assembleLessonMarkdown } = await import("../src/lib/constructor/assemblePlan.ts");
-const { validateStageMarkdown } = await import("../src/lib/constructor/stageValidators.ts");
+const { validateStageMarkdown, parseStageTasks } = await import(
+  "../src/lib/constructor/stageValidators.ts"
+);
 const { resolveSubjectProfile } = await import("../src/lib/constructor/subjectProfiles.ts");
 const { validateAssembledLesson } = await import("../src/lib/lessonPlanValidator.ts");
 
@@ -249,6 +251,58 @@ const goodStage = `## Актуализация знаний
 Ответ: x = 3.`;
 const goodVal = validateStageMarkdown(goodStage, activationStage, profile);
 assert.equal(goodVal.ok, true);
+
+const parsedTasks = parseStageTasks(goodStage);
+assert.equal(parsedTasks.length, 1);
+assert.ok(parsedTasks[0].condition.length >= 12);
+assert.equal(parsedTasks[0].answer, "x = 3.");
+
+const emptyAnswerStage = `## Актуализация
+Время: 10 мин
+Учитель: Даёт задание.
+Ученики: Выполняют пробное действие, фиксируют затруднение.
+Задание 3.1. Решите уравнение.
+Ответ:`;
+const emptyAnswerVal = validateStageMarkdown(emptyAnswerStage, activationStage, profile);
+assert.equal(emptyAnswerVal.ok, false);
+assert.ok(emptyAnswerVal.issues.some((i) => i.code === "empty_answer"));
+
+const placeholderStage = `## Актуализация
+Время: 10 мин
+Учитель: TODO
+Ученики: ...
+Задание 3.1. Задача.
+Ответ: TBD`;
+const placeholderVal = validateStageMarkdown(placeholderStage, activationStage, profile);
+assert.equal(placeholderVal.ok, false);
+assert.ok(
+  placeholderVal.issues.some((i) =>
+    ["empty_teacher_activity", "empty_student_activity", "empty_answer", "placeholder_condition"].includes(
+      i.code,
+    ),
+  ),
+);
+
+const consolidationStage = getStageDefinition("new_knowledge", "primary_consolidation");
+const pollStage = `## Первичное закрепление
+Время: 10 мин
+Учитель: Проводит фронтальный опрос класса.
+Ученики: Отвечают устно.
+Задание 6.1. Тренировочная задача: вычислите 2+2.
+Ответ: 4.`;
+const pollVal = validateStageMarkdown(pollStage, consolidationStage, profile);
+assert.equal(pollVal.ok, false);
+assert.ok(pollVal.issues.some((i) => i.code === "stage_content_rule" || i.code === "forbidden_pattern"));
+
+const goodConsolidation = `## Первичное закрепление
+Время: 10 мин
+Учитель: Организует самостоятельное решение задач, даёт эталон для самопроверки.
+Ученики: Выполняют тренировочные задания, сверяются с эталоном.
+Задание 6.1. Задача: решите 3x - 6 = 0.
+Ответ: x = 2.
+Пояснение для учителя: при затруднении напомните про перенос слагаемого.`;
+const goodConsolidationVal = validateStageMarkdown(goodConsolidation, consolidationStage, profile);
+assert.equal(goodConsolidationVal.ok, true);
 
 // --- constructor: assemble plan ---
 const assembled = assembleLessonMarkdown({
