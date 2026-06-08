@@ -23,7 +23,14 @@ export const GENERATION_STEPS_V1: GenerationProgressStep[] = [
   { id: "process", shortLabel: "Редактор", weight: 0.13 },
 ];
 
-export type GenerationProgressMode = "v2" | "v1";
+export type GenerationProgressMode = "v3" | "v2" | "v1";
+
+export const GENERATION_STEPS_V3: GenerationProgressStep[] = [
+  { id: "start", shortLabel: "Старт", weight: 0.05 },
+  { id: "stages", shortLabel: "Этапы", weight: 0.82 },
+  { id: "finish", shortLabel: "Сборка", weight: 0.08 },
+  { id: "process", shortLabel: "Редактор", weight: 0.05 },
+];
 
 export type GenerationProgressState = {
   percent: number;
@@ -33,11 +40,40 @@ export type GenerationProgressState = {
   activeStepIndex: number;
 };
 
+function parseConstructStageStep(
+  externalStep: string | null,
+): { current: number; total: number; title: string } | null {
+  if (!externalStep) return null;
+  const m = externalStep.match(/Этап\s+(\d+)\s+из\s+(\d+)\s*[—–-]\s*(.+)/i);
+  if (!m) return null;
+  return { current: Number(m[1]), total: Number(m[2]), title: m[3].trim() };
+}
+
 function stepLabelForRemotePhase(
   mode: GenerationProgressMode,
   elapsedMs: number,
   externalStep: string | null,
 ): { label: string; activeStepIndex: number } {
+  if (mode === "v3") {
+    const parsed = parseConstructStageStep(externalStep);
+    if (externalStep?.includes("Обработка") || externalStep?.includes("редактор")) {
+      return { label: "Загрузка плана в редактор…", activeStepIndex: 3 };
+    }
+    if (externalStep?.includes("Сборка") || externalStep?.includes("финальн")) {
+      return { label: "Сборка и финальная проверка…", activeStepIndex: 2 };
+    }
+    if (externalStep?.includes("Каркас") || externalStep?.includes("старт")) {
+      return { label: "Подготовка каркаса FGOS и ФРП…", activeStepIndex: 0 };
+    }
+    if (parsed) {
+      return {
+        label: `Этап ${parsed.current} из ${parsed.total} — ${parsed.title}`,
+        activeStepIndex: 1,
+      };
+    }
+    return { label: externalStep ?? "Генерация по этапам…", activeStepIndex: 1 };
+  }
+
   if (externalStep?.includes("Обработка ответа") || externalStep?.includes("редактор")) {
     return { label: "Загрузка плана в редактор…", activeStepIndex: mode === "v2" ? 4 : 2 };
   }
@@ -74,6 +110,24 @@ function cumulativeWeights(steps: GenerationProgressStep[]): number[] {
     out.push(sum);
   }
   return out;
+}
+
+function percentFromConstructStage(
+  externalStep: string | null,
+  elapsedMs: number,
+  totalMs: number,
+  isProcessing: boolean,
+): number {
+  const parsed = parseConstructStageStep(externalStep);
+  if (!parsed || parsed.total <= 0) {
+    return Math.min(isProcessing ? 100 : 92, Math.max(5, Math.round((elapsedMs / totalMs) * 90)));
+  }
+  const stageShare = 0.82;
+  const startShare = 0.05;
+  const perStage = stageShare / parsed.total;
+  const stageProgress = Math.min(1, (elapsedMs % (totalMs / parsed.total)) / (totalMs / parsed.total));
+  const raw = (startShare + perStage * (parsed.current - 1 + stageProgress * 0.9)) * 100;
+  return Math.min(isProcessing ? 100 : 96, Math.max(5, Math.round(raw)));
 }
 
 function percentFromElapsed(
@@ -117,14 +171,24 @@ export function computeGenerationProgress(
   elapsedMs: number,
   externalStep: string | null,
   mode: GenerationProgressMode,
+  estimateMs?: number,
 ): GenerationProgressState {
-  const steps = mode === "v2" ? GENERATION_STEPS_V2 : GENERATION_STEPS_V1;
-  const totalMs = mode === "v2" ? GENERATION_ESTIMATE_MS_V2 : GENERATION_ESTIMATE_MS_V1;
+  const steps =
+    mode === "v3" ? GENERATION_STEPS_V3 : mode === "v2" ? GENERATION_STEPS_V2 : GENERATION_STEPS_V1;
+  const totalMs =
+    mode === "v3"
+      ? estimateMs ?? 180_000
+      : mode === "v2"
+        ? GENERATION_ESTIMATE_MS_V2
+        : GENERATION_ESTIMATE_MS_V1;
   const isProcessing =
     Boolean(externalStep?.includes("Обработка")) || Boolean(externalStep?.includes("редактор"));
 
   const { label, activeStepIndex } = stepLabelForRemotePhase(mode, elapsedMs, externalStep);
-  const percent = percentFromElapsed(elapsedMs, totalMs, steps, activeStepIndex, isProcessing);
+  const percent =
+    mode === "v3"
+      ? percentFromConstructStage(externalStep, elapsedMs, totalMs, isProcessing)
+      : percentFromElapsed(elapsedMs, totalMs, steps, activeStepIndex, isProcessing);
 
   const remainingMs = Math.max(0, totalMs - elapsedMs);
   let etaLabel = formatEta(remainingMs, percent);
@@ -136,6 +200,13 @@ export function computeGenerationProgress(
 }
 
 export function detectGenerationMode(step: string | null): GenerationProgressMode {
+  if (
+    step?.includes("версия 3") ||
+    step?.includes("конструктор") ||
+    step?.match(/Этап\s+\d+\s+из\s+\d+/i)
+  ) {
+    return "v3";
+  }
   if (
     step?.includes("версия 1") ||
     step?.includes("один шаг") ||

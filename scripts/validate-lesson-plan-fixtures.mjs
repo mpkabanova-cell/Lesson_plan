@@ -18,6 +18,18 @@ const { buildFrpSystemPromptBlock, shouldSkipLegacyInformaticsStub } = await imp
 );
 const { convertAllMathToSpans } = await import("../src/lib/convertInlineMathToSpans.ts");
 const { embedAnswerKeysInStages } = await import("../src/lib/embedAnswerKeysInStages.ts");
+const {
+  getLessonTypeStages,
+  getStageDefinition,
+  allocateStageMinutes,
+  requiredStageIds,
+  LESSON_TYPE_IDS,
+} = await import("../src/lib/constructor/stageRegistry.ts");
+const { resolveConstructorFrpContext } = await import("../src/lib/constructor/frpContext.ts");
+const { assembleLessonMarkdown } = await import("../src/lib/constructor/assemblePlan.ts");
+const { validateStageMarkdown } = await import("../src/lib/constructor/stageValidators.ts");
+const { resolveSubjectProfile } = await import("../src/lib/constructor/subjectProfiles.ts");
+const { validateAssembledLesson } = await import("../src/lib/lessonPlanValidator.ts");
 
 // --- subject mode ---
 assert.equal(resolveSubjectGenerationMode("История", "8"), "humanities");
@@ -198,5 +210,84 @@ const endKeysFail = validateLessonPlan(
   { subject: "Математика", grade: "8", topic: "T", mode: "mathematics", selectedStages: [] },
 );
 assert.ok(endKeysFail.issues.some((i) => i.code === "answer_keys_at_end"));
+
+// --- constructor: FGOS registry ---
+assert.equal(LESSON_TYPE_IDS.length, 3);
+for (const lt of LESSON_TYPE_IDS) {
+  const stages = getLessonTypeStages(lt);
+  assert.ok(stages.length >= 7, `${lt} has stages`);
+  assert.ok(stages.some((s) => s.fgosFlag === "required"), `${lt} has required`);
+}
+assert.ok(getStageDefinition("new_knowledge", "knowledge_activation"));
+assert.equal(requiredStageIds("new_knowledge").includes("primary_acquisition"), true);
+
+const minutes = allocateStageMinutes("new_knowledge", requiredStageIds("new_knowledge"), 45);
+const sum = Object.values(minutes).reduce((a, b) => a + b, 0);
+assert.equal(sum, 45);
+
+// --- constructor: FRP context ---
+const frpCtx = resolveConstructorFrpContext("Информатика", "8", "Условный оператор");
+assert.equal(frpCtx.available, true);
+if (frpCtx.available) {
+  assert.ok(frpCtx.topic.title.length > 3);
+  assert.ok(Array.isArray(frpCtx.concepts));
+  assert.ok(frpCtx.results.subject.length >= 0);
+}
+
+// --- constructor: stage validator ---
+const profile = resolveSubjectProfile("Математика", "8");
+const activationStage = getStageDefinition("new_knowledge", "knowledge_activation");
+const badStage = `## Актуализация\nВремя: 5 мин\nУчитель: Обсудите.\nУченики: Думают.`;
+const badVal = validateStageMarkdown(badStage, activationStage, profile);
+assert.equal(badVal.ok, false);
+
+const goodStage = `## Актуализация знаний
+Время: 10 мин
+Учитель: Даёт пробное задание.
+Ученики: Выполняют пробное действие, фиксируют затруднение — разные ответы.
+Задание 3.1. Задача: решите уравнение x + 2 = 5.
+Ответ: x = 3.`;
+const goodVal = validateStageMarkdown(goodStage, activationStage, profile);
+assert.equal(goodVal.ok, true);
+
+// --- constructor: assemble plan ---
+const assembled = assembleLessonMarkdown({
+  lessonType: "new_knowledge",
+  selectedStageIds: ["organizational_moment", "knowledge_activation"],
+  stageResults: [
+    {
+      stageId: "organizational_moment",
+      title: "Организационный момент",
+      markdown: "## Организационный момент\nВремя: 2 мин\nУчитель: Привет.\nУченики: Готовятся.",
+      summary: "Орг",
+      attempts: 1,
+    },
+    {
+      stageId: "knowledge_activation",
+      title: "Актуализация знаний",
+      markdown: goodStage,
+      summary: "Акт",
+      attempts: 1,
+    },
+  ],
+  subject: "Математика",
+  grade: "8",
+  topic: "Уравнения",
+  goal: "Решать линейные уравнения",
+});
+assert.ok(assembled.includes("Задание 2.1"));
+assert.ok(assembled.includes("План урока"));
+
+const assembledVal = validateAssembledLesson(assembled, {
+  subject: "Математика",
+  grade: "8",
+  topic: "Уравнения",
+  mode: "mathematics",
+  selectedStages: ["Организационный момент", "Актуализация знаний"],
+  lessonType: "new_knowledge",
+  selectedStageIds: ["organizational_moment", "knowledge_activation"],
+  frpContext: frpCtx,
+});
+assert.ok(Array.isArray(assembledVal.failedStageIds));
 
 console.log("All fixture checks passed.");

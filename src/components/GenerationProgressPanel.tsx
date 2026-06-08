@@ -11,9 +11,11 @@ type Props = {
   active: boolean;
   step: string | null;
   startedAt: number | null;
+  /** Оценка длительности v3 (мс), если известна. */
+  estimateMs?: number;
 };
 
-export function GenerationProgressPanel({ active, step, startedAt }: Props) {
+export function GenerationProgressPanel({ active, step, startedAt, estimateMs }: Props) {
   const [state, setState] = useState<GenerationProgressState | null>(null);
 
   useEffect(() => {
@@ -25,13 +27,13 @@ export function GenerationProgressPanel({ active, step, startedAt }: Props) {
     const tick = () => {
       const elapsed = Date.now() - startedAt;
       const mode = detectGenerationMode(step);
-      setState(computeGenerationProgress(elapsed, step, mode));
+      setState(computeGenerationProgress(elapsed, step, mode, estimateMs));
     };
 
     tick();
     const id = window.setInterval(tick, 400);
     return () => window.clearInterval(id);
-  }, [active, step, startedAt]);
+  }, [active, step, startedAt, estimateMs]);
 
   if (!active || !state) return null;
 

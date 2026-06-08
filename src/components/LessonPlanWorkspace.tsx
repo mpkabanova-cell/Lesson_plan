@@ -9,7 +9,13 @@ import {
 } from "@/config/subjectClassMap";
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
-import { LESSON_STAGES, LESSON_TYPE_LABELS } from "@/lib/lessonTypes";
+import { estimateGenerationMs } from "@/lib/lessonTypes";
+import {
+  getLessonTypeStages,
+  LESSON_TYPE_IDS,
+  LESSON_TYPE_LABELS,
+  type LessonTypeId,
+} from "@/lib/lessonTypes";
 import { DURATION_OPTIONS, SUBJECT_OPTIONS } from "@/lib/options";
 import {
   extractLessonFingerprint,
@@ -21,7 +27,33 @@ import { GenerationProgressPanel } from "./GenerationProgressPanel";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
 
-const LESSON_TYPE_ID = "new_knowledge" as const;
+type ConstructStartResponse = {
+  sessionId: string;
+  stages: Array<{ id: string; title: string; fgosFlag: string; minutes: number }>;
+  totalStages: number;
+  frp?: Record<string, unknown> | null;
+};
+
+type ConstructStageResponse = {
+  sessionId: string;
+  stageResult: { stageId: string; title: string; markdown: string; attempts: number };
+  completedStages: number;
+  totalStages: number;
+};
+
+type ConstructFinishResponse = {
+  sessionId: string;
+  raw: string;
+  html: string;
+  validation: {
+    ok: boolean;
+    issues: Array<{ code: string; message: string }>;
+    failedStageIds?: string[];
+  };
+  stageResults?: Array<{ stageId: string; title: string }>;
+  frp?: Record<string, unknown> | null;
+  generationVersion?: number;
+};
 
 function PanelIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -225,6 +257,70 @@ async function requestLessonPlan(
   return data;
 }
 
+async function requestConstructV3(
+  payload: {
+    subject: string;
+    grade: string;
+    topic: string;
+    goal: string;
+    durationMinutes: number;
+    lessonType: LessonTypeId;
+    homework?: string;
+    selectedStageIds: string[];
+  },
+  onStep?: (step: string) => void,
+): Promise<ConstructFinishResponse> {
+  onStep?.("Версия 3: подготовка каркаса FGOS и ФРП…");
+  const start = await postJson<ConstructStartResponse>("/api/construct/start", payload, 60_000);
+
+  let sessionId = start.sessionId;
+  const total = start.totalStages;
+
+  for (let i = 0; i < start.stages.length; i++) {
+    const stage = start.stages[i];
+    onStep?.(`Этап ${i + 1} из ${total} — ${stage.title}`);
+    const stageRes = await postJson<ConstructStageResponse>(
+      "/api/construct/stage",
+      { sessionId, stageId: stage.id },
+      120_000,
+    );
+    sessionId = stageRes.sessionId;
+  }
+
+  onStep?.("Сборка сценария и финальная проверка…");
+  let finish = await postJson<ConstructFinishResponse>(
+    "/api/construct/finish",
+    { sessionId },
+    60_000,
+  );
+
+  const failed = finish.validation.failedStageIds ?? [];
+  if (!finish.validation.ok && failed.length > 0) {
+    for (let i = 0; i < failed.length; i++) {
+      const stageId = failed[i];
+      const title =
+        start.stages.find((s) => s.id === stageId)?.title ??
+        finish.stageResults?.find((s) => s.stageId === stageId)?.title ??
+        stageId;
+      onStep?.(`Перегенерация: ${title} (${i + 1}/${failed.length})`);
+      const regen = await postJson<ConstructStageResponse>(
+        "/api/construct/stage",
+        { sessionId: finish.sessionId, stageId },
+        120_000,
+      );
+      sessionId = regen.sessionId;
+    }
+    onStep?.("Повторная сборка и проверка…");
+    finish = await postJson<ConstructFinishResponse>(
+      "/api/construct/finish",
+      { sessionId },
+      60_000,
+    );
+  }
+
+  return finish;
+}
+
 /** Запрос с таймаутом; тело всегда читается как текст, затем JSON — так видны не-JSON и пустые ответы. */
 async function postJson<T>(url: string, body: unknown, timeoutMs = 130_000): Promise<T> {
   const controller = new AbortController();
@@ -388,14 +484,21 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const resultRef = useRef<HTMLDivElement>(null);
   const generateActionRef = useRef<HTMLDivElement>(null);
 
-  const stages = LESSON_STAGES[LESSON_TYPE_ID];
+  const [lessonTypeId, setLessonTypeId] = useState<LessonTypeId>("new_knowledge");
+  const stageDefs = useMemo(() => getLessonTypeStages(lessonTypeId), [lessonTypeId]);
+  const stages = useMemo(() => stageDefs.map((s) => s.title), [stageDefs]);
   const availableGradeOptions = useMemo(() => getAvailableGrades(subject), [subject]);
   const topicSuggestions = useMemo(() => getTopicSuggestions(subject, grade), [subject, grade]);
   const suggestionsKey = `${subject}-${grade}`;
 
   const [stageFlags, setStageFlags] = useState<boolean[]>(() =>
-    LESSON_STAGES.new_knowledge.map(() => true),
+    getLessonTypeStages("new_knowledge").map(() => true),
   );
+  const [constructEstimateMs, setConstructEstimateMs] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    setStageFlags(stageDefs.map(() => true));
+  }, [lessonTypeId, stageDefs]);
 
   const effectiveStageFlags = useMemo(() => {
     if (stageFlags.length !== stages.length) return stages.map(() => true);
@@ -505,7 +608,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setGenerateStep(null);
       return;
     }
-    const selectedStages = stages.filter((_, i) => effectiveStageFlags[i]);
+    const selectedStageDefs = stageDefs.filter((_, i) => effectiveStageFlags[i]);
+    const selectedStages = selectedStageDefs.map((s) => s.title);
+    const selectedStageIds = selectedStageDefs.map((s) => s.id);
     if (selectedStages.length === 0) {
       setError("Отметьте хотя бы один этап в структуре урока.");
       setGenerateStep(null);
@@ -513,6 +618,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     }
     setLoading(true);
     setGenerateStartedAt(Date.now());
+    setConstructEstimateMs(estimateGenerationMs(lessonTypeId, selectedStageIds));
     setGenerateStep("Отправка запроса на сервер…");
     try {
       const basePayload = {
@@ -522,46 +628,92 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         topic,
         goal,
         durationMinutes: duration,
-        lessonType: LESSON_TYPE_ID,
+        lessonType: lessonTypeId,
         homework: homework.trim() || undefined,
         selectedStages,
         recentLessonFingerprints: loadRecentFingerprints(),
       };
 
-      let data: GenerateApiResponse;
+      let html = "";
+      let raw = "";
+      let usedVersion = 3;
+      let successInfo: string | null = null;
+
       try {
-        setGenerateStep("Проектирование каркаса и написание сценария (версия 2)…");
-        data = await requestLessonPlan(
-          { ...basePayload, generationVersion: 2 },
+        setGenerateStep("Версия 3: поэтапный конструктор FGOS…");
+        const constructData = await requestConstructV3(
+          {
+            subject,
+            grade,
+            topic,
+            goal,
+            durationMinutes: duration,
+            lessonType: lessonTypeId,
+            homework: homework.trim() || undefined,
+            selectedStageIds,
+          },
           setGenerateStep,
         );
-      } catch (v2Error) {
-        const msg = v2Error instanceof Error ? v2Error.message : String(v2Error);
-        const isPlannerFailure =
-          msg.includes("422") ||
-          msg.includes("планировщик") ||
-          msg.includes("версия 2");
-        if (!isPlannerFailure) {
-          throw v2Error;
+        html = constructData.html ?? "";
+        raw = constructData.raw ?? "";
+        if (!constructData.validation.ok) {
+          const issueCount = constructData.validation.issues?.length ?? 0;
+          successInfo =
+            issueCount > 0
+              ? `Конструктор v3: план собран с замечаниями проверки (${issueCount}).`
+              : "План собран конструктором v3 (FGOS, поэтапно).";
+        } else {
+          successInfo = "План собран конструктором v3 (FGOS, поэтапно).";
         }
-        setGenerateStep("Планировщик недоступен, генерация в один шаг (версия 1)…");
-        data = await requestLessonPlan(
-          { ...basePayload, generationVersion: 1 },
-          setGenerateStep,
-        );
+      } catch (v3Error) {
+        const msg = v3Error instanceof Error ? v3Error.message : String(v3Error);
+        const v3Disabled = msg.includes("503") || msg.includes("отключён");
+        if (!v3Disabled && !msg.includes("HTTP 5") && !msg.includes("OpenRouter")) {
+          throw v3Error;
+        }
+
+        usedVersion = 2;
+        setConstructEstimateMs(undefined);
+        let data: GenerateApiResponse;
+        try {
+          setGenerateStep("Конструктор v3 недоступен, версия 2…");
+          data = await requestLessonPlan(
+            { ...basePayload, generationVersion: 2 },
+            setGenerateStep,
+          );
+        } catch (v2Error) {
+          const v2msg = v2Error instanceof Error ? v2Error.message : String(v2Error);
+          const isPlannerFailure =
+            v2msg.includes("422") ||
+            v2msg.includes("планировщик") ||
+            v2msg.includes("версия 2");
+          if (!isPlannerFailure) {
+            throw v2Error;
+          }
+          usedVersion = 1;
+          setGenerateStep("Планировщик недоступен, генерация в один шаг (версия 1)…");
+          data = await requestLessonPlan(
+            { ...basePayload, generationVersion: 1 },
+            setGenerateStep,
+          );
+        }
+        html = typeof data.html === "string" ? data.html : "";
+        raw = typeof data.raw === "string" ? data.raw : "";
+        const attempts = data.validationAttempts ?? 0;
+        const refined = attempts > 0 ? ` (доработок: ${attempts})` : "";
+        successInfo =
+          attempts > 0
+            ? `План прошёл проверку содержательности${refined}.`
+            : null;
       }
 
       setGenerateStep("Обработка ответа и загрузка в редактор…");
 
-      if (data == null || typeof data !== "object") {
-        throw new Error("Сервер вернул не объект в JSON. Проверьте версию API /api/generate.");
-      }
-      const html = typeof data.html === "string" ? data.html : "";
       const prepared = prepareLessonPlanHtmlForEditor(html || "<p></p>");
       const textOnly = prepared.replace(/<[^>]+>/g, "").trim();
       if (!textOnly) {
-        const hint = data.raw?.trim()
-          ? ` Фрагмент сырого ответа: ${data.raw.slice(0, 400)}${data.raw.length > 400 ? "…" : ""}`
+        const hint = raw?.trim()
+          ? ` Фрагмент сырого ответа: ${raw.slice(0, 400)}${raw.length > 400 ? "…" : ""}`
           : "";
         setError(
           `После обработки план пустой. Проверьте модель и системный промпт плана.${hint}`,
@@ -569,16 +721,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         setGenerateSuccessInfo(null);
       } else {
         setError(null);
-        const attempts = data.validationAttempts ?? 0;
-        const refined = attempts > 0 ? ` (доработок: ${attempts})` : "";
-        setGenerateSuccessInfo(
-          attempts > 0
-            ? `План прошёл проверку содержательности${refined}.`
-            : null,
-        );
-        setToast(`План урока готов${refined}`);
-        if (typeof data.raw === "string" && data.raw.trim()) {
-          saveRecentFingerprint(extractLessonFingerprint(data.raw, subject, topic));
+        setGenerateSuccessInfo(successInfo);
+        setToast(`План урока готов (v${usedVersion})`);
+        if (raw.trim()) {
+          saveRecentFingerprint(extractLessonFingerprint(raw, subject, topic));
         }
       }
       setPlanHtml(prepared);
@@ -617,7 +763,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
           subject,
           grade,
           topic: topic.trim(),
-          lessonType: LESSON_TYPE_ID,
+          lessonType: lessonTypeId,
         },
         70_000,
       );
@@ -788,8 +934,22 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               </div>
             </WizardCard>
 
-            <WizardCard icon="🧩" title={`Тип урока «${LESSON_TYPE_LABELS[LESSON_TYPE_ID]}»`}>
+            <WizardCard icon="🧩" title="Тип урока по ФГОС">
               <div className="grid grid-cols-1 gap-2">
+                <label className="block text-xs font-medium text-slate-600">
+                  Структура урока (ФГОС)
+                  <select
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-sm shadow-sm"
+                    value={lessonTypeId}
+                    onChange={(e) => setLessonTypeId(e.target.value as LessonTypeId)}
+                  >
+                    {LESSON_TYPE_IDS.map((id) => (
+                      <option key={id} value={id}>
+                        {LESSON_TYPE_LABELS[id]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="block text-xs font-medium text-slate-600">
                   Длительность
                   <select
@@ -811,8 +971,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   Структура урока
                 </summary>
                 <ul className="space-y-2 border-t border-slate-200 p-3">
-                  {stages.map((label, i) => (
-                    <li key={label}>
+                  {stageDefs.map((def, i) => (
+                    <li key={def.id}>
                       <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-800">
                         <input
                           type="checkbox"
@@ -827,7 +987,12 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                             });
                           }}
                         />
-                        <span>{label}</span>
+                        <span>
+                          {def.title}
+                          <span className="ml-1 text-xs text-slate-500">
+                            ({def.fgosFlag === "required" ? "+" : "*"})
+                          </span>
+                        </span>
                       </label>
                     </li>
                   ))}
@@ -946,6 +1111,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   active={loading}
                   step={generateStep}
                   startedAt={generateStartedAt}
+                  estimateMs={constructEstimateMs}
                 />
               ) : null}
               {!loading && (generateSuccessInfo || error) ? (

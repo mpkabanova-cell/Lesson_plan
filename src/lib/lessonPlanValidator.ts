@@ -1,3 +1,9 @@
+import type { ConstructorFrpContext } from "@/lib/constructor/frpContext";
+import {
+  getStageDefinition,
+  requiredStageIds,
+  type LessonTypeId,
+} from "@/lib/constructor/stageRegistry";
 import {
   getSubjectContentMarkers,
   type SubjectGenerationMode,
@@ -28,6 +34,16 @@ export type LessonValidationContext = {
   topic: string;
   mode: SubjectGenerationMode;
   selectedStages: string[];
+};
+
+export type AssembledLessonValidationContext = LessonValidationContext & {
+  lessonType: LessonTypeId;
+  selectedStageIds: string[];
+  frpContext?: ConstructorFrpContext;
+};
+
+export type AssembledValidationResult = ValidationResult & {
+  failedStageIds: string[];
 };
 
 const DISCUSSION_MARKERS = [
@@ -345,6 +361,94 @@ export function validateLessonPlan(
       materialMarkers: materialTotal,
       taskCount,
     },
+  };
+}
+
+function mapIssueToStageId(
+  issue: ValidationIssue,
+  lessonType: LessonTypeId,
+  selectedStageIds: string[],
+): string | null {
+  const code = issue.code;
+  const map: Record<string, string[]> = {
+    trial_action: ["knowledge_activation", "problem_situation_goal"],
+    difficulty: ["knowledge_activation", "problem_situation_goal"],
+    benchmark: ["primary_acquisition", "primary_consolidation", "primary_comprehension_check"],
+    missing_inline_answer: selectedStageIds,
+    missing_task: selectedStageIds.filter((id) => {
+      const d = getStageDefinition(lessonType, id);
+      return d?.requiredOutputs.some((o) => /задание/i.test(o));
+    }),
+    vague_homework: ["homework_info"],
+    missing_homework: ["homework_info"],
+  };
+
+  const candidates = map[code];
+  if (!candidates?.length) return selectedStageIds[0] ?? null;
+  return candidates.find((id) => selectedStageIds.includes(id)) ?? candidates[0];
+}
+
+/**
+ * Финальная валидация собранного v3-урока с указанием проблемных этапов.
+ */
+export function validateAssembledLesson(
+  rawMarkdown: string,
+  ctx: AssembledLessonValidationContext,
+): AssembledValidationResult {
+  const base = validateLessonPlan(rawMarkdown, ctx);
+  const issues = [...base.issues];
+  const failedStageIds = new Set<string>();
+
+  const required = requiredStageIds(ctx.lessonType);
+  for (const reqId of required) {
+    if (!ctx.selectedStageIds.includes(reqId)) {
+      issues.push({
+        code: "missing_required_stage",
+        message: `Отсутствует обязательный FGOS-этап: ${getStageDefinition(ctx.lessonType, reqId)?.title ?? reqId}.`,
+        severity: "error",
+      });
+      failedStageIds.add(reqId);
+    }
+  }
+
+  if (ctx.frpContext?.available === true && ctx.frpContext.contentKeywords.length > 0) {
+    const lower = rawMarkdown.toLowerCase();
+    const hits = ctx.frpContext.contentKeywords.filter((k) => lower.includes(k.toLowerCase()));
+    if (hits.length < Math.min(2, ctx.frpContext.contentKeywords.length)) {
+      issues.push({
+        code: "frp_keywords",
+        message: "В сценарии мало ключевых понятий из ФРП по теме.",
+        severity: "warn",
+      });
+    }
+  }
+
+  if (ctx.lessonType === "new_knowledge") {
+    const hasTrial = /пробн|попроб|выполн/i.test(rawMarkdown);
+    const hasDifficulty = /затруднен|не получ|ошибк|разные ответ/i.test(rawMarkdown);
+    const hasOpening = /эталон|правил|алгоритм|схем|модел/i.test(rawMarkdown);
+    if (!hasTrial || !hasDifficulty) {
+      const id = ctx.selectedStageIds.find((s) => s === "knowledge_activation") ?? "knowledge_activation";
+      failedStageIds.add(id);
+    }
+    if (!hasOpening) {
+      const id =
+        ctx.selectedStageIds.find((s) => s === "primary_acquisition") ?? "primary_acquisition";
+      failedStageIds.add(id);
+    }
+  }
+
+  for (const issue of issues.filter((i) => i.severity === "error")) {
+    const stageId = mapIssueToStageId(issue, ctx.lessonType, ctx.selectedStageIds);
+    if (stageId) failedStageIds.add(stageId);
+  }
+
+  const errors = issues.filter((i) => i.severity === "error");
+  return {
+    ok: errors.length === 0,
+    issues,
+    metrics: base.metrics,
+    failedStageIds: [...failedStageIds],
   };
 }
 

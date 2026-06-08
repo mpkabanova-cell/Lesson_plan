@@ -9,6 +9,7 @@
     "lint": "next lint",
     "extract:knowledge": "node scripts/extract-pdf-knowledge.cjs",
     "extract:frp": "node scripts/extract-frp-knowledge.cjs",
+    "extract:fgos": "node scripts/extract-fgos-stages.mjs",
     "test:fixtures": "npx tsx scripts/validate-lesson-plan-fixtures.mjs"
   },
   "dependencies": {
