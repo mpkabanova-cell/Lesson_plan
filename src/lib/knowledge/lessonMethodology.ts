@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
+import { resolveFrpExcerpt } from "@/lib/knowledge/frpResolve";
 import { buildSubjectModePromptBlock } from "@/lib/subjectGenerationMode";
 
 const DEFAULT_MAX_METHODOLOGY_CHARS = 120_000;
@@ -184,8 +185,25 @@ ${section}`;
   return appendSubjectModeAndExtras(appendInformaticsSubjectKnowledge(merged, ctx), ctx);
 }
 
+function appendFrpSubjectKnowledge(base: string, ctx?: KnowledgePromptContext): string {
+  const subject = ctx?.subject?.trim();
+  const grade = ctx?.grade?.trim();
+  if (!subject || !grade) return base;
+
+  const frp = resolveFrpExcerpt(subject, grade, ctx?.topic?.trim() ?? "");
+  if (!frp?.excerpt.trim()) return base;
+
+  return `${base}
+
+---
+
+${frp.header}
+
+${frp.excerpt}`;
+}
+
 function appendSubjectModeAndExtras(base: string, ctx?: KnowledgePromptContext): string {
-  let result = base;
+  let result = appendFrpSubjectKnowledge(base, ctx);
   const subject = ctx?.subject?.trim();
   const grade = ctx?.grade?.trim();
   if (subject && grade) {

@@ -1,0 +1,415 @@
+{
+  "generatedAt": "2026-06-08T10:35:30.333Z",
+  "track": "базовый",
+  "subjects": [
+    {
+      "subject": "Математика",
+      "appAliases": [
+        "Математика",
+        "Алгебра",
+        "Геометрия"
+      ],
+      "files": [
+        {
+          "id": "noo_1-4",
+          "level": "НОО",
+          "grades": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "pdf": "docs/frp/НОО/Математика_1-4.pdf",
+          "md": "src/lib/knowledge/frp/Математика/noo_1-4.md",
+          "note": null
+        },
+        {
+          "id": "ooo_5-9_базовый",
+          "level": "ООО",
+          "grades": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "pdf": "docs/frp/ООО/Математика_5-9_базовый.pdf",
+          "md": "src/lib/knowledge/frp/Математика/ooo_5-9_базовый.md",
+          "note": null
+        },
+        {
+          "id": "soo_10-11_базовый",
+          "level": "СОО",
+          "grades": [
+            10,
+            11
+          ],
+          "pdf": "docs/frp/СОО/Математика_10-11_базовый.pdf",
+          "md": "src/lib/knowledge/frp/Математика/soo_10-11_базовый.md",
+          "note": null
+        }
+      ]
+    },
+    {
+      "subject": "История",
+      "appAliases": [
+        "История"
+      ],
+      "files": [
+        {
+          "id": "ooo_5-9",
+          "level": "ООО",
+          "grades": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "pdf": "docs/frp/ООО/История_5-9.pdf",
+          "md": "src/lib/knowledge/frp/История/ooo_5-9.md",
+          "note": null
+        },
+        {
+          "id": "soo_10-11_базовый",
+          "level": "СОО",
+          "grades": [
+            10,
+            11
+          ],
+          "pdf": "docs/frp/СОО/История_10-11_базовый.pdf",
+          "md": "src/lib/knowledge/frp/История/soo_10-11_базовый.md",
+          "note": null
+        }
+      ]
+    },
+    {
+      "subject": "Обществознание",
+      "appAliases": [
+        "Обществознание"
+      ],
+      "files": [
+        {
+          "id": "ooo_6-9",
+          "level": "ООО",
+          "grades": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "pdf": "docs/frp/ООО/Обществознание_6-9.pdf",
+          "md": "src/lib/knowledge/frp/Обществознание/ooo_6-9.md",
+          "note": null
+        },
+        {
+          "id": "soo_10-11_базовый",
+          "level": "СОО",
+          "grades": [
+            10,
+            11
+          ],
+          "pdf": "docs/frp/СОО/Обществознание_10-11_базовый.pdf",
+          "md": "src/lib/knowledge/frp/Обществознание/soo_10-11_базовый.md",
+          "note": null
+        }
+      ]
+    },
+    {
+      "subject": "Русский язык",
+      "appAliases": [
+        "Русский язык"
+      ],
+      "files": [
+        {
+          "id": "noo_1-4",
+          "level": "НОО",
+          "grades": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "pdf": "docs/frp/НОО/Русский_язык_1-4.pdf",
+          "md": "src/lib/knowledge/frp/Русский_язык/noo_1-4.md",
+          "note": null
+        },
+        {
+          "id": "ooo_5-9",
+          "level": "ООО",
+          "grades": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "pdf": "docs/frp/ООО/Русский_язык_5-9.pdf",
+          "md": "src/lib/knowledge/frp/Русский_язык/ooo_5-9.md",
+          "note": null
+        },
+        {
+          "id": "soo_10-11",
+          "level": "СОО",
+          "grades": [
+            10,
+            11
+          ],
+          "pdf": "docs/frp/СОО/Русский_язык_10-11.pdf",
+          "md": "src/lib/knowledge/frp/Русский_язык/soo_10-11.md",
+          "note": null
+        }
+      ]
+    },
+    {
+      "subject": "Литература",
+      "appAliases": [
+        "Литература"
+      ],
+      "files": [
+        {
+          "id": "ooo_5-9",
+          "level": "ООО",
+          "grades": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "pdf": "docs/frp/ООО/Литература_5-9.pdf",
+          "md": "src/lib/knowledge/frp/Литература/ooo_5-9.md",
+          "note": null
+        },
+        {
+          "id": "soo_10-11_базовый",
+          "level": "СОО",
+          "grades": [
+            10,
+            11
+          ],
+          "pdf": "docs/frp/СОО/Литература_10-11_базовый.pdf",
+          "md": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md",
+          "note": null
+        }
+      ]
+    },
+    {
+      "subject": "Информатика",
+      "appAliases": [
+        "Информатика"
+      ],
+      "files": [
+        {
+          "id": "ooo_7-9_базовый",
+          "level": "ООО",
+          "grades": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "pdf": "docs/frp/ООО/Информатика_7-9_базовый.pdf",
+          "md": "src/lib/knowledge/frp/Информатика/ooo_7-9_базовый.md",
+          "note": "Для 5–6 классов в приложении используется фрагмент программы 7–9."
+        },
+        {
+          "id": "soo_10-11_базовый",
+          "level": "СОО",
+          "grades": [
+            10,
+            11
+          ],
+          "pdf": "docs/frp/СОО/Информатика_10-11_базовый.pdf",
+          "md": "src/lib/knowledge/frp/Информатика/soo_10-11_базовый.md",
+          "note": null
+        }
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "subject": "Математика",
+      "file": "noo_1-4",
+      "pages": 79,
+      "chars": 117356,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 210,
+      "out": "src/lib/knowledge/frp/Математика/noo_1-4.md"
+    },
+    {
+      "subject": "Математика",
+      "file": "ooo_5-9_базовый",
+      "pages": 143,
+      "chars": 216363,
+      "sections": [
+        "results",
+        "content",
+        "thematic"
+      ],
+      "topics": 102,
+      "out": "src/lib/knowledge/frp/Математика/ooo_5-9_базовый.md"
+    },
+    {
+      "subject": "Математика",
+      "file": "soo_10-11_базовый",
+      "pages": 89,
+      "chars": 135747,
+      "sections": [
+        "results",
+        "content",
+        "thematic"
+      ],
+      "topics": 73,
+      "out": "src/lib/knowledge/frp/Математика/soo_10-11_базовый.md"
+    },
+    {
+      "subject": "История",
+      "file": "ooo_5-9",
+      "pages": 228,
+      "chars": 436710,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 466,
+      "out": "src/lib/knowledge/frp/История/ooo_5-9.md"
+    },
+    {
+      "subject": "История",
+      "file": "soo_10-11_базовый",
+      "pages": 150,
+      "chars": 259335,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 325,
+      "out": "src/lib/knowledge/frp/История/soo_10-11_базовый.md"
+    },
+    {
+      "subject": "Обществознание",
+      "file": "ooo_6-9",
+      "pages": 162,
+      "chars": 253864,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 415,
+      "out": "src/lib/knowledge/frp/Обществознание/ooo_6-9.md"
+    },
+    {
+      "subject": "Обществознание",
+      "file": "soo_10-11_базовый",
+      "pages": 74,
+      "chars": 112734,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 47,
+      "out": "src/lib/knowledge/frp/Обществознание/soo_10-11_базовый.md"
+    },
+    {
+      "subject": "Русский язык",
+      "file": "noo_1-4",
+      "pages": 196,
+      "chars": 289805,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 369,
+      "out": "src/lib/knowledge/frp/Русский_язык/noo_1-4.md"
+    },
+    {
+      "subject": "Русский язык",
+      "file": "ooo_5-9",
+      "pages": 252,
+      "chars": 390096,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 864,
+      "out": "src/lib/knowledge/frp/Русский_язык/ooo_5-9.md"
+    },
+    {
+      "subject": "Русский язык",
+      "file": "soo_10-11",
+      "pages": 92,
+      "chars": 138794,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 177,
+      "out": "src/lib/knowledge/frp/Русский_язык/soo_10-11.md"
+    },
+    {
+      "subject": "Литература",
+      "file": "ooo_5-9",
+      "pages": 193,
+      "chars": 299693,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 283,
+      "out": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "subject": "Литература",
+      "file": "soo_10-11_базовый",
+      "pages": 127,
+      "chars": 184935,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 106,
+      "out": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "subject": "Информатика",
+      "file": "ooo_7-9_базовый",
+      "pages": 66,
+      "chars": 108211,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 178,
+      "out": "src/lib/knowledge/frp/Информатика/ooo_7-9_базовый.md"
+    },
+    {
+      "subject": "Информатика",
+      "file": "soo_10-11_базовый",
+      "pages": 46,
+      "chars": 76222,
+      "sections": [
+        "content",
+        "results",
+        "thematic"
+      ],
+      "topics": 64,
+      "out": "src/lib/knowledge/frp/Информатика/soo_10-11_базовый.md"
+    }
+  ]
+}

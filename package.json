@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "extract:knowledge": "node scripts/extract-pdf-knowledge.cjs",
+    "extract:frp": "node scripts/extract-frp-knowledge.cjs",
     "test:fixtures": "npx tsx scripts/validate-lesson-plan-fixtures.mjs"
   },
   "dependencies": {

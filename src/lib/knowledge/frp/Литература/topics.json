@@ -1,0 +1,3121 @@
+{
+  "subject": "Литература",
+  "appAliases": [
+    "Литература"
+  ],
+  "generatedAt": "2026-06-08T10:35:27.951Z",
+  "topics": [
+    {
+      "grade": "5",
+      "code": "раздел_1",
+      "title": "Мифология",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "1.1",
+      "title": "Мифы народов России и мира 3 Понятие о мифе. Легенды и мифы Древней Греции.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "раздел_2",
+      "title": "Фольклор",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "2.1",
+      "title": "Малые жанры: пословицы, поговорки, загадки 2 Малые жанры:",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "2.2",
+      "title": "Сказки народов России и народов мира 5 Сказки народов России и народов мира. Сказки",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "раздел_3",
+      "title": "Литература первой половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.1",
+      "title": "И.А. Крылов. Басни (три по выбору) 4 И. А. Крылов – великий русский баснописец.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.2",
+      "title": "А. С. Пушкин. Образы русской природы в произведениях поэта (не менее трех).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.3",
+      "title": "М.Ю. Лермонтов. Стихотворение «Бородино» 2 М.Ю. Лермонтов.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.4",
+      "title": "Н.В. Гоголь. Повесть «Ночь перед Рождеством» 2 Н.В. Гоголь. Повесть «Ночь перед",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "раздел_4",
+      "title": "Литература второй половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "4.1",
+      "title": "И.С. Тургенев. Рассказ «Муму» 5 И.С. Тургенев. Рассказ «Муму». История",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "4.2",
+      "title": "Н.А. Некрасов. Стихотворения (не менее двух). Поэма «Мороз. Красный",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "4.3",
+      "title": "Л.Н. Толстой. Рассказ «Кавказский пленник» 5 Л.Н. Толстой. Рассказ «Кавказский пленник»:",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "раздел_5",
+      "title": "Литература XIX–ХХ веков",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.1",
+      "title": "Стихотворения отечественных поэтов XIX–ХХ веков о родной природе и о связи",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.2",
+      "title": "Юмористические рассказы отечественных писателей XIX–XX веков. А.П. Чехов (два рассказа",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.3",
+      "title": "Произведения отечественной литературы о природе и животных",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.4",
+      "title": "А.П. Платонов. Рассказы (один по выбору) 2 А.П. Платонов. Рассказы (один по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.5",
+      "title": "В.П. Астафьев. Рассказ «Васюткино озеро» 2 В.П. Астафьев. Рассказ «Васюткино озеро».",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "раздел_6",
+      "title": "Литература XX– начала XXI века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "6.1",
+      "title": "Произведения отечественной литературы на тему «Человек на войне»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "6.2",
+      "title": "Произведения отечественных писателей XX– начала XXI века на тему детства (не менее",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "6.3",
+      "title": "Произведения приключенческого жанра 2 Произведения приключенческого жанра",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "6.4",
+      "title": "Литература народов Российской Федерации. Стихотворения (одно по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "раздел_7",
+      "title": "Зарубежная литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "7.1",
+      "title": "Х.К. Андерсен. Сказки (одна по выбору) 2 Х.К. Андерсен. Сказки (одна по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "7.2",
+      "title": "Зарубежная сказочная проза (одно произведение по выбору) 2 Зарубежная сказочная",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "7.3",
+      "title": "Зарубежная проза о детях и подростках (два произведения по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "7.4",
+      "title": "Зарубежная приключенческая проза (два произведения по выбору). Например,",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "7.5",
+      "title": "Зарубежная проза о животных (одно-два произведения по выбору) 2 Зарубежная проза",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "раздел_1",
+      "title": "Античная литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "1.1",
+      "title": "Гомер. Поэмы «Илиада», «Одиссея» (фрагменты) 2 Античная литература. Гомер. Поэмы «Илиада»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "раздел_2",
+      "title": "Фольклор",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "2.1",
+      "title": "Былины (не менее двух). Например, «Илья Муромец и Соловей- разбойник», «Садко»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "2.2",
+      "title": "Народные песни и поэмы народов России и мира (не менее трех песен и двух поэм). Например,",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "раздел_3",
+      "title": "Древнерусская литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "3.1",
+      "title": "«Повесть временных лет» (не менее одного фрагмента). Например, «Сказание о белгородском",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "раздел_4",
+      "title": "Литература первой половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "4.1",
+      "title": "А.С. Пушкин. Стихотворения (не менее трех). Роман «Дубровский»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "4.2",
+      "title": "М.Ю. Лермонтов. Стихотворения (не менее трех) 3 М.Ю. Лермонтов.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "4.3",
+      "title": "А.В. Кольцов. Стихотворения (не менее двух) 2 А.В. Кольцов.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "раздел_5",
+      "title": "Литература второй половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.1",
+      "title": "Ф.И. Тютчев. Стихотворения (не менее двух) 2 Ф.И. Тютчев.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.2",
+      "title": "А. А. Фет. Стихотворения (не менее двух) 2 А. А. Фет. Стихотворения (не менее двух).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.3",
+      "title": "И.С. Тургенев. Рассказ «Бежин луг» 2 И.С. Тургенев. Рассказ «Бежин луг». Образы",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.4",
+      "title": "Н.С. Лесков. Сказ «Левша» 3 Н.С. Лесков. Сказ «Левша».",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.5",
+      "title": "Л.Н. Толстой. Повесть «Детство» (главы) 2 Л.Н. Толстой. Повесть «Детство» (главы).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.6",
+      "title": "А.П. Чехов. Рассказы (три по выбору) 3 А.П. Чехов. Рассказы (три по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.7",
+      "title": "А.И. Куприн. Рассказ «Чудесный доктор» 2 А.И. Куприн. Рассказ «Чудесный доктор».",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "раздел_6",
+      "title": "Литература ХХ – начала XXI века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.1",
+      "title": "Стихотворения отечественных поэтов начала ХХ века (не менее двух)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.2",
+      "title": "Стихотворения отечественных поэтов XX века (не менее четырех стихотворений",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.3",
+      "title": "Проза отечественных писателей конца XX – начала XXI века, в том числе о Великой",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.4",
+      "title": "В.Г. Распутин. Рассказ «Уроки французского» 3 В.Г. Распутин. Рассказ «Уроки французского».",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.5",
+      "title": "Произведения отечественных писателей на тему взросления человека (не менее двух)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.6",
+      "title": "Произведения современных отечественных писателей- фантастов",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.7",
+      "title": "Литература народов Российской Федерации. 2 Литература народов Российской Федерации.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "раздел_7",
+      "title": "Зарубежная литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "7.1",
+      "title": "Д. Дефо. «Робинзон Крузо» (главы по выбору) 4 Д. Дефо. «Робинзон Крузо» (главы",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "7.2",
+      "title": "Дж. Свифт. «Путешествия Гулливера» (главы по выбору) 3 Дж. Свифт. «Путешествия",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "7.3",
+      "title": "Произведения зарубежных писателей на тему взросления человека (не менее двух)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "раздел_1",
+      "title": "Древнерусская литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "1.1",
+      "title": "Древнерусские повести (одна повесть по выбору) 1 Древнерусские повести (одна повесть по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "раздел_2",
+      "title": "Литература первой половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.1",
+      "title": "А.С. Пушкин. Стихотворения (не менее четырех). «Повести Белкина»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.2",
+      "title": "М.Ю. Лермонтов. Стихотворения (не менее четырех). «Песня про царя Ивана",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.3",
+      "title": "Н.В. Гоголь. Повесть «Тарас Бульба» 3 Н.В. Гоголь. Повесть «Тарас Бульба».",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "раздел_3",
+      "title": "Литература второй половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.1",
+      "title": "И.С. Тургенев. Рассказы из цикла «Записки охотника» (два по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.2",
+      "title": "Л.Н. Толстой. Рассказ «После бала» 3 Л.Н. Толстой. Рассказ «После бала»: тематика,",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.3",
+      "title": "Н.А. Некрасов. Стихотворения (не менее двух) 2 Н.А. Некрасов.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.4",
+      "title": "Поэзия второй половины XIX века. Ф.И. Тютчев, А.А. Фет, А.К. Толстой и др. (не менее двух",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.5",
+      "title": "М.Е. Салтыков-Щедрин. Сказки (одна по выбору) 2 М. Е. Салтыков-Щедрин. Идейно-художественное",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.6",
+      "title": "Произведения отечественных и зарубежных писателей на историческую тему",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "раздел_4",
+      "title": "Литература конца XIX – начала XX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "4.1",
+      "title": "А.П. Чехов. Рассказы (один по выбору) 1 А.П. Чехов. Рассказы (один по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "4.2",
+      "title": "М. Горький. Ранние рассказы (одно произведение по выбору) 1 М. Горький. Ранние",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "4.3",
+      "title": "Сатирические произведения отечественной и зарубежной литературы",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "раздел_5",
+      "title": "Литература первой половины XX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.1",
+      "title": "А.С. Грин. Повести и рассказы (одно произведение по выбору) 2 А.С. Грин. Особенности",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.2",
+      "title": "Отечественная поэзия первой половины XX века. Стихотворения на тему мечты",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.3",
+      "title": "В.В. Маяковский. Стихотворения (одно по выбору) 2 В.В. Маяковский.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.4",
+      "title": "М.А. Шолохов. «Донские рассказы» (один по выбору) 1 М.А. Шолохов. «Донские",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.5",
+      "title": "А.П. Платонов. Рассказы (один по выбору) 1 А.П. Платонов. Рассказы (один по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "раздел_6",
+      "title": "Литература второй половины XX – начала XXI века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "6.1",
+      "title": "В.М. Шукшин. Рассказы (один по выбору) 2 В.М. Шукшин. Рассказы (один по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "6.2",
+      "title": "Стихотворения отечественных поэтов XX–XXI веков (не менее четырех стихотворений",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "6.3",
+      "title": "Произведения отечественных прозаиков второй половины XX – начала XXI века (не менее",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "раздел_7",
+      "title": "Зарубежная литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "7.1",
+      "title": "М. де Сервантес Сааведра. Роман «Хитроумный идальго Дон Кихот Ламанчский» (главы)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "7.2",
+      "title": "Зарубежная новеллистика (одно-два произведения по выбору). Например, П. Мериме. «Маттео",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "7.3",
+      "title": "А. де Сент Экзюпери. Повесть- сказка «Маленький принц» 3 А. де Сент Экзюпери.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "раздел_1",
+      "title": "Древнерусская литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "1.1",
+      "title": "Житийная литература (одно произведение по выбору) 2 Жанровые особенности",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "раздел_2",
+      "title": "Литература XVIII века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "2.1",
+      "title": "Д.И. Фонвизин. Комедия «Недоросль» 3 Д.И. Фонвизин. Комедия «Недоросль» как",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "раздел_3",
+      "title": "Литература первой половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.1",
+      "title": "А.С. Пушкин. Стихотворения (не менее двух). «Маленькие трагедии»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.2",
+      "title": "М.Ю. Лермонтов. Стихотворения (не менее двух). Поэма «Мцыри»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.3",
+      "title": "Н.В. Гоголь. Повесть «Шинель». Комедия «Ревизор» 6 Н.В. Гоголь. Повесть",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "раздел_4",
+      "title": "Литература второй половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "4.1",
+      "title": "И.С. Тургенев. Повести (одна по выбору) 2 И.С. Тургенев. Повести (одна по выбору).",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "4.2",
+      "title": "Ф.М. Достоевский. «Бедные люди», «Белые ночи» (одно произведение по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "4.3",
+      "title": "Л.Н. Толстой. Повести и рассказы (одно произведение по выбору) 2 Л.Н. Толстой. Повести",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "раздел_5",
+      "title": "Литература первой половины XX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "5.1",
+      "title": "Произведения писателей русского зарубежья (не менее двух по выбору). Например,",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "5.2",
+      "title": "Поэзия первой половины ХХ века (не менее трех стихотворений на тему «Человек и эпоха»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "5.3",
+      "title": "М.А. Булгаков (одна повесть по выбору). Например, «Собачье сердце» и др.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "раздел_6",
+      "title": "Литература второй половины XX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.1",
+      "title": "А.Т. Твардовский. Поэма «Василий Теркин» (главы «Переправа», «Гармонь», «Два солдата»,",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.2",
+      "title": "А.Н. Толстой. Рассказ «Русский характер» 2 А.Н. Толстой. Рассказ «Русский характер».",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.3",
+      "title": "М.А. Шолохов. Рассказ «Судьба человека» 3 М.А. Шолохов. Рассказ",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.4",
+      "title": "А.И. Солженицын. Рассказ «Матренин двор» 2 А.И. Солженицын. Рассказ «Матренин двор».",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.5",
+      "title": "Произведения отечественных прозаиков второй половины XX– начала XXI века (не менее",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.6",
+      "title": "Поэзия второй половины XX – начала XXI века (не менее трех стихотворений двух",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "раздел_7",
+      "title": "Зарубежная литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "7.1",
+      "title": "У. Шекспир. Сонеты (один-два по выбору). Например, No 66 «Измучась всем,",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "7.2",
+      "title": "Ж.-Б. Мольер. Комедия «Мещанин 2 Ж.-Б. Мольер – великий комедиограф. Комедия",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "раздел_1",
+      "title": "Древнерусская литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "1.1",
+      "title": "«Слово о полку Игореве» 3 Литература Древней Руси. «Слово о полку Игореве». История открытия «Слова о полку Игореве».",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "раздел_2",
+      "title": "Литература XVIII века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "2.1",
+      "title": "М.В. Ломоносов. «Ода на день восшествия на Всероссийский престол Ея Величества",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "2.2",
+      "title": "Г.Р. Державин. Стихотворения (два по выбору). Например, «Властителям",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "2.3",
+      "title": "Н.М. Карамзин. Повесть «Бедная Лиза» 2 Н.М. Карамзин. Повесть «Бедная Лиза». Сюжет",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "раздел_3",
+      "title": "Литература первой половины XIX века",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.1",
+      "title": "В.А. Жуковский. Баллады, элегии (две по выбору). Например, «Светлана», 3 В.А. Жуковский. Черты",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.2",
+      "title": "А.С. Грибоедов. Комедия «Горе от ума» 8 А.С. Грибоедов. Жизнь и творчество.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.3",
+      "title": "Поэзия пушкинской эпохи. К.Н. Батюшков, А.А. Дельвиг, Н.М. Языков,",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.4",
+      "title": "А.С. Пушкин. Стихотворения (не менее пяти по выбору). Например, «Бесы»,",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.5",
+      "title": "М.Ю. Лермонтов. Стихотворения (не менее пяти по выбору). Например, «Выхожу один",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.6",
+      "title": "Н.В. Гоголь. Поэма «Мертвые души» 10 Н.В. Гоголь. Жизнь и творчество. История",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "раздел_4",
+      "title": "Зарубежная литература",
+      "type": "section",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.1",
+      "title": "Данте. «Божественная комедия» (не менее двух фрагментов по выбору) 2 Данте Алигьери.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.2",
+      "title": "У. Шекспир. Трагедия «Гамлет» (фрагменты по выбору) 2 У. Шекспир. Трагедия",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.3",
+      "title": "И.-В. Гете. Трагедия «Фауст» (не менее двух фрагментов по выбору) 2 И.-В. Гете. Трагедия",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.4",
+      "title": "Дж. Г. Байрон. Стихотворения (одно по выбору). Например, «Душа моя мрачна.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.5",
+      "title": "Зарубежная проза первой половины XIX века (одно произведение по выбору). Например, произведения",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.1",
+      "title": "определять тему и главную мысль произведения, иметь начальные представления о родах и жанрах литературы, характеризовать героев-персонажей, давать их сравнительные характеристики, выявлять элементарны",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.2",
+      "title": "понимать смысловое наполнение теоретико-литературных понятий и использовать в процессе анализа и интерпретации произведений таких теоретико-литературных понятий, как художественная литература и устное",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.3",
+      "title": "сопоставлять темы и сюжеты произведений, образы персонажей",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.4",
+      "title": "сопоставлять с помощью учителя изученные и самостоятельно прочитанные произведения фольклора и художественной литературы с произведениями других видов искусства (с учетом возраста, литературного разви",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "1.1",
+      "title": "Мифы народов России и мира 2 Фольклор",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "2.1",
+      "title": "Малые жанры: пословицы, поговорки, загадки",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "2.2",
+      "title": "Сказки народов России и народов мира (не менее трех) 3 Литература первой половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.1",
+      "title": "И.А. Крылов. Басни (три по выбору). Например, «Волк на псарне», «Листы и Корни», «Свинья под Дубом», «Квартет», «Осел и Соловей», «Ворона и Лисица»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.2",
+      "title": "А.С. Пушкин. Стихотворения «Зимнее утро», «Зимний вечер», «Няне» и другие по выбору",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.3",
+      "title": "А.С. Пушкин. «Сказка о мертвой царевне и о семи богатырях»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.4",
+      "title": "М.Ю. Лермонтов. Стихотворение «Бородино»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "3.5",
+      "title": "Н.В. Гоголь. Повесть «Ночь перед Рождеством» из сборника «Вечера на хуторе близ Диканьки» 4 Литература второй половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "4.1",
+      "title": "И.С. Тургенев. Рассказ «Муму»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "4.2",
+      "title": "Н.А. Некрасов. Стихотворения «Крестьянские дети», «Школьник». Поэма «Мороз, Красный нос» (фрагмент)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "4.3",
+      "title": "Л.Н. Толстой. Рассказ «Кавказский пленник» 5 Литература XIX – XX вв.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.1",
+      "title": "Стихотворения отечественных поэтов XIX – XX вв. о родной природе и о связи человека с Родиной (не менее пяти стихотворений трех поэтов). Стихотворения А.К. Толстого, Ф.И. Тютчева, А.А. Фета, И.А. Буни",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.2",
+      "title": "Юмористические рассказы отечественных писателей XIX – XX вв. А.П. Чехов (два рассказа по выбору). Например, «Лошадиная фамилия», «Мальчики», «Хирургия». М.М. Зощенко (два рассказа по выбору). Например",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.3",
+      "title": "Произведения отечественной литературы о природе и животных (не менее двух). А.И. Куприн, М.М. Пришвин, К.Г. Паустовский",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.4",
+      "title": "А.П. Платонов. Рассказы (один по выбору). Например, «Корова», «Никита»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "5.5",
+      "title": "В.П. Астафьев. Рассказ «Васюткино озеро» 6 Литература XX – начала XXI в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "6.1",
+      "title": "Произведения отечественной литературы на тему «Человек на войне» (не менее двух). Например, Л.А. Кассиль «Дорогие мои мальчишки», Ю.Я. Яковлев «Девочки с Васильевского острова», В.П. Катаев «Сын полка",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "6.2",
+      "title": "Произведения отечественных писателей XX – начала XXI в. на тему детства (не менее двух). Например, произведения В.П. Катаева, В.П. Крапивина, Ю.П. Казакова, А.Г. Алексина В.К. Железникова, Ю.Я. Яковле",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "6.3",
+      "title": "Произведения приключенческого жанра отечественных писателей (одно по выбору). Например, К. Булычев «Девочка, с которой ничего не случится», «Миллион приключений» (главы по выбору) 7 Литература народов",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "7.1",
+      "title": "Стихотворения (одно по выбору). Р.Г. Гамзатов «Песня соловья»; М. Карим «Эту песню мать мне пела» 8 Зарубежная литература",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "8.1",
+      "title": "Х.-К. Андерсен. Сказки (одна по выбору). Например, «Снежная королева», «Соловей»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "8.2",
+      "title": "Зарубежная сказочная проза (одно произведение по выбору). Например, Л. Кэрролл «Алиса в Стране Чудес» (главы по выбору), Д. Толкин «Хоббит, или Туда и обратно» (главы по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "8.3",
+      "title": "Зарубежная проза о детях и подростках (два произведения по выбору). Например, М. Твен «Приключения Тома Сойера» (главы по выбору), Дж. Лондон «Сказание о Кише», Р. Брэдбери. Рассказы. Например, «Каник",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "8.4",
+      "title": "Зарубежная приключенческая проза (два произведения по выбору), например, Р. Стивенсон. «Остров сокровищ», «Черная стрела»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "5",
+      "code": "8.5",
+      "title": "Зарубежная проза о животных (одно – два произведения по выбору). Например, Э. Сетон-Томпсон «Королевская аналостанка», Д. Даррелл, «Говорящий сверток», Дж. Лондон «Белый клык», Дж. Р. Киплинг «Маугли»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "3.1",
+      "title": "определять тему и главную мысль произведения, основные вопросы, поднятые автором, указывать родовую и жанровую принадлежность произведения, выявлять позицию героя и авторскую позицию, характеризовать ",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "3.2",
+      "title": "понимать сущность теоретико-литературных понятий и учиться использовать их в процессе анализа и интерпретации произведений, оформления собственных оценок и наблюдений: художественная литература и устн",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "3.3",
+      "title": "выделять в произведениях элементы художественной формы и обнаруживать связи между ними",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "3.4",
+      "title": "сопоставлять произведения, их фрагменты, образы персонажей, сюжеты разных литературных произведений, темы, проблемы, жанры (с учетом возраста и литературного развития обучающихся)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "3.5",
+      "title": "сопоставлять с помощью учителя изученные и самостоятельно прочитанные произведения художественной литературы с произведениями других видов искусства (живопись, музыка, театр, кино)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "1.1",
+      "title": "Гомер. Поэмы. «Илиада», «Одиссея» (фрагменты) 2 Фольклор",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "2.1",
+      "title": "Русские былины (не менее двух). Например, «Илья Муромец и Соловей- разбойник», «Садко»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "2.2",
+      "title": "Народные песни и поэмы народов России и мира (не менее трех песен и двух поэм). Например, «Ах, кабы на цветы да не морозы...», «Ах вы ветры, ветры буйные...», «Черный ворон», «Не шуми, мати зеленая ду",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "3.1",
+      "title": "«Повесть временных лет» (один фрагмент). Например, «Сказание о белгородском киселе», «Сказание о походе князя Олега на Царьград», «Предание о смерти князя Олега» 4 Литература первой половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "4.1",
+      "title": "А.С. Пушкин. Стихотворения (не менее трех). Например, «Песнь о вещем Олеге», «Зимняя дорога», «Узник», «Туча» и другие",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "4.2",
+      "title": "А.С. Пушкин. Роман «Дубровский»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "4.3",
+      "title": "М.Ю. Лермонтов. Стихотворения (не менее трех). Например, «Три пальмы», «Листок», «Утес»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "4.4",
+      "title": "А.В. Кольцов. Стихотворения (не менее двух). Например, «Косарь», «Соловей» 5 Литература второй половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.1",
+      "title": "Ф.И. Тютчев. Стихотворения (не менее двух). Например, «Есть в осени первоначальной...», «С поляны коршун поднялся...»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.2",
+      "title": "А.А. Фет. Стихотворения (не менее двух). Например, «Учись у них – у дуба, у березы...», «Я пришел к тебе с приветом...»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.3",
+      "title": "И.С. Тургенев. Рассказ «Бежин луг»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.4",
+      "title": "Н.С. Лесков. Сказ «Левша»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.5",
+      "title": "Л.Н. Толстой. Повесть «Детство» (главы)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.6",
+      "title": "А.П. Чехов. Рассказы (три по выбору). Например, «Толстый и тонкий», «Хамелеон», «Смерть чиновника»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "5.7",
+      "title": "А.И. Куприн. Рассказ «Чудесный доктор» 6 Литература XX – начала XXI в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.1",
+      "title": "Стихотворения отечественных поэтов начала XX в. (не менее двух). Например, стихотворения С.А. Есенина, В.В. Маяковского, А.А. Блока",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.2",
+      "title": "Стихотворения отечественных поэтов XX в. (не менее четырех стихотворений двух поэтов). Например, стихотворения О.Ф. Берггольц, В.С. Высоцкого, Ю.П. Мориц, Д.С. Самойлова",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.3",
+      "title": "Проза отечественных писателей конца XX – начала XXI в., в том числе о Великой Отечественной войне (два произведения по выбору). Например, Б.Л. Васильев «Экспонат N...», Б.П. Екимов «Ночь исцеления», Э",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.4",
+      "title": "В.Г. Распутин. Рассказ «Уроки французского»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.5",
+      "title": "Произведения отечественных писателей на тему взросления человека (не менее двух). Например, Р.П. Погодин «Кирпичные острова», Р.И. Фраерман «Дикая собака Динго, или Повесть о первой любви», Ю.И. Ковал",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "6.6",
+      "title": "Произведения современных отечественных писателей-фантастов. Например, К. Булычев «Сто лет тому вперед» 7 Литература народов Российской Федерации",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "7.1",
+      "title": "Стихотворения (два по выбору). Например, М. Карим «Бессмертие» (фрагменты), Г. Тукай «Родная деревня», «Книга», К. Кулиев «Когда на меня навалилась беда...», «Каким бы малым ни был мой народ...», «Что",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "8.1",
+      "title": "Д. Дефо «Робинзон Крузо» (главы по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "8.2",
+      "title": "Дж. Свифт «Путешествия Гулливера» (главы по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "6",
+      "code": "8.3",
+      "title": "Произведения зарубежных писателей на тему взросления человека (не менее двух). Например, Ж. Верн «Дети капитана Гранта» (главы по выбору), Х. Ли «Убить пересмешника» (главы по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.1",
+      "title": "анализировать произведение в единстве формы и содержания; определять тему, главную мысль и проблематику произведения, его родовую и жанровую принадлежность; выявлять позицию героя, рассказчика и автор",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.2",
+      "title": "понимать сущность и элементарные смысловые функции теоретико-литературных понятий и учиться самостоятельно использовать их в процессе анализа и интерпретации",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.3",
+      "title": "выделять в произведениях элементы художественной формы и обнаруживать связи между ними",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.4",
+      "title": "сопоставлять произведения, их фрагменты, образы персонажей, сюжеты разных литературных произведений, темы, проблемы, жанры, художественные приемы, особенности языка",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.5",
+      "title": "сопоставлять изученные и самостоятельно прочитанные произведения художественной литературы с произведениями других видов искусства (живопись, музыка, театр, кино) 4 выразительно читать стихи и прозу, ",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "1.1",
+      "title": "Древнерусские повести (одна повесть по выбору). Например, «Поучение» Владимира Мономаха (в сокращении) 2 Литература первой половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.1",
+      "title": "А.С. Пушкин. Стихотворения (не менее четырех). Например, «Во глубине сибирских руд...», «19 октября» («Роняет лес багряный свой убор...»), «И.И. Пущину», «На холмах Грузии лежит ночная мгла...»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.2",
+      "title": "А.С. Пушкин «Повести Белкина» («Станционный смотритель»)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.3",
+      "title": "А.С. Пушкин. Поэма «Полтава» (фрагмент)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.4",
+      "title": "М.Ю. Лермонтов. Стихотворения (не менее четырех). Например, «Узник», «Парус», «Тучи», «Желанье» («Отворите мне темницу...»), «Когда волнуется желтеющая нива...», «Ангел», «Молитва» («В минуту жизни тр",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.5",
+      "title": "М.Ю. Лермонтов «Песня про царя Ивана Васильевича, молодого опричника и удалого купца Калашникова»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "2.6",
+      "title": "Н.В. Гоголь. Повесть «Тарас Бульба» 3 Литература второй половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.1",
+      "title": "И.С. Тургенев. Рассказы из цикла «Записки охотника» (два по выбору). Например, «Бирюк», «Хорь и Калиныч» и другие. Стихотворения в прозе. Например, «Русский язык», «Воробей»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.2",
+      "title": "Л.Н. Толстой. Рассказ «После бала»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.3",
+      "title": "Н.А. Некрасов. Стихотворения (не менее двух). Например, «Размышления у парадного подъезда», «Железная дорога»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.4",
+      "title": "Поэзия второй половины XIX в. Ф.И. Тютчев, А.А. Фет, А.К. Толстой и другие (не менее двух стихотворений по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.5",
+      "title": "М.Е. Салтыков-Щедрин. Сказки (одна по выбору). Например, «Повесть о том, как один мужик двух генералов прокормил», «Дикий помещик», «Премудрый пискарь»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "3.6",
+      "title": "Произведения отечественных и зарубежных писателей на историческую тему (не менее двух). Например, А.К. Толстой, Р. Сабатини, Ф. Купер 4 Литература конца XIX – начала XX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "4.1",
+      "title": "А.П. Чехов. Рассказы (один по выбору). Например, «Тоска», «Злоумышленник»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "4.2",
+      "title": "М. Горький. Ранние рассказы (одно произведение по выбору). Например, «Старуха Изергиль» (легенда о Данко), «Челкаш»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "4.3",
+      "title": "Сатирические произведения отечественных и зарубежных писателей (не менее двух). Например, М.М. Зощенко, А.Т. Аверченко, Н. Тэффи, О. Генри, Я. Гашека 5 Литература первой половины XX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.1",
+      "title": "А.С. Грин. Повести и рассказы (одно произведение по выбору). Например, «Алые паруса», «Зеленая лампа»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.2",
+      "title": "Отечественная поэзия первой половины XX в. Стихотворения на тему мечты и реальности (два-три по выбору). Например, стихотворения А.А. Блока, Н.С. Гумилева, М.И. Цветаевой",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.3",
+      "title": "В.В. Маяковский. Стихотворения (одно по выбору). Например, «Необычайное приключение, бывшее с Владимиром Маяковским летом на даче», «Хорошее отношение к лошадям»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.4",
+      "title": "М.А. Шолохов «Донские рассказы» (один по выбору). Например, «Родинка», «Чужая кровь»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "5.5",
+      "title": "А.П. Платонов. Рассказы (один по выбору). Например, «Юшка», «Неизвестный цветок» 6 Литература второй половины XX – начала XXI в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "6.1",
+      "title": "В.М. Шукшин. Рассказы (один по выбору). Например, «Чудик», «Стенька Разин», «Критики»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "6.2",
+      "title": "Стихотворения отечественных поэтов второй половины XX – начала XXI в. (не менее четырех стихотворений двух поэтов). Например, стихотворения М.И. Цветаевой, Е.А. Евтушенко, Б.А. Ахмадулиной, Б.Ш. Окудж",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "6.3",
+      "title": "Произведения отечественных прозаиков второй половины XX – начала XXI в. (не менее двух). Например, произведения Ф.А. Абрамова, В.П. Астафьева, В.И. Белова, Ф.А. Искандера 7 Зарубежная литература",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "7.1",
+      "title": "М. Сервантес. Роман «Хитроумный идальго Дон Кихот Ламанчский» (главы)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "7.2",
+      "title": "Зарубежная новеллистика (одно-два произведения по выбору). Например, П. Мериме «Маттео Фальконе», О. Генри «Дары волхвов», «Последний лист»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "7",
+      "code": "7.3",
+      "title": "Антуан де Сент-Экзюпери. Повесть-сказка «Маленький принц»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.1",
+      "title": "анализировать произведение в единстве формы и содержания, определять тематику и проблематику произведения, его родовую и жанровую принадлежность, выявлять позицию героя, повествователя, рассказчика и ",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.2",
+      "title": "владеть сущностью и пониманием смысловых функций теоретико-литературных понятий и самостоятельно использовать их в процессе анализа и интерпретации произведений, оформления собственных оценок и наблюд",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.3",
+      "title": "рассматривать отдельные изученные произведения в рамках историко-литературного процесса (определять и учитывать при анализе принадлежность произведения к историческому времени, определенному литератур",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.4",
+      "title": "выделять в произведениях элементы художественной формы и обнаруживать связи между ними, определять родо-жанровую специфику изученного художественного произведения",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.5",
+      "title": "сопоставлять произведения, их фрагменты, образы персонажей, литературные явления и факты, сюжеты разных литературных произведений, темы, проблемы, жанры, художественные приемы, эпизоды текста, особенн",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.6",
+      "title": "сопоставлять изученные и самостоятельно прочитанные произведения художественной литературы с произведениями других видов искусства (изобразительное искусство, музыка, театр, балет, кино, фотоискусство",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "1.1",
+      "title": "Житийная литература (одно произведение по выбору). «Житие Сергия Радонежского», «Житие протопопа Аввакума, им самим написанное» 2 Литература XVIII в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "2.1",
+      "title": "Д.И. Фонвизин. Комедия «Недоросль» 3 Литература первой половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.1",
+      "title": "А.С. Пушкин. Стихотворения (не менее двух). Например, «К Чаадаеву», «Анчар»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.2",
+      "title": "А.С. Пушкин. «Маленькие трагедии» (одна пьеса по выбору). Например, «Моцарт и Сальери», «Каменный гость»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.3",
+      "title": "А.С. Пушкин. Роман «Капитанская дочка»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.4",
+      "title": "М.Ю. Лермонтов. Стихотворения (не менее двух). Например, «Я не хочу, чтоб свет узнал...», «Из-под таинственной, холодной полумаски...», «Нищий»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.5",
+      "title": "М.Ю. Лермонтов. Поэма «Мцыри»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.6",
+      "title": "Н.В. Гоголь. Повесть «Шинель»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "3.7",
+      "title": "Н.В. Гоголь. Комедия «Ревизор» 4 Литература второй половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "4.1",
+      "title": "И.С. Тургенев. Повести (одна по выбору). Например, «Ася», «Первая любовь»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "4.3",
+      "title": "Л.Н. Толстой. Повести и рассказы (одно произведение по выбору). Например, «Отрочество» (главы) 5 Литература первой половины XX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "5.1",
+      "title": "Произведения писателей русского зарубежья (не менее двух по выбору). Например, произведения И.С. Шмелева, М.А. Осоргина, В.В. Набокова, Н. Тэффи, А.Т. Аверченко",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "5.2",
+      "title": "Поэзия первой половины XX в. (не менее трех стихотворений на тему «Человек и эпоха» по выбору). Например, стихотворения В.В. Маяковского, А.А. Ахматовой, М.И. Цветаевой, О.Э. Мандельштама, Б.Л. Пастер",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "5.3",
+      "title": "М.А. Булгаков (одна повесть по выбору). Например, «Собачье сердце» 6 Литература второй половины XX – начала XXI в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.1",
+      "title": "А.Т. Твардовский. Поэма «Василий Теркин» (главы «Переправа», «Гармонь», «Два солдата», «Поединок»)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.2",
+      "title": "А.Н. Толстой. Рассказ «Русский характер»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.3",
+      "title": "М.А. Шолохов. Рассказ «Судьба человека»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.4",
+      "title": "А.И. Солженицын. Рассказ «Матренин двор»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.5",
+      "title": "Произведения отечественных прозаиков второй половины XX – начала XXI в. (не менее двух произведений). Например, произведения В.П. Астафьева, Ю.В. Бондарева, Б.П. Екимова, Е.И. Носова, А.Н. и Б.Н. Стру",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "6.6",
+      "title": "Поэзия второй половины XX – начала XXI в. (не менее трех стихотворений двух поэтов). Например, стихотворения Н.А. Заболоцкого, М.А. Светлова, М.В. Исаковского, К.М. Симонова, А.А. Вознесенского, Е.А. ",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "7.1",
+      "title": "У. Шекспир. Сонеты (один-два по выбору). Например, N 66 «Измучась всем, я умереть хочу...», N 130 «Ее глаза на звезды не похожи...»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "7.2",
+      "title": "У. Шекспир. Трагедия «Ромео и Джульетта» (фрагменты по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "8",
+      "code": "7.3",
+      "title": "Ж.-Б. Мольер. Комедия «Мещанин во дворянстве» (фрагменты по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.1",
+      "title": "анализировать произведение в единстве формы и содержания, определять тематику и проблематику произведения, его родовую и жанровую принадлежность; выявлять позицию героя, повествователя, рассказчика и ",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.2",
+      "title": "владеть сущностью и пониманием смысловых функций теоретико-литературных понятий и самостоятельно использовать их в процессе анализа и интерпретации произведений, оформления собственных оценок и наблюд",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.3",
+      "title": "рассматривать изученные и самостоятельно прочитанные произведения в рамках историко-литературного процесса (определять и учитывать при анализе принадлежность произведения к историческому времени, опре",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.4",
+      "title": "выявлять связь между важнейшими фактами биографии писателей (в том числе А.С. Грибоедова, А.С. Пушкина, М.Ю. Лермонтова, Н.В. Гоголя) и особенностями",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.5",
+      "title": "выделять в произведениях элементы художественной формы и обнаруживать связи между ними; определять родо-жанровую специфику изученного и самостоятельно прочитанного художественного произведения",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.6",
+      "title": "сопоставлять произведения, их фрагменты (с учетом внутритекстовых и межтекстовых связей), образы персонажей, литературные явления и факты, сюжеты разных литературных произведений, темы, проблемы, жанр",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.7",
+      "title": "сопоставлять изученные и самостоятельно прочитанные произведения художественной литературы с произведениями других видов искусства (изобразительное искусство, музыка, театр, балет, кино, фотоискусство",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "1.1",
+      "title": "«Слово о полку Игореве» 2 Литература XVIII в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "2.1",
+      "title": "М.В. Ломоносов. «Ода на день восшествия на Всероссийский престол Ея Величества Государыни Императрицы Елисаветы Петровны 1747 года» и другие стихотворения (по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "2.2",
+      "title": "Г.Р. Державин. Стихотворения (два по выбору). Например, «Властителям и судиям», «Памятник»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "2.3",
+      "title": "Н.М. Карамзин. Повесть «Бедная Лиза» 3 Литература первой половины XIX в.",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.1",
+      "title": "В.А. Жуковский. Баллады, элегии (две по выбору). Например, «Светлана», «Невыразимое», «Море»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.2",
+      "title": "А.С. Грибоедов. Комедия «Горе от ума»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.3",
+      "title": "Поэзия пушкинской эпохи (не менее трех стихотворений по выбору). Например, К.Н. Батюшков, А.А. Дельвиг, Н.М. Языков, Е.А. Баратынский",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.4",
+      "title": "А.С. Пушкин. Стихотворения (не менее пяти по выбору). Например, «Бесы», «Брожу ли я вдоль улиц шумных...», «...Вновь я посетил...», «Из Пиндемонти», «К морю», «К***» («Я помню чудное мгновенье...»), «",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.5",
+      "title": "А.С. Пушкин. Поэма «Медный всадник»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.6",
+      "title": "А.С. Пушкин. Роман в стихах «Евгений Онегин»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.7",
+      "title": "М.Ю. Лермонтов. Стихотворения (не менее пяти по выбору). Например, «Выхожу один я на дорогу...», «Дума», «И скучно и грустно», «Как часто, пестрою толпою окружен...», «Молитва» («Я, Матерь Божия, ныне",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.8",
+      "title": "М.Ю. Лермонтов. Роман «Герой нашего времени»",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "3.9",
+      "title": "Н.В. Гоголь. Поэма «Мертвые души» 4 Зарубежная литература",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.1",
+      "title": "Данте Алигьери. «Божественная комедия» (не менее двух фрагментов по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.2",
+      "title": "У. Шекспир. Трагедия «Гамлет» (не менее двух фрагментов по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.3",
+      "title": "И. Гете. Трагедия «Фауст» (не менее двух фрагментов по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.4",
+      "title": "Дж. Г. Байрон. Стихотворения (одно по выбору). Например, «Душа моя мрачна. Скорей, певец, скорей!..», «Прощание Наполеона». Поэма «Паломничество Чайльд-Гарольда» (один фрагмент по выбору)",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "9",
+      "code": "4.5",
+      "title": "Зарубежная проза первой половины XIX в. (одно произведение по выбору). Например, произведения Э.Т.А. Гофмана, В. Гюго, В. Скотта",
+      "type": "topic",
+      "fileId": "ooo_5-9",
+      "mdPath": "src/lib/knowledge/frp/Литература/ooo_5-9.md"
+    },
+    {
+      "grade": "10",
+      "code": "раздел_1",
+      "title": "Литература второй половины XIX века",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.1",
+      "title": "А.Н. Островский. Драма «Гроза» 4 А.Н. Островский. Драма «Гроза». Основные этапы",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.2",
+      "title": "И.А. Гончаров. Роман «Обломов» 5 И.А. Гончаров. Роман «Обломов». Основные этапы",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.3",
+      "title": "И.С. Тургенев. Роман «Отцы и дети» 6 И.С. Тургенев. Роман «Отцы и дети». Основные",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.4",
+      "title": "Ф.И. Тютчев. Стихотворения (не менее трех по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.5",
+      "title": "Н.А. Некрасов. Стихотворения (не менее трех по выбору).",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.6",
+      "title": "А.А. Фет. Стихотворения (не менее трех по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.7",
+      "title": "М.Е. Салтыков-Щедрин. Роман-хроника «История одного города» (не менее двух",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.8",
+      "title": "Ф.М. Достоевский. Роман «Преступление и наказание» 10 Ф.М. Достоевский. Роман",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.9",
+      "title": "Л.Н. Толстой. Роман- эпопея «Война и мир» 15 Л.Н. Толстой. Роман-эпопея «Война и мир».",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.10",
+      "title": "Н.С. Лесков. Рассказы и повести (не менее одного произведения по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "1.11",
+      "title": "А.П. Чехов. Рассказы (не менее трех по выбору). Комедия «Вишневый",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "раздел_2",
+      "title": "Литература народов России",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.1",
+      "title": "Стихотворения (не менее одного по выбору). Например, Г. Тукая, К. Хетагурова",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "раздел_3",
+      "title": "Зарубежная литература",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "3.1",
+      "title": "Зарубежная проза второй половины XIX века (не менее 2 Зарубежная проза второй",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "3.2",
+      "title": "Зарубежная поэзия второй половины XIX века (не менее двух стихотворений одного",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "3.3",
+      "title": "Зарубежная драматургия второй половины XIX века (не менее одного произведения",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "раздел_1",
+      "title": "Литература конца XIX – начала ХХ века",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "1.1",
+      "title": "А.И. Куприн. Рассказы и повести (одно произведение по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "1.2",
+      "title": "Л.Н. Андреев. Рассказы и повести (одно произведение по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "1.3",
+      "title": "М. Горький. Рассказы (один по выбору). Пьеса «На дне» 5 М. Горький. Рассказы (один",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "1.4",
+      "title": "Стихотворения поэтов Серебряного века (не менее двух стихотворений одного",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "раздел_2",
+      "title": "Литература ХХ века",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.1",
+      "title": "И.А. Бунин. Рассказы (два по выбору) 3 И.А. Бунин. Рассказы (два по выбору). Например,",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.2",
+      "title": "А.А. Блок. Стихотворения (не менее трех по выбору). Поэма «Двенадцать»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.3",
+      "title": "В.В. Маяковский. Стихотворения (не менее трех по выбору).",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.4",
+      "title": "С.А. Есенин. Стихотворения (не менее трех по выбору) 3 С.А. Есенин. Стихотворения",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.5",
+      "title": "О.Э. Мандельштам. Стихотворения (не менее трех по выбору) 2 О.Э. Мандельштам.",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.6",
+      "title": "М.И. Цветаева. Стихотворения (не менее трех по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.7",
+      "title": "А.А. Ахматова. Стихотворения (не менее трех по выбору). Поэма «Реквием»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.8",
+      "title": "Н.А. Островский. Роман «Как закалялась сталь» (избранные главы) 2 Н.А. Островский. Роман",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.9",
+      "title": "М.А. Шолохов. Роман- эпопея «Тихий Дон» (избранные главы) 4 М.А. Шолохов. Роман-",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.10",
+      "title": "М.А. Булгаков. Романы (один роман по выбору) 4 М.А. Булгаков. Романы «Белая гвардия», «Мастер",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.11",
+      "title": "А.П. Платонов. Рассказы и повести (одно произведение по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.12",
+      "title": "А.Т. Твардовский. Стихотворения (не менее трех по выбору) 3 А.Т. Твардовский.",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.13",
+      "title": "Проза о Великой Отечественной войне (по одному произведению не менее",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.14",
+      "title": "А.А. Фадеев. Роман «Молодая гвардия» 2 А.А. Фадеев. Роман «Молодая гвардия».",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.15",
+      "title": "В.О. Богомолов. Роман «В августе сорок четвертого» 1 В.О. Богомолов. Роман",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.16",
+      "title": "Поэзия о Великой Отечественной войне. Стихотворения (по одному",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.17",
+      "title": "Драматургия о Великой Отечественной войне. Пьесы (одно",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.18",
+      "title": "Б.Л. Пастернак. Стихотворения (не менее трех по выбору) 3 Б.Л. Пастернак.",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.19",
+      "title": "А.И. Солженицын. Произведения «Один день Ивана Денисовича»,",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.20",
+      "title": "В.М. Шукшин. Рассказы (не менее двух по выбору) 2 В.М. Шукшин. Рассказы",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.21",
+      "title": "В.Г. Распутин. Рассказы и повести (не менее одного произведения по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.22",
+      "title": "Н.М. Рубцов. Стихотворения (не менее трех по выбору) 2 Н.М. Рубцов. Стихотворения",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.23",
+      "title": "И.А. Бродский. Стихотворения (не менее трех по выбору) 3 И.А. Бродский.",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "раздел_3",
+      "title": "Проза второй половины XX – начала XXI века",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "3.1",
+      "title": "Проза второй половины XX – начала XXI века. Рассказы, повести, романы (по одному",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "раздел_4",
+      "title": "Поэзия второй половины XX – начала XXI века",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "4.1",
+      "title": "Поэзия второй половины XX – начала XXI века. Стихотворения 2 Поэзия второй половины",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "раздел_5",
+      "title": "Драматургия второй половины XX – начала XXI века",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "5.1",
+      "title": "Драматургия второй половины ХХ – начала XXI века. Пьесы (произведение одного",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "раздел_6",
+      "title": "Литература народов России",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "6.1",
+      "title": "Рассказы, повести, стихотворения (не менее одного произведения по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "раздел_7",
+      "title": "Зарубежная литература",
+      "type": "section",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "7.1",
+      "title": "Зарубежная проза XX века (не менее одного произведения по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "7.2",
+      "title": "Зарубежная поэзия XX века (не менее двух стихотворений одного из поэтов по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "7.3",
+      "title": "Зарубежная драматургия XX века (не менее одного произведения по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.1",
+      "title": "А.П. Островский. Драма «Гроза»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.2",
+      "title": "И.А. Гончаров. Роман «Обломов»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.3",
+      "title": "И.С. Тургенев. Роман «Отцы и дети»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.4",
+      "title": "Ф.И. Тютчев. Стихотворения (не менее трех по выбору). Например, «Silentium!», «Не то, что мните вы, природа...», «Умом Россию не понять...», «О, как убийственно мы любим...», «Нам не дано предугадать.",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.5",
+      "title": "Н.А. Некрасов. Стихотворения (не менее трех по выбору). Например, «Тройка», «Я не люблю иронии твоей...», «Вчерашний день, часу в шестом...», «Мы с тобой бестолковые люди...», «Поэт и Гражданин», «Эле",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.6",
+      "title": "А.А. Фет. Стихотворения (не менее трех по выбору). Например, «Одним толчком согнать ладью живую...», «Еще майская ночь», «Вечер», «Это утро, радость эта...», «Шепот, робкое дыханье...», «Сияла ночь. Л",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.7",
+      "title": "М.Е. Салтыков-Щедрин. Роман-хроника «История одного города» (не менее двух глав по выбору). Например, главы «О корени происхождения глуповцев», «Опись градоначальникам», «Органчик», «Подтверждение пок",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.8",
+      "title": "Ф.М. Достоевский. Роман «Преступление и наказание»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.9",
+      "title": "Л.Н. Толстой. Роман-эпопея «Война и мир»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.10",
+      "title": "Н.С. Лесков. Рассказы и повести (одно произведение по выбору). Например, «Очарованный странник», «Однодум»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "2.11",
+      "title": "А.П. Чехов. Рассказы (не менее трех по выбору). Например, «Студент», «Ионыч», «Дама с собачкой», «Человек в футляре». Комедия «Вишневый сад» 3 Литературная критика второй половины XIX в.",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "5.1",
+      "title": "Зарубежная проза второй половины XIX в. (одно произведение по выбору). Например, произведения Ч. Диккенса «Дэвид Копперфилд», «Большие надежды»; Г. Флобера «Мадам Бовари»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "5.2",
+      "title": "Зарубежная поэзия второй половины XIX в. (не менее двух стихотворений одного из поэтов по выбору). Например, стихотворения А. Рембо, Ш. Бодлера",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "10",
+      "code": "5.3",
+      "title": "Зарубежная драматургия второй половины XIX в. (одно произведение по выбору). Например, пьеса Г. Ибсена «Кукольный дом»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "1.1",
+      "title": "А.И. Куприн. Рассказы и повести (одно произведение по выбору). Например, «Гранатовый браслет», «Олеся»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "1.2",
+      "title": "Л.Н. Андреев. Рассказы и повести (одно произведение по выбору). Например, «Иуда Искариот», «Большой шлем»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "1.3",
+      "title": "М. Горький. Рассказы (один по выбору). Например, «Старуха Изергиль», «Макар Чудра», «Коновалов». Пьеса «На дне»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "1.4",
+      "title": "Стихотворения поэтов Серебряного века (не менее двух стихотворений одного поэта по выбору). Например, стихотворения К.Д. Бальмонта, М.А. Волошина, Н.С. Гумилева 2 Литература XX в.",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.1",
+      "title": "И.А. Бунин. Рассказы (два по выбору). Например, «Антоновские яблоки», «Чистый понедельник», «Господин из Сан-Франциско»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.2",
+      "title": "А.А. Блок. Стихотворения (не менее трех по выбору). Например, «Незнакомка», «Россия», «Ночь, улица, фонарь, аптека...», «Река раскинулась. Течет, грустит лениво...» (из цикла «На поле Куликовом»),",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.3",
+      "title": "В.В. Маяковский. Стихотворения (не менее трех по выбору). Например, «А вы могли бы?», «Нате!», «Послушайте!», «Лиличка!», «Юбилейное», «Прозаседавшиеся», «Письмо Татьяне Яковлевой». Поэма «Облако в шт",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.4",
+      "title": "С.А. Есенин. Стихотворения (не менее трех по выбору). Например, «Гой ты, Русь, моя родная...», «Письмо матери», «Собаке Качалова», «Спит ковыль. Равнина дорогая...», «Шаганэ ты моя, Шаганэ...», «Не жа",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.5",
+      "title": "О.Э. Мандельштам. Стихотворения (не менее трех по выбору). Например, «Бессонница. Гомер. Тугие паруса...», «За гремучую доблесть грядущих веков...», «Ленинград», «Мы живем, под собою не чуя страны...»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.6",
+      "title": "М.И. Цветаева. Стихотворения (не менее трех по выбору). Например, «Моим стихам, написанным так рано...», «Кто создан из камня, кто создан из глины...», «Идешь, на меня похожий...», «Мне нравится, что ",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.7",
+      "title": "А.А. Ахматова. Стихотворения (не менее трех по выбору). Например, «Песня последней встречи», «Сжала руки под темной вуалью...», «Смуглый отрок бродил по аллеям...», «Мне голос был. Он звал утешно...»,",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.8",
+      "title": "Н.А. Островский. Роман «Как закалялась сталь» (избранные главы)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.9",
+      "title": "М.А. Шолохов. Роман-эпопея «Тихий Дон» (избранные главы)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.10",
+      "title": "М.А. Булгаков. Романы «Белая гвардия», «Мастер и Маргарита» (один роман по выбору)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.11",
+      "title": "А.П. Платонов. Рассказы и повести (одно произведение по выбору). Например, «В прекрасном и яростном мире», «Котлован», «Возвращение»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.12",
+      "title": "А.Т. Твардовский. Стихотворения (не менее трех по выбору). Например, «Вся суть в одном-единственном завете...», «Памяти матери» («В краю, куда их вывезли гуртом...»), «Я знаю, никакой моей вины...», «",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.13",
+      "title": "Проза о Великой Отечественной войне (по одному произведению не менее чем двух писателей по выбору). Например, В.П. Астафьев «Пастух и пастушка»; Ю.В. Бондарев «Горячий снег»; В.В. Быков «Обелиск», «Со",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.14",
+      "title": "А.А. Фадеев. Роман «Молодая гвардия»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.15",
+      "title": "В.О. Богомолов. Роман «В августе сорок четвертого»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.16",
+      "title": "Поэзия о Великой Отечественной войне. Стихотворения (по одному стихотворению не менее чем двух поэтов по выбору). Например, Ю.В. Друниной, М.В. Исаковского, Ю.Д. Левитанского, С.С. Орлова, Д.С. Самойл",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.17",
+      "title": "Драматургия о Великой Отечественной войне. Пьесы (одно произведение по выбору). Например, В.С. Розов «Вечно живые»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.18",
+      "title": "Б.Л. Пастернак. Стихотворения (не менее трех по выбору). Например, «Февраль. Достать чернил и плакать!..», «Определение поэзии», «Во всем мне хочется дойти...», «Снег идет», «Любить иных – тяжелый кре",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.19",
+      "title": "А.И. Солженицын. Произведения «Один день Ивана Денисовича», «Архипелаг ГУЛАГ» (фрагменты книги по выбору, например, глава «Поэзия под плитой, правда под камнем»)",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.20",
+      "title": "В.М. Шукшин. Рассказы (не менее двух по выбору). Например, «Срезал», «Обида», «Микроскоп», «Мастер», «Крепкий мужик», «Сапожки»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.21",
+      "title": "В.Г. Распутин. Рассказы и повести (одно произведение по выбору). Например, «Живи и помни», «Прощание с Матерой»",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.22",
+      "title": "Н.М. Рубцов. Стихотворения (не менее трех по выбору). Например, «Звезда полей», «Тихая моя родина!..», «В горнице моей светло...», «Привет, Россия...», «Русский огонек», «Я буду скакать по холмам задр",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "2.23",
+      "title": "И.А. Бродский. Стихотворения (не менее трех по выбору). Например, «На смерть Жукова», «Осенний крик ястреба», «Пилигримы», «Стансы» («Ни страны, ни погоста...»), «На столетие Анны",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "3.1",
+      "title": "Проза второй половины XX – начала XXI в. Рассказы, повести, романы (по одному произведению не менее чем двух прозаиков по выбору). Например, Ф.А. Абрамов (повесть «Пелагея»); Ч.Т. Айтматов (повесть «Б",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "3.2",
+      "title": "Поэзия второй половины XX – начала XXI в. Стихотворения (по одному произведению не менее чем двух поэтов по выбору). Например, Б.А. Ахмадулиной, А.А. Вознесенского, В.С. Высоцкого, Е.А. Евтушенко, Н.А",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "3.3",
+      "title": "Драматургия второй половины XX – начала XXI в. Пьесы (произведение одного из драматургов по выбору). Например, А.Н. Арбузов («Иркутская история»); А.В. Вампилов («Старший сын») 4 Литература народов Ро",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "5.1",
+      "title": "Зарубежная проза XX в. (одно произведение по выбору). Например, произведения Р. Брэдбери «451 градус по Фаренгейту»; Э.М. Ремарка «Три товарища»; Д. Сэлинджера «Над пропастью во ржи»; Г. Уэллса «Машин",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "5.2",
+      "title": "Зарубежная поэзия XX в. (не менее двух стихотворений одного из поэтов по выбору). Например, стихотворения Г. Аполлинера, Т.С. Элиота",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    },
+    {
+      "grade": "11",
+      "code": "5.3",
+      "title": "Зарубежная драматургия XX в. (одно произведение по выбору). Например, пьесы Б. Брехта «Мамаша Кураж и ее дети»; М. Метерлинка «Синяя птица»; О. Уайльда «Идеальный муж»; Т. Уильямса «Трамвай «Желание»;",
+      "type": "topic",
+      "fileId": "soo_10-11_базовый",
+      "mdPath": "src/lib/knowledge/frp/Литература/soo_10-11_базовый.md"
+    }
+  ]
+}
