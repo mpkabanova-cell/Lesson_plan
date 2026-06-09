@@ -794,7 +794,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setConstructSessionId(nextConstructSessionId);
       setContentKey((k) => k + 1);
       setActiveWorkspace("lesson");
-      setPlanNoticeCollapsed(false);
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
