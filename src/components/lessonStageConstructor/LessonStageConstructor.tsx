@@ -1,17 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getStageDefinition } from "@/lib/constructor/stageRegistry";
 import {
   getTechniquePickerOptions,
   getTechniqueByName,
   isTechniqueSuitableForStage,
   type StageTechnique,
 } from "@/lib/constructor/stageTechniques";
+import type { LessonTypeId } from "@/lib/constructor/stageRegistry";
 import {
   type StageFieldKey,
   type StageMethod,
   type StructuredLesson,
   type StructuredLessonStage,
+  type StructuredStageIssue,
   updateStructuredStageField,
   validateStructuredStage,
 } from "@/lib/constructor/structuredLesson";
@@ -192,7 +195,7 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
   };
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
       <div className="mb-4 rounded-2xl border border-violet-100 bg-violet-50/80 px-4 py-3 text-sm text-violet-950">
         <p className="font-semibold">Конструктор этапов</p>
         <p className="mt-1 text-xs leading-relaxed">
@@ -205,6 +208,7 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
             key={stage.id}
             stage={stage}
             index={index}
+            lessonType={lesson.lessonType}
             busyKey={busyKey}
             onImproveStage={() => improveStage(index)}
             onOpenTechniquePicker={() => setPickerStageIndex(index)}
@@ -214,6 +218,7 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
             onFixField={(field) => regenerateField(index, field, "regenerate")}
             onImproveField={(field) => regenerateField(index, field, "improve")}
             onRegenerateField={(field) => regenerateField(index, field, "regenerate")}
+            onToast={onToast}
           />
         ))}
       </div>
@@ -228,9 +233,15 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
   );
 }
 
+function scrollToStageSection(stageIndex: number, field: StructuredStageIssue["field"]) {
+  const id = field === "method" ? `stage-${stageIndex}-method` : `stage-${stageIndex}-field-${field}`;
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 function StageCard({
   stage,
   index,
+  lessonType,
   busyKey,
   onImproveStage,
   onOpenTechniquePicker,
@@ -238,9 +249,11 @@ function StageCard({
   onFixField,
   onImproveField,
   onRegenerateField,
+  onToast,
 }: {
   stage: StructuredLessonStage;
   index: number;
+  lessonType: LessonTypeId;
   busyKey: string | null;
   onImproveStage: () => void;
   onOpenTechniquePicker: () => void;
@@ -248,8 +261,14 @@ function StageCard({
   onFixField: (field: StageFieldKey) => void;
   onImproveField: (field: StageFieldKey) => void;
   onRegenerateField: (field: StageFieldKey) => void;
+  onToast?: (message: string) => void;
 }) {
-  const validation = useMemo(() => validateStructuredStage(stage), [stage]);
+  const validation = useMemo(() => validateStructuredStage(stage, lessonType), [stage, lessonType]);
+  const visibleFields = useMemo(() => {
+    const templateOnly = getStageDefinition(lessonType, stage.id)?.templateOnly === true;
+    if (!templateOnly) return FIELD_META;
+    return FIELD_META.filter((meta) => meta.key !== "task" && meta.key !== "answer");
+  }, [lessonType, stage.id]);
   const issuesByField = useMemo(() => {
     const map = new Map<string, string[]>();
     validation.issues.forEach((issue) => {
@@ -289,17 +308,40 @@ function StageCard({
         </div>
       </div>
 
+      {!validation.ok ? (
+        <div className="mt-3 rounded-2xl border border-amber-100 bg-amber-50/80 px-3 py-2.5">
+          <p className="text-xs font-semibold text-amber-950">
+            Что нужно исправить ({validation.issues.length}):
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {validation.issues.map((issue) => (
+              <li key={`${issue.field}:${issue.message}`}>
+                <button
+                  type="button"
+                  onClick={() => scrollToStageSection(index, issue.field)}
+                  className="text-left text-xs leading-relaxed text-amber-900 underline decoration-amber-300 underline-offset-2 hover:text-amber-950"
+                >
+                  {issue.message}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <StageMethodBlock
         stage={stage}
+        sectionId={`stage-${index}-method`}
         issueMessages={issuesByField.get("method") ?? []}
         busy={busyKey === `${index}:method:apply`}
         onOpenPicker={onOpenTechniquePicker}
       />
 
       <div className="mt-4 grid gap-3">
-        {FIELD_META.map((meta) => (
+        {visibleFields.map((meta) => (
           <StageEditableField
             key={meta.key}
+            sectionId={`stage-${index}-field-${meta.key}`}
             label={meta.label}
             value={stage[meta.key]}
             minRows={meta.minRows}
@@ -310,6 +352,7 @@ function StageCard({
             onFix={() => onFixField(meta.key)}
             onImprove={() => onImproveField(meta.key)}
             onRegenerate={() => onRegenerateField(meta.key)}
+            onToast={onToast}
           />
         ))}
       </div>
@@ -319,17 +362,19 @@ function StageCard({
 
 function StageMethodBlock({
   stage,
+  sectionId,
   issueMessages,
   busy,
   onOpenPicker,
 }: {
   stage: StructuredLessonStage;
+  sectionId: string;
   issueMessages: string[];
   busy: boolean;
   onOpenPicker: () => void;
 }) {
   return (
-    <section className="mt-4 rounded-2xl border border-violet-100 bg-violet-50/60 p-3">
+    <section id={sectionId} className="mt-4 rounded-2xl border border-violet-100 bg-violet-50/60 p-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-500">
@@ -376,7 +421,84 @@ function StageMethodBlock({
   );
 }
 
+function FieldExtrasMenu({
+  value,
+  onClear,
+  onToast,
+}: {
+  value: string;
+  onClear: () => void;
+  onToast?: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [open]);
+
+  const copyValue = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      onToast?.("Текст скопирован");
+      setOpen(false);
+    } catch {
+      onToast?.("Не удалось скопировать текст");
+    }
+  };
+
+  return (
+    <div className="relative" ref={rootRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+        aria-expanded={open}
+        aria-haspopup="menu"
+      >
+        ⋮ Дополнительно
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-20 mt-1 min-w-[10rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={copyValue}
+            disabled={!value.trim()}
+            className="block w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Скопировать текст
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onClear();
+              setOpen(false);
+            }}
+            disabled={!value.trim()}
+            className="block w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Очистить поле
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function StageEditableField({
+  sectionId,
   label,
   value,
   minRows = 3,
@@ -387,7 +509,9 @@ function StageEditableField({
   onFix,
   onImprove,
   onRegenerate,
+  onToast,
 }: {
+  sectionId: string;
   label: string;
   value: string;
   minRows?: number;
@@ -398,9 +522,13 @@ function StageEditableField({
   onFix: () => void;
   onImprove: () => void;
   onRegenerate: () => void;
+  onToast?: (message: string) => void;
 }) {
   return (
-    <label className="group block rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition focus-within:border-violet-200 focus-within:bg-white">
+    <label
+      id={sectionId}
+      className="group block scroll-mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition focus-within:border-violet-200 focus-within:bg-white"
+    >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</span>
         <div className="flex flex-wrap gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
@@ -420,13 +548,7 @@ function StageEditableField({
           >
             {busyRegenerate ? "Генерирую…" : "🔄 Перегенерировать"}
           </button>
-          <button
-            type="button"
-            className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
-            title="Дополнительно"
-          >
-            ⋮ Дополнительно
-          </button>
+          <FieldExtrasMenu value={value} onClear={() => onChange("")} onToast={onToast} />
         </div>
       </div>
       <textarea

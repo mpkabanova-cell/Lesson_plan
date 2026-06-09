@@ -193,14 +193,18 @@ function isInvalidValue(value: string): boolean {
   return false;
 }
 
-export function validateStructuredStage(stage: StructuredLessonStage): StructuredStageValidation {
+export function validateStructuredStage(
+  stage: StructuredLessonStage,
+  lessonType?: LessonTypeId,
+): StructuredStageValidation {
   const issues: StructuredStageIssue[] = [];
+  const templateOnly =
+    lessonType !== undefined && getStageDefinition(lessonType, stage.id)?.templateOnly === true;
   const required: StageFieldKey[] = [
     "goal",
     "teacherSpeech",
     "studentActions",
-    "task",
-    "answer",
+    ...(templateOnly ? [] : (["task", "answer"] as StageFieldKey[])),
     "result",
   ];
 

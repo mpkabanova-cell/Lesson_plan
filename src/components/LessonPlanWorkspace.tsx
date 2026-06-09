@@ -1240,7 +1240,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                           </p>
                         ) : null}
                       </div>
-                      <div className="min-h-0 flex-1 overflow-hidden">
+                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         {structuredLesson ? (
                           <LessonStageConstructor
                             lesson={structuredLesson}
