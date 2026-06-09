@@ -3,61 +3,61 @@
     "motivation": {
       "label": "Мотивация и целеполагание",
       "techniques": [
-        { "id": "surprise", "name": "Удивляй", "description": "Неожиданный факт, парадокс или наглядный пример, вызывающий интерес к теме." },
-        { "id": "delayed_guess", "name": "Отсроченная отгадка", "description": "Загадка или вопрос в начале урока; ответ раскрывается в конце этапа или урока." },
-        { "id": "idea_basket", "name": "Корзина идей", "description": "Учащиеся предлагают ассоциации и гипотезы по теме; учитель фиксирует на доске." },
-        { "id": "problem_question", "name": "Проблемный вопрос", "description": "Вопрос, ставящий ученика в ситуацию незнания или противоречия." }
+        { "id": "surprise", "name": "Удивляй", "description": "Неожиданный факт, парадокс или наглядный пример, вызывающий интерес к теме.", "allowedStages": ["organizational_moment", "goal_setting_motivation"], "subjects": ["all"], "example": "Начните с факта или демонстрации, которая не совпадает с ожиданиями учеников." },
+        { "id": "delayed_guess", "name": "Отсроченная отгадка", "description": "Загадка или вопрос в начале урока; ответ раскрывается в конце этапа или урока.", "allowedStages": ["goal_setting_motivation", "problem_situation_goal"], "subjects": ["all"], "example": "Задайте вопрос, ответ на который ученики смогут доказать только после изучения темы." },
+        { "id": "idea_basket", "name": "Корзина идей", "description": "Учащиеся предлагают ассоциации и гипотезы по теме; учитель фиксирует на доске.", "allowedStages": ["goal_setting_motivation", "knowledge_activation"], "subjects": ["all"], "example": "Соберите версии учеников о том, что уже известно по теме." },
+        { "id": "problem_question", "name": "Проблемный вопрос", "description": "Вопрос, ставящий ученика в ситуацию незнания или противоречия.", "allowedStages": ["problem_situation_goal", "goal_setting_motivation"], "subjects": ["all"], "example": "Почему старый способ здесь не помогает?" }
       ]
     },
     "activation": {
       "label": "Актуализация знаний",
       "techniques": [
-        { "id": "true_false", "name": "Верные и неверные утверждения", "description": "Серия утверждений: ученики отмечают верные/неверные и обосновывают." },
-        { "id": "blitz_poll", "name": "Блиц-опрос", "description": "Короткие вопросы по опорным знаниям с быстрой фиксацией ответов." },
-        { "id": "error_work", "name": "Работа с ошибкой", "description": "Готовый пример с типичной ошибкой; ученики находят и исправляют." },
-        { "id": "cluster", "name": "Кластер", "description": "Ключевое слово в центре; ученики дополняют ассоциациями и связями." }
+        { "id": "true_false", "name": "Верные и неверные утверждения", "description": "Серия утверждений: ученики отмечают верные/неверные и обосновывают.", "allowedStages": ["knowledge_activation", "problem_situation_goal"], "subjects": ["all"], "example": "Определите, какие утверждения по теме верны, а какие требуют исправления." },
+        { "id": "blitz_poll", "name": "Блиц-опрос", "description": "Короткие вопросы по опорным знаниям с быстрой фиксацией ответов.", "allowedStages": ["knowledge_activation", "homework_check"], "subjects": ["all"], "example": "Ответьте на 5 коротких вопросов по материалу прошлого урока." },
+        { "id": "error_work", "name": "Работа с ошибкой", "description": "Готовый пример с типичной ошибкой; ученики находят и исправляют.", "allowedStages": ["knowledge_activation", "primary_comprehension_check"], "subjects": ["all"], "example": "Найдите ошибку в решении/рассуждении и объясните исправление." },
+        { "id": "cluster", "name": "Кластер", "description": "Ключевое слово в центре; ученики дополняют ассоциациями и связями.", "allowedStages": ["knowledge_activation", "generalization_systematization"], "subjects": ["all"], "example": "Составьте кластер понятий, связанных с новой темой." }
       ]
     },
     "difficulty": {
       "label": "Выявление затруднения",
       "techniques": [
-        { "id": "problem_situation", "name": "Проблемная ситуация", "description": "Ситуация, где известные способы не работают; возникает познавательное затруднение." },
-        { "id": "contradiction", "name": "Противоречие", "description": "Два факта или результата, которые нельзя объяснить старым знанием." },
-        { "id": "trial_action", "name": "Пробное действие", "description": "Задание на известных знаниях, приводящее к тупику или ошибке." }
+        { "id": "problem_situation", "name": "Проблемная ситуация", "description": "Ситуация, где известные способы не работают; возникает познавательное затруднение.", "allowedStages": ["problem_situation_goal"], "subjects": ["all"], "example": "Предложите задачу, которую нельзя решить изученным способом." },
+        { "id": "contradiction", "name": "Противоречие", "description": "Два факта или результата, которые нельзя объяснить старым знанием.", "allowedStages": ["problem_situation_goal"], "subjects": ["all"], "example": "Сравните два результата и найдите противоречие." },
+        { "id": "trial_action", "name": "Пробное действие", "description": "Задание на известных знаниях, приводящее к тупику или ошибке.", "allowedStages": ["problem_situation_goal", "primary_acquisition"], "subjects": ["all"], "example": "Попробуйте выполнить действие старым способом и зафиксируйте затруднение." }
       ]
     },
     "acquisition": {
       "label": "Открытие нового знания",
       "techniques": [
-        { "id": "leading_dialogue", "name": "Подводящий диалог", "description": "Цепочка вопросов, ведущих к формулировке правила или вывода." },
-        { "id": "research", "name": "Исследование", "description": "Самостоятельный поиск закономерности по примерам или опыту." },
-        { "id": "example_analysis", "name": "Анализ примеров", "description": "Сравнение нескольких примеров с выводом общего правила." },
-        { "id": "source_work", "name": "Работа с источником", "description": "Извлечение нового знания из текста, документа, схемы или данных." },
-        { "id": "observation", "name": "Наблюдение", "description": "Фиксация признаков, закономерностей по наглядности или демонстрации." }
+        { "id": "leading_dialogue", "name": "Подводящий диалог", "description": "Цепочка вопросов, ведущих к формулировке правила или вывода.", "allowedStages": ["primary_acquisition"], "subjects": ["all"], "example": "Ответьте на вопросы и сформулируйте общий вывод." },
+        { "id": "research", "name": "Исследование", "description": "Самостоятельный поиск закономерности по примерам или опыту.", "allowedStages": ["primary_acquisition", "creative_application"], "subjects": ["all"], "example": "Исследуйте несколько примеров и найдите закономерность." },
+        { "id": "example_analysis", "name": "Анализ примеров", "description": "Сравнение нескольких примеров с выводом общего правила.", "allowedStages": ["primary_acquisition", "primary_comprehension_check"], "subjects": ["all"], "example": "Сравните примеры и выделите общий признак." },
+        { "id": "source_work", "name": "Работа с источником", "description": "Извлечение нового знания из текста, документа, схемы или данных.", "allowedStages": ["primary_acquisition", "generalization_systematization"], "subjects": ["all"], "example": "Найдите в источнике сведения, которые помогают открыть правило." },
+        { "id": "observation", "name": "Наблюдение", "description": "Фиксация признаков, закономерностей по наглядности или демонстрации.", "allowedStages": ["primary_acquisition"], "subjects": ["all"], "example": "Понаблюдайте за объектом/примером и запишите признаки." }
       ]
     },
     "consolidation": {
       "label": "Закрепление и применение",
       "techniques": [
-        { "id": "training_tasks", "name": "Тренировочные задания", "description": "Серия задач с нарастающей сложностью на новом способе." },
-        { "id": "pair_check", "name": "Взаимопроверка", "description": "Ученики сверяют решения по эталону в парах." },
-        { "id": "creative_apply", "name": "Творческое применение", "description": "Задание в нестандартной или жизненной ситуации." }
+        { "id": "training_tasks", "name": "Тренировочные задания", "description": "Серия задач с нарастающей сложностью на новом способе.", "allowedStages": ["primary_consolidation", "primary_comprehension_check"], "subjects": ["all"], "example": "Выполните 2–3 задания с постепенным усложнением." },
+        { "id": "pair_check", "name": "Взаимопроверка", "description": "Ученики сверяют решения по эталону в парах.", "allowedStages": ["primary_comprehension_check", "comprehension_control"], "subjects": ["all"], "example": "Обменяйтесь работами и проверьте по эталону." },
+        { "id": "creative_apply", "name": "Творческое применение", "description": "Задание в нестандартной или жизненной ситуации.", "allowedStages": ["creative_application", "apply_new_situation"], "subjects": ["all"], "example": "Примените новый способ в практической ситуации." }
       ]
     },
     "reflection": {
       "label": "Рефлексия",
       "techniques": [
-        { "id": "traffic_light", "name": "Светофор", "description": "Самооценка: зелёный — понял, жёлтый — частично, красный — затруднение." },
-        { "id": "cinquain", "name": "Синквейн", "description": "Короткая рефлексия в форме синквейна по теме урока." },
-        { "id": "backpack", "name": "Рюкзак", "description": "Что взял с урока, что оставил, что не хватило." },
-        { "id": "pops", "name": "ПОПС", "description": "Понравилось — Оказалось — Понял — Сложилось." }
+        { "id": "traffic_light", "name": "Светофор", "description": "Самооценка: зелёный — понял, жёлтый — частично, красный — затруднение.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Оцените понимание темы цветом и объясните выбор." },
+        { "id": "cinquain", "name": "Синквейн", "description": "Короткая рефлексия в форме синквейна по теме урока.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Составьте синквейн по ключевому понятию урока." },
+        { "id": "backpack", "name": "Рюкзак", "description": "Что взял с урока, что оставил, что не хватило.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Назовите, что берёте с урока в свой учебный рюкзак." },
+        { "id": "pops", "name": "ПОПС", "description": "Понравилось — Оказалось — Понял — Сложилось.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Заполните четыре короткие фразы по итогам урока." }
       ]
     },
     "general": {
       "label": "Общие приёмы",
       "techniques": [
-        { "id": "insert", "name": "Инсёрт", "description": "Маркеры «знаю / хочу узнать / узнал» при работе с текстом или темой." },
-        { "id": "venn", "name": "Диаграмма Венна", "description": "Сравнение понятий, явлений, способов в пересекающихся кругах." }
+        { "id": "insert", "name": "Инсёрт", "description": "Маркеры «знаю / хочу узнать / узнал» при работе с текстом или темой.", "allowedStages": ["primary_acquisition", "generalization_systematization", "homework_info"], "subjects": ["all"], "example": "Пометьте в тексте известное, новое и непонятное." },
+        { "id": "venn", "name": "Диаграмма Венна", "description": "Сравнение понятий, явлений, способов в пересекающихся кругах.", "allowedStages": ["generalization_systematization", "primary_comprehension_check"], "subjects": ["all"], "example": "Сравните два понятия и заполните пересечение." }
       ]
     }
   },

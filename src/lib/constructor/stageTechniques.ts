@@ -4,6 +4,9 @@ export type StageTechnique = {
   id: string;
   name: string;
   description: string;
+  allowedStages?: string[];
+  subjects?: string[];
+  example?: string;
 };
 
 type PhaseConfig = {
@@ -29,6 +32,44 @@ export function getTechniquesForStage(stageId: string): StageTechnique[] {
   const phase = data.phases[phaseId];
   if (!phase) return data.phases.general?.techniques ?? [];
   return phase.techniques;
+}
+
+export function getAllTechniques(): StageTechnique[] {
+  const seen = new Set<string>();
+  const out: StageTechnique[] = [];
+  for (const phase of Object.values(data.phases)) {
+    for (const technique of phase.techniques) {
+      if (seen.has(technique.id)) continue;
+      seen.add(technique.id);
+      out.push(technique);
+    }
+  }
+  return out;
+}
+
+export function getTechniqueById(id: string): StageTechnique | undefined {
+  return getAllTechniques().find((technique) => technique.id === id);
+}
+
+export function getTechniqueByName(name: string): StageTechnique | undefined {
+  const normalized = normalizeTechniqueName(name);
+  return getAllTechniques().find((technique) => normalizeTechniqueName(technique.name) === normalized);
+}
+
+export function getTechniquePickerOptions(stageId: string): {
+  suitable: StageTechnique[];
+  other: StageTechnique[];
+} {
+  const suitable = getTechniquesForStage(stageId);
+  const suitableIds = new Set(suitable.map((technique) => technique.id));
+  return {
+    suitable,
+    other: getAllTechniques().filter((technique) => !suitableIds.has(technique.id)),
+  };
+}
+
+export function isTechniqueSuitableForStage(stageId: string, techniqueId: string): boolean {
+  return getTechniquesForStage(stageId).some((technique) => technique.id === techniqueId);
 }
 
 export function getPhaseLabelForStage(stageId: string): string {

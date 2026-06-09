@@ -1,12 +1,14 @@
 import HTMLtoDOCX from "html-to-docx";
 import { NextResponse } from "next/server";
+import { structuredLessonToHtml, type StructuredLesson } from "@/lib/constructor/structuredLesson";
 import { expandMathSpansForExport } from "@/lib/expandMathSpansForExport";
 import { sanitizeLessonHtml } from "@/lib/sanitizeHtml";
 
 export const runtime = "nodejs";
 
 type Body = {
-  html: string;
+  html?: string;
+  lesson?: StructuredLesson;
   title?: string;
 };
 
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
 
-  const innerRaw = body.html?.trim();
+  const innerRaw = body.lesson ? await structuredLessonToHtml(body.lesson) : body.html?.trim();
   if (!innerRaw) {
     return NextResponse.json({ error: "Пустой HTML" }, { status: 400 });
   }

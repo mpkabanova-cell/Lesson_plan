@@ -36,6 +36,11 @@ const { pickTechniqueForStage, getTechniquesForStage } = await import(
 const { isDuplicateTask } = await import("../src/lib/constructor/stageTaskDiversity.ts");
 const { resolveSubjectProfile } = await import("../src/lib/constructor/subjectProfiles.ts");
 const { validateAssembledLesson } = await import("../src/lib/lessonPlanValidator.ts");
+const {
+  structuredLessonFromStageResults,
+  structuredLessonToMarkdown,
+  validateStructuredStage,
+} = await import("../src/lib/constructor/structuredLesson.ts");
 
 // --- subject mode ---
 assert.equal(resolveSubjectGenerationMode("История", "8"), "humanities");
@@ -279,6 +284,39 @@ const parsedTasks = parseStageTasks(goodStage);
 assert.equal(parsedTasks.length, 1);
 assert.ok(parsedTasks[0].condition.length >= 12);
 assert.ok(parsedTasks[0].answer?.includes("x = 3"));
+
+const structured = structuredLessonFromStageResults({
+  subject: "Математика",
+  grade: "8",
+  topic: "Уравнения",
+  goal: "Решать линейные уравнения",
+  durationMinutes: 45,
+  lessonType: "new_knowledge",
+  selectedStageIds: ["knowledge_activation"],
+  stageMinutes: { knowledge_activation: 10 },
+  stageResults: [
+    {
+      stageId: "knowledge_activation",
+      title: "Актуализация знаний",
+      markdown: goodStage,
+      summary: "Актуализация",
+      attempts: 1,
+    },
+  ],
+});
+assert.equal(structured.stages.length, 1);
+assert.equal(structured.stages[0].method?.name, activationTechnique.name);
+assert.ok(structured.stages[0].task.includes("Решите уравнение"));
+assert.ok(validateStructuredStage(structured.stages[0]).ok);
+const structuredMarkdown = structuredLessonToMarkdown(structured);
+assert.ok(structuredMarkdown.includes("Задание 1.1"));
+assert.ok(structuredMarkdown.includes("Ответ: x = 3"));
+
+const invalidStructured = { ...structured.stages[0], method: null, teacherSpeech: "Учитель организует обсуждение." };
+const invalidStructuredVal = validateStructuredStage(invalidStructured);
+assert.equal(invalidStructuredVal.ok, false);
+assert.ok(invalidStructuredVal.issues.some((issue) => issue.field === "method"));
+assert.ok(invalidStructuredVal.issues.some((issue) => issue.field === "teacherSpeech"));
 
 const genericSpeechStage = `## Актуализация знаний
 Время: 10 мин

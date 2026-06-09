@@ -23,7 +23,12 @@ import {
   type LessonFingerprint,
 } from "@/lib/lessonPlanDiversity";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
+import {
+  structuredLessonFromStageResults,
+  type StructuredLesson,
+} from "@/lib/constructor/structuredLesson";
 import { GenerationProgressPanel } from "./GenerationProgressPanel";
+import { LessonStageConstructor } from "./lessonStageConstructor/LessonStageConstructor";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
 
@@ -50,7 +55,8 @@ type ConstructFinishResponse = {
     issues: Array<{ code: string; message: string }>;
     failedStageIds?: string[];
   };
-  stageResults?: Array<{ stageId: string; title: string }>;
+  stageResults?: Array<{ stageId: string; title: string; markdown: string; summary: string; attempts: number }>;
+  stageMinutes?: Record<string, number>;
   frp?: Record<string, unknown> | null;
   generationVersion?: number;
 };
@@ -325,7 +331,10 @@ async function requestConstructV3(
     );
   }
 
-  return finish;
+  return {
+    ...finish,
+    stageMinutes: Object.fromEntries(start.stages.map((stage) => [stage.id, stage.minutes])),
+  };
 }
 
 /** Запрос с таймаутом; тело всегда читается как текст, затем JSON — так видны не-JSON и пустые ответы. */
@@ -459,8 +468,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [homework, setHomework] = useState("");
 
   const [planHtml, setPlanHtml] = useState("");
+  const [structuredLesson, setStructuredLesson] = useState<StructuredLesson | null>(null);
+  const [constructSessionId, setConstructSessionId] = useState<string | null>(null);
   const [contentKey, setContentKey] = useState(0);
-  const [materialsSessionKey, setMaterialsSessionKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [goalSuggesting, setGoalSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -511,6 +521,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const resetWorkspaceResults = useCallback(() => {
     stripUrlSearchParams();
     setPlanHtml("");
+    setStructuredLesson(null);
+    setConstructSessionId(null);
     setContentKey((k) => k + 1);
     setGoal("");
     setHomework("");
@@ -670,6 +682,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       let raw = "";
       let usedVersion = 3;
       let successInfo: string | null = null;
+      let nextStructuredLesson: StructuredLesson | null = null;
+      let nextConstructSessionId: string | null = null;
 
       try {
         setGenerateStep("Версия 3: поэтапный конструктор FGOS…");
@@ -688,6 +702,21 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         );
         html = constructData.html ?? "";
         raw = constructData.raw ?? "";
+        nextConstructSessionId = constructData.sessionId;
+        if (constructData.stageResults?.length) {
+          nextStructuredLesson = structuredLessonFromStageResults({
+            subject,
+            grade,
+            topic,
+            goal,
+            durationMinutes: duration,
+            lessonType: lessonTypeId,
+            homework: homework.trim() || undefined,
+            selectedStageIds,
+            stageMinutes: constructData.stageMinutes ?? {},
+            stageResults: constructData.stageResults,
+          });
+        }
         if (!constructData.validation.ok) {
           const issueCount = constructData.validation.issues?.length ?? 0;
           successInfo =
@@ -705,6 +734,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         }
 
         usedVersion = 2;
+        nextStructuredLesson = null;
+        nextConstructSessionId = null;
         setConstructEstimateMs(undefined);
         let data: GenerateApiResponse;
         try {
@@ -760,6 +791,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         }
       }
       setPlanHtml(prepared);
+      setStructuredLesson(nextStructuredLesson);
+      setConstructSessionId(nextConstructSessionId);
       setContentKey((k) => k + 1);
       setActiveWorkspace("lesson");
       setPlanNoticeCollapsed(false);
@@ -824,7 +857,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     try {
       await downloadBlob(
         "/api/export/docx",
-        { html: planHtml, title: exportTitle },
+        structuredLesson
+          ? { lesson: structuredLesson, title: exportTitle }
+          : { html: planHtml, title: exportTitle },
         "plan.docx",
       );
     } catch (e) {
@@ -838,7 +873,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     setPlanHtml(html);
   }, []);
 
-  const hasPlan = planHtml.replace(/<[^>]+>/g, "").trim().length > 0;
+  const hasPlan =
+    Boolean(structuredLesson?.stages.length) ||
+    planHtml.replace(/<[^>]+>/g, "").trim().length > 0;
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,#f4ddff_0,#eef2ff_32%,#f8fafc_62%)]">
@@ -1185,6 +1222,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                               type="button"
                               onClick={() => {
                                 setPlanHtml("");
+                                setStructuredLesson(null);
+                                setConstructSessionId(null);
                                 setContentKey((k) => k + 1);
                                 setGenerateSuccessInfo(null);
                                 setError(null);
@@ -1197,19 +1236,29 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                         </div>
                         {!planNoticeCollapsed ? (
                           <p className="mt-1 text-xs leading-relaxed text-emerald-900">
-                            Основная работа теперь в редакторе ниже: можно править текст, добавлять материалы и скачать Word.
+                            Основная работа теперь в конструкторе ниже: можно править отдельные блоки, приёмы и скачать Word.
                           </p>
                         ) : null}
                       </div>
                       <div className="min-h-0 flex-1 overflow-hidden">
-                        <PlanEditor
-                          content={planHtml}
-                          contentKey={contentKey}
-                          onHtmlChange={onHtmlChange}
-                          onExternalLoad={handlePlanEditorLoad}
-                          disabled={loading}
-                          placeholder="Здесь появится готовый сценарий урока."
-                        />
+                        {structuredLesson ? (
+                          <LessonStageConstructor
+                            lesson={structuredLesson}
+                            sessionId={constructSessionId}
+                            onChange={(nextLesson) => setStructuredLesson(nextLesson)}
+                            onToast={setToast}
+                            onError={setError}
+                          />
+                        ) : (
+                          <PlanEditor
+                            content={planHtml}
+                            contentKey={contentKey}
+                            onHtmlChange={onHtmlChange}
+                            onExternalLoad={handlePlanEditorLoad}
+                            disabled={loading}
+                            placeholder="Здесь появится готовый сценарий урока."
+                          />
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -1225,7 +1274,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               >
                 {materialsWorkspaceMounted ? (
                   <MaterialsSearchTab
-                    key={materialsSessionKey}
                     programmableSearchCx={googleProgrammableSearchCx}
                   />
                 ) : null}
