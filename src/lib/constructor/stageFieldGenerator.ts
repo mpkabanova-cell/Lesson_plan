@@ -27,6 +27,7 @@ export type StageFieldGenerationInput = {
   method?: StageMethod | null;
   previousStageSummary?: string;
   nextStageSummary?: string;
+  userInstructions?: string;
   frpMeta?: unknown;
 };
 
@@ -106,7 +107,10 @@ function buildSystemPrompt(input: StageFieldGenerationInput): string {
 Если это ответ — дай ключ/эталон проверки.`;
   }
 
-  return `Ты — опытный методист. Улучшаешь только текущий этап урока.
+  const instructionHint = input.userInstructions?.trim()
+    ? " Учти пожелания учителя из userInstructions."
+    : "";
+  return `Ты — опытный методист. Перегенерируешь содержание текущего этапа урока под выбранный методический приём.${instructionHint}
 Верни строго JSON вида {"fields":{"teacherSpeech":"...","studentActions":"...","expectedAnswers":"...","task":"...","answer":"...","result":"...","teacherComment":"..."}}.
 Не меняй название этапа, время, цель этапа и выбранный методический приём.
 Не возвращай другие этапы, Markdown или пояснения.
@@ -131,6 +135,7 @@ function buildUserPayload(input: StageFieldGenerationInput): string {
       },
       previousStageSummary: input.previousStageSummary,
       nextStageSummary: input.nextStageSummary,
+      userInstructions: input.userInstructions?.trim() || undefined,
       frpContext: input.frpMeta,
     },
     null,

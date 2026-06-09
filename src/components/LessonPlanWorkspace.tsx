@@ -7,7 +7,7 @@ import {
   getAvailableGrades,
   isSubjectGradeCompatible,
 } from "@/config/subjectClassMap";
-import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
+import { suggestLessonGoal } from "@/app/actions/suggestLessonGoal";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { estimateGenerationMs } from "@/lib/lessonTypes";
 import {
@@ -496,7 +496,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<"lesson" | "materials">("lesson");
   const [materialsWorkspaceMounted, setMaterialsWorkspaceMounted] = useState(false);
-  const [planNoticeCollapsed, setPlanNoticeCollapsed] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -821,22 +820,16 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     }
     setGoalSuggesting(true);
     try {
-      const data = await postJson<{ goal?: string }>(
-        "/api/generate-goal",
-        {
-          systemPrompt: DEFAULT_GOAL_SYSTEM_PROMPT,
-          subject,
-          grade,
-          topic: topic.trim(),
-          lessonType: lessonTypeId,
-        },
-        70_000,
-      );
-      const g = typeof data.goal === "string" ? data.goal.trim() : "";
-      if (!g) {
-        throw new Error("Сервер не вернул текст.");
+      const result = await suggestLessonGoal({
+        subject,
+        grade,
+        topic: topic.trim(),
+        lessonType: lessonTypeId,
+      });
+      if (!result.ok) {
+        throw new Error(result.detail ? `${result.error} — ${result.detail}` : result.error);
       }
-      setGoal(g);
+      setGoal(result.goal);
       setToast("Формулировка добавлена");
     } catch (e) {
       const msg =
@@ -1200,45 +1193,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                     </div>
                   ) : hasPlan ? (
                     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-                      <div className="shrink-0 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-2.5 text-sm text-emerald-950">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setPlanNoticeCollapsed((value) => !value)}
-                            aria-expanded={!planNoticeCollapsed}
-                            className="font-medium hover:text-emerald-800"
-                          >
-                            ✨ План создан{planNoticeCollapsed ? "" : ". Можно продолжить редактирование."}
-                          </button>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setPlanNoticeCollapsed((value) => !value)}
-                              className="rounded-full px-2.5 py-1 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
-                            >
-                              {planNoticeCollapsed ? "Развернуть" : "Свернуть"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPlanHtml("");
-                                setStructuredLesson(null);
-                                setConstructSessionId(null);
-                                setContentKey((k) => k + 1);
-                                setGenerateSuccessInfo(null);
-                                setError(null);
-                              }}
-                              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-100 hover:bg-emerald-100"
-                            >
-                              Создать новый
-                            </button>
-                          </div>
-                        </div>
-                        {!planNoticeCollapsed ? (
-                          <p className="mt-1 text-xs leading-relaxed text-emerald-900">
-                            Основная работа теперь в конструкторе ниже: можно править отдельные блоки, приёмы и скачать Word.
-                          </p>
-                        ) : null}
+                      <div className="shrink-0 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-2.5 text-sm font-medium text-emerald-950">
+                        ✨ План создан. Можно продолжить редактирование.
                       </div>
                       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         {structuredLesson ? (

@@ -113,6 +113,7 @@ function stageWithPatch(stage: StructuredLessonStage, patch: StagePatch): Struct
 export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, onError }: Props) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [pickerStageIndex, setPickerStageIndex] = useState<number | null>(null);
+  const [regenerateStageIndex, setRegenerateStageIndex] = useState<number | null>(null);
 
   const updateStage = (stageIndex: number, updater: (stage: StructuredLessonStage) => StructuredLessonStage) => {
     onChange({
@@ -140,17 +141,23 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
     }
   };
 
-  const improveStage = async (stageIndex: number) => {
-    const key = `${stageIndex}:stage:improve`;
+  const regenerateStage = async (stageIndex: number, userInstructions: string) => {
+    const stage = lesson.stages[stageIndex];
+    if (!stage.method) return;
+
+    const key = `${stageIndex}:method:apply`;
     setBusyKey(key);
     onError?.(null);
     try {
       const data = await postJson<{ fields: StagePatch }>("/api/construct/field", {
         ...buildContext(lesson, stageIndex, sessionId),
-        mode: "improve-stage",
+        mode: "apply-method",
+        method: stage.method,
+        userInstructions: userInstructions.trim() || undefined,
       });
-      updateStage(stageIndex, (stage) => stageWithPatch(stage, data.fields ?? {}));
-      onToast?.("Этап улучшен");
+      updateStage(stageIndex, (current) => stageWithPatch(current, data.fields ?? {}));
+      setRegenerateStageIndex(null);
+      onToast?.("Этап перегенерирован");
     } catch (e) {
       onError?.(e instanceof Error ? e.message : String(e));
     } finally {
@@ -196,12 +203,6 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-      <div className="mb-4 rounded-2xl border border-violet-100 bg-violet-50/80 px-4 py-3 text-sm text-violet-950">
-        <p className="font-semibold">Конструктор этапов</p>
-        <p className="mt-1 text-xs leading-relaxed">
-          Урок хранится как набор редактируемых блоков. Можно менять одно поле, приём или этап без перегенерации всего плана.
-        </p>
-      </div>
       <div className="space-y-4">
         {lesson.stages.map((stage, index) => (
           <StageCard
@@ -210,8 +211,8 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
             index={index}
             lessonType={lesson.lessonType}
             busyKey={busyKey}
-            onImproveStage={() => improveStage(index)}
             onOpenTechniquePicker={() => setPickerStageIndex(index)}
+            onOpenRegenerate={() => setRegenerateStageIndex(index)}
             onChangeField={(field, value) =>
               updateStage(index, (current) => updateStructuredStageField(current, field, value))
             }
@@ -229,6 +230,14 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
           onApply={(technique, mode) => applyTechnique(pickerStageIndex, technique, mode)}
         />
       ) : null}
+      {regenerateStageIndex !== null ? (
+        <RegenerateStageModal
+          stage={lesson.stages[regenerateStageIndex]}
+          busy={busyKey === `${regenerateStageIndex}:method:apply`}
+          onClose={() => setRegenerateStageIndex(null)}
+          onSubmit={(instructions) => regenerateStage(regenerateStageIndex, instructions)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -243,8 +252,8 @@ function StageCard({
   index,
   lessonType,
   busyKey,
-  onImproveStage,
   onOpenTechniquePicker,
+  onOpenRegenerate,
   onChangeField,
   onFixField,
   onImproveField,
@@ -255,8 +264,8 @@ function StageCard({
   index: number;
   lessonType: LessonTypeId;
   busyKey: string | null;
-  onImproveStage: () => void;
   onOpenTechniquePicker: () => void;
+  onOpenRegenerate: () => void;
   onChangeField: (field: StageFieldKey, value: string) => void;
   onFixField: (field: StageFieldKey) => void;
   onImproveField: (field: StageFieldKey) => void;
@@ -279,33 +288,12 @@ function StageCard({
 
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">
-            Этап {index + 1}
-          </p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-950">{stage.title}</h3>
-          <p className="mt-1 text-xs font-medium text-slate-500">Время: {stage.time}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {!validation.ok ? (
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-100">
-              Есть замечания: {validation.issues.length}
-            </span>
-          ) : (
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-100">
-              Этап заполнен
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={onImproveStage}
-            disabled={busyKey === `${index}:stage:improve`}
-            className="rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-violet-700 disabled:opacity-60"
-          >
-            {busyKey === `${index}:stage:improve` ? "Улучшаю…" : "✨ Улучшить этап"}
-          </button>
-        </div>
+      <div className="border-b border-slate-100 pb-3">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">
+          Этап {index + 1}
+        </p>
+        <h3 className="mt-1 text-lg font-semibold text-slate-950">{stage.title}</h3>
+        <p className="mt-1 text-xs font-medium text-slate-500">Время: {stage.time}</p>
       </div>
 
       {!validation.ok ? (
@@ -335,6 +323,7 @@ function StageCard({
         issueMessages={issuesByField.get("method") ?? []}
         busy={busyKey === `${index}:method:apply`}
         onOpenPicker={onOpenTechniquePicker}
+        onRegenerate={onOpenRegenerate}
       />
 
       <div className="mt-4 grid gap-3">
@@ -366,12 +355,14 @@ function StageMethodBlock({
   issueMessages,
   busy,
   onOpenPicker,
+  onRegenerate,
 }: {
   stage: StructuredLessonStage;
   sectionId: string;
   issueMessages: string[];
   busy: boolean;
   onOpenPicker: () => void;
+  onRegenerate: () => void;
 }) {
   return (
     <section id={sectionId} className="mt-4 rounded-2xl border border-violet-100 bg-violet-50/60 p-3">
@@ -408,11 +399,11 @@ function StageMethodBlock({
           {stage.method ? (
             <button
               type="button"
-              onClick={onOpenPicker}
+              onClick={onRegenerate}
               disabled={busy}
               className="rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
             >
-              {busy ? "Применяю…" : "✨ Применить к этапу"}
+              {busy ? "Генерирую…" : "🔄 Перегенерировать"}
             </button>
           ) : null}
         </div>
@@ -575,6 +566,89 @@ function StageEditableField({
         </div>
       ) : null}
     </label>
+  );
+}
+
+function RegenerateStageModal({
+  stage,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  stage: StructuredLessonStage;
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (instructions: string) => void;
+}) {
+  const [instructions, setInstructions] = useState("");
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="regenerate-stage-title"
+    >
+      <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-500">
+              Перегенерировать этап
+            </p>
+            <h3 id="regenerate-stage-title" className="mt-1 text-lg font-semibold text-slate-950">
+              {stage.title}
+            </h3>
+            {stage.method ? (
+              <p className="mt-1 text-xs text-slate-600">
+                Приём: <span className="font-medium text-slate-800">{stage.method.name}</span>
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-full px-3 py-1 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+          >
+            Закрыть
+          </button>
+        </div>
+
+        <label className="mt-4 block">
+          <span className="text-sm font-medium text-slate-800">Пожелания к изменениям</span>
+          <span className="mt-0.5 block text-xs text-slate-500">
+            Опишите, что нужно изменить: тон, акценты, примеры, длина речи и т.д. Поле можно оставить пустым.
+          </span>
+          <textarea
+            value={instructions}
+            onChange={(event) => setInstructions(event.target.value)}
+            rows={5}
+            autoFocus
+            placeholder="Например: сделать речь короче, добавить вопрос к классу, использовать пример из жизни…"
+            className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 shadow-inner outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+          />
+        </label>
+
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={() => onSubmit(instructions)}
+            disabled={busy}
+            className="rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-700 disabled:opacity-60"
+          >
+            {busy ? "Генерирую…" : "Перегенерировать"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

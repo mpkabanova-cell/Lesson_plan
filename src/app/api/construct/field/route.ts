@@ -31,6 +31,7 @@ type Body = {
   stage?: StructuredLessonStage;
   previousStageSummary?: string;
   nextStageSummary?: string;
+  userInstructions?: string;
 };
 
 const FIELD_KEYS = new Set<StageFieldKey>([
@@ -102,6 +103,7 @@ export async function POST(req: Request) {
       method: body.method,
       previousStageSummary: body.previousStageSummary,
       nextStageSummary: body.nextStageSummary,
+      userInstructions: body.userInstructions,
       frpMeta: frp.available ? frp : session?.frpMeta,
     });
 
