@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { getStageDefinition } from "@/lib/constructor/stageRegistry";
 import {
   getTechniquePickerOptions,
@@ -217,9 +217,7 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
               updateStage(index, (current) => updateStructuredStageField(current, field, value))
             }
             onFixField={(field) => regenerateField(index, field, "regenerate")}
-            onImproveField={(field) => regenerateField(index, field, "improve")}
             onRegenerateField={(field) => regenerateField(index, field, "regenerate")}
-            onToast={onToast}
           />
         ))}
       </div>
@@ -256,9 +254,7 @@ function StageCard({
   onOpenRegenerate,
   onChangeField,
   onFixField,
-  onImproveField,
   onRegenerateField,
-  onToast,
 }: {
   stage: StructuredLessonStage;
   index: number;
@@ -268,9 +264,7 @@ function StageCard({
   onOpenRegenerate: () => void;
   onChangeField: (field: StageFieldKey, value: string) => void;
   onFixField: (field: StageFieldKey) => void;
-  onImproveField: (field: StageFieldKey) => void;
   onRegenerateField: (field: StageFieldKey) => void;
-  onToast?: (message: string) => void;
 }) {
   const validation = useMemo(() => validateStructuredStage(stage, lessonType), [stage, lessonType]);
   const visibleFields = useMemo(() => {
@@ -339,9 +333,7 @@ function StageCard({
             busyRegenerate={busyKey === `${index}:${meta.key}:regenerate`}
             onChange={(value) => onChangeField(meta.key, value)}
             onFix={() => onFixField(meta.key)}
-            onImprove={() => onImproveField(meta.key)}
             onRegenerate={() => onRegenerateField(meta.key)}
-            onToast={onToast}
           />
         ))}
       </div>
@@ -394,7 +386,7 @@ function StageMethodBlock({
             disabled={busy}
             className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-violet-900 ring-1 ring-violet-100 hover:bg-violet-100 disabled:opacity-60"
           >
-            {stage.method ? "🔄 Заменить приём" : "➕ Добавить приём"}
+            {stage.method ? "🎲 Заменить приём" : "➕ Добавить приём"}
           </button>
           {stage.method ? (
             <button
@@ -412,82 +404,6 @@ function StageMethodBlock({
   );
 }
 
-function FieldExtrasMenu({
-  value,
-  onClear,
-  onToast,
-}: {
-  value: string;
-  onClear: () => void;
-  onToast?: (message: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handlePointerDown = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [open]);
-
-  const copyValue = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      onToast?.("Текст скопирован");
-      setOpen(false);
-    } catch {
-      onToast?.("Не удалось скопировать текст");
-    }
-  };
-
-  return (
-    <div className="relative" ref={rootRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
-        aria-expanded={open}
-        aria-haspopup="menu"
-      >
-        ⋮ Дополнительно
-      </button>
-      {open ? (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-20 mt-1 min-w-[10rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={copyValue}
-            disabled={!value.trim()}
-            className="block w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            Скопировать текст
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              onClear();
-              setOpen(false);
-            }}
-            disabled={!value.trim()}
-            className="block w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            Очистить поле
-          </button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 function StageEditableField({
   sectionId,
   label,
@@ -498,9 +414,7 @@ function StageEditableField({
   busyRegenerate,
   onChange,
   onFix,
-  onImprove,
   onRegenerate,
-  onToast,
 }: {
   sectionId: string;
   label: string;
@@ -511,9 +425,7 @@ function StageEditableField({
   busyRegenerate: boolean;
   onChange: (value: string) => void;
   onFix: () => void;
-  onImprove: () => void;
   onRegenerate: () => void;
-  onToast?: (message: string) => void;
 }) {
   return (
     <label
@@ -525,21 +437,12 @@ function StageEditableField({
         <div className="flex flex-wrap gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <button
             type="button"
-            onClick={onImprove}
-            disabled={busyImprove || busyRegenerate}
-            className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-violet-800 ring-1 ring-violet-100 hover:bg-violet-50 disabled:opacity-50"
-          >
-            {busyImprove ? "Улучшаю…" : "✨ Улучшить"}
-          </button>
-          <button
-            type="button"
             onClick={onRegenerate}
             disabled={busyImprove || busyRegenerate}
             className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-teal-800 ring-1 ring-teal-100 hover:bg-teal-50 disabled:opacity-50"
           >
             {busyRegenerate ? "Генерирую…" : "🔄 Перегенерировать"}
           </button>
-          <FieldExtrasMenu value={value} onClear={() => onChange("")} onToast={onToast} />
         </div>
       </div>
       <textarea
