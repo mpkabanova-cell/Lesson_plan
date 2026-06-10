@@ -19,7 +19,10 @@ import {
   validateStructuredStage,
 } from "@/lib/constructor/structuredLesson";
 
-type ApplyMode = "name-only" | "rebuild-stage";
+type FieldRegenerateTarget = {
+  stageIndex: number;
+  field: StageFieldKey;
+};
 type StagePatch = Partial<
   Pick<
     StructuredLessonStage,
@@ -143,6 +146,7 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [pickerStageIndex, setPickerStageIndex] = useState<number | null>(null);
   const [regenerateStageIndex, setRegenerateStageIndex] = useState<number | null>(null);
+  const [regenerateFieldTarget, setRegenerateFieldTarget] = useState<FieldRegenerateTarget | null>(null);
 
   const updateStage = (stageIndex: number, updater: (stage: StructuredLessonStage) => StructuredLessonStage) => {
     onChange({
@@ -151,7 +155,12 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
     });
   };
 
-  const regenerateField = async (stageIndex: number, field: StageFieldKey, mode: "improve" | "regenerate") => {
+  const regenerateField = async (
+    stageIndex: number,
+    field: StageFieldKey,
+    mode: "improve" | "regenerate",
+    userInstructions?: string,
+  ) => {
     const key = `${stageIndex}:${field}:${mode}`;
     setBusyKey(key);
     onError?.(null);
@@ -160,9 +169,16 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
         ...buildContext(lesson, stageIndex, sessionId),
         mode,
         field,
+        userInstructions: userInstructions?.trim() || undefined,
       });
+      const currentValue = lesson.stages[stageIndex]?.[field] ?? "";
       updateStage(stageIndex, (stage) => updateStructuredStageField(stage, field, data.value));
-      onToast?.(mode === "improve" ? "Поле улучшено" : "Поле перегенерировано");
+      setRegenerateFieldTarget(null);
+      if (data.value.trim() === currentValue.trim()) {
+        onToast?.("Модель вернула тот же текст. Уточните пожелание к изменению.");
+      } else {
+        onToast?.(mode === "improve" ? "Поле исправлено" : "Поле перегенерировано");
+      }
     } catch (e) {
       onError?.(e instanceof Error ? e.message : String(e));
     } finally {
@@ -194,14 +210,10 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
     }
   };
 
-  const applyTechnique = async (stageIndex: number, technique: StageTechnique, mode: ApplyMode) => {
+  const applyTechnique = async (stageIndex: number, technique: StageTechnique) => {
     const method = methodFromTechnique(technique);
     setPickerStageIndex(null);
     updateStage(stageIndex, (stage) => ({ ...stage, method }));
-    if (mode === "name-only") {
-      onToast?.("Приём добавлен");
-      return;
-    }
 
     const key = `${stageIndex}:method:apply`;
     setBusyKey(key);
@@ -245,8 +257,10 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
             onChangeField={(field, value) =>
               updateStage(index, (current) => updateStructuredStageField(current, field, value))
             }
-            onFixField={(field) => regenerateField(index, field, "regenerate")}
-            onRegenerateField={(field) => regenerateField(index, field, "regenerate")}
+            onFixField={(field, messages) =>
+              regenerateField(index, field, "improve", `Исправь поле по замечаниям: ${messages.join("; ")}`)
+            }
+            onRegenerateField={(field) => setRegenerateFieldTarget({ stageIndex: index, field })}
           />
         ))}
       </div>
@@ -254,7 +268,7 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
         <TechniquePickerPanel
           stage={lesson.stages[pickerStageIndex]}
           onClose={() => setPickerStageIndex(null)}
-          onApply={(technique, mode) => applyTechnique(pickerStageIndex, technique, mode)}
+          onApply={(technique) => applyTechnique(pickerStageIndex, technique)}
         />
       ) : null}
       {regenerateStageIndex !== null ? (
@@ -263,6 +277,22 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
           busy={busyKey === `${regenerateStageIndex}:method:apply`}
           onClose={() => setRegenerateStageIndex(null)}
           onSubmit={(instructions) => regenerateStage(regenerateStageIndex, instructions)}
+        />
+      ) : null}
+      {regenerateFieldTarget !== null ? (
+        <RegenerateFieldModal
+          label={FIELD_META.find((meta) => meta.key === regenerateFieldTarget.field)?.label ?? "Поле"}
+          value={lesson.stages[regenerateFieldTarget.stageIndex]?.[regenerateFieldTarget.field] ?? ""}
+          busy={busyKey === `${regenerateFieldTarget.stageIndex}:${regenerateFieldTarget.field}:regenerate`}
+          onClose={() => setRegenerateFieldTarget(null)}
+          onSubmit={(instructions) =>
+            regenerateField(
+              regenerateFieldTarget.stageIndex,
+              regenerateFieldTarget.field,
+              "regenerate",
+              instructions,
+            )
+          }
         />
       ) : null}
     </div>
@@ -292,7 +322,7 @@ function StageCard({
   onOpenTechniquePicker: () => void;
   onOpenRegenerate: () => void;
   onChangeField: (field: StageFieldKey, value: string) => void;
-  onFixField: (field: StageFieldKey) => void;
+  onFixField: (field: StageFieldKey, issueMessages: string[]) => void;
   onRegenerateField: (field: StageFieldKey) => void;
 }) {
   const validation = useMemo(() => validateStructuredStage(stage, lessonType), [stage, lessonType]);
@@ -365,7 +395,7 @@ function StageCard({
             busyImprove={busyKey === `${index}:${meta.key}:improve`}
             busyRegenerate={busyKey === `${index}:${meta.key}:regenerate`}
             onChange={(value) => onChangeField(meta.key, value)}
-            onFix={() => onFixField(meta.key)}
+            onFix={() => onFixField(meta.key, issuesByField.get(meta.key) ?? [])}
             onRegenerate={() => onRegenerateField(meta.key)}
           />
         ))}
@@ -583,6 +613,93 @@ function RegenerateStageModal({
   );
 }
 
+function RegenerateFieldModal({
+  label,
+  value,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  label: string;
+  value: string;
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (instructions: string) => void;
+}) {
+  const [instructions, setInstructions] = useState("");
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="regenerate-field-title"
+    >
+      <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-600">
+              Перегенерировать поле
+            </p>
+            <h3 id="regenerate-field-title" className="mt-1 text-lg font-semibold text-slate-950">
+              {label}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-full px-3 py-1 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+          >
+            Закрыть
+          </button>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Сейчас</p>
+          <p className="mt-1 max-h-32 overflow-y-auto text-sm leading-relaxed text-slate-700">
+            {value || "Поле пустое"}
+          </p>
+        </div>
+
+        <label className="mt-4 block">
+          <span className="text-sm font-medium text-slate-800">Что изменить?</span>
+          <span className="mt-0.5 block text-xs text-slate-500">
+            Например: сделать конкретнее, добавить действия учеников, убрать общие слова, привязать к заданию.
+          </span>
+          <textarea
+            value={instructions}
+            onChange={(event) => setInstructions(event.target.value)}
+            rows={5}
+            autoFocus
+            placeholder="Например: заменить общую фразу на конкретные действия учеников с тетрадью и чертежом…"
+            className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 shadow-inner outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+          />
+        </label>
+
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={() => onSubmit(instructions)}
+            disabled={busy}
+            className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 disabled:opacity-60"
+          >
+            {busy ? "Генерирую…" : "Перегенерировать поле"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TechniquePickerPanel({
   stage,
   onClose,
@@ -590,12 +707,11 @@ function TechniquePickerPanel({
 }: {
   stage: StructuredLessonStage;
   onClose: () => void;
-  onApply: (technique: StageTechnique, mode: ApplyMode) => void;
+  onApply: (technique: StageTechnique) => void;
 }) {
   const options = useMemo(() => getTechniquePickerOptions(stage.id), [stage.id]);
   const current = stage.method ? getTechniqueByName(stage.method.name) : undefined;
   const [selectedId, setSelectedId] = useState(current?.id ?? options.suitable[0]?.id ?? "");
-  const [mode, setMode] = useState<ApplyMode>("name-only");
   const all = [...options.suitable, ...options.other];
   const selected = all.find((technique) => technique.id === selectedId) ?? options.suitable[0] ?? all[0];
   const suitable = selected ? isTechniqueSuitableForStage(stage.id, selected.id) : true;
@@ -644,31 +760,10 @@ function TechniquePickerPanel({
               Этот приём обычно не используется на данном этапе. Вы всё равно можете его применить.
             </p>
           ) : null}
-          <fieldset className="space-y-2 text-sm text-slate-700">
-            <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Как применить приём?
-            </legend>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={mode === "name-only"}
-                onChange={() => setMode("name-only")}
-              />
-              Только добавить название приёма
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={mode === "rebuild-stage"}
-                onChange={() => setMode("rebuild-stage")}
-              />
-              Перестроить этот этап под выбранный приём
-            </label>
-          </fieldset>
           <button
             type="button"
             disabled={!selected}
-            onClick={() => selected && onApply(selected, mode)}
+            onClick={() => selected && onApply(selected)}
             className="mt-4 w-full rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-violet-700 disabled:opacity-50"
           >
             Применить
