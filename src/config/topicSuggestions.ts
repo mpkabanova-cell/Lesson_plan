@@ -140,3 +140,30 @@ export function getTopicSuggestions(subject: string, grade: string): string[] {
     ? subjectSuggestions.default
     : [...UNIVERSAL_TOPIC_SUGGESTIONS];
 }
+
+/** Тема из саджестов другого класса того же предмета (например, Пифагор в 7 вместо 8). */
+export function isCuratedTopicForAnotherGrade(
+  subject: string,
+  grade: string,
+  topic: string,
+): boolean {
+  const trimmed = topic.trim();
+  if (!trimmed) return false;
+  if (getTopicSuggestions(subject, grade).includes(trimmed)) return false;
+
+  const subjectSuggestions = TOPIC_SUGGESTIONS_BY_SUBJECT[subject];
+  if (!subjectSuggestions) return false;
+
+  for (const [key, values] of Object.entries(subjectSuggestions)) {
+    if (key === "default" || key === grade || !values) continue;
+    if (values.includes(trimmed)) return true;
+  }
+  return false;
+}
+
+/** Очищает устаревшую тему из автосохранения, если она относится к другому классу. */
+export function sanitizeTopicForGrade(subject: string, grade: string, topic: string): string {
+  const trimmed = topic.trim();
+  if (!trimmed) return "";
+  return isCuratedTopicForAnotherGrade(subject, grade, trimmed) ? "" : trimmed;
+}

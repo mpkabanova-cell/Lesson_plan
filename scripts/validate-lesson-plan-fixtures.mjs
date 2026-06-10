@@ -10,7 +10,9 @@ const { compareFingerprints, extractLessonFingerprint } = await import(
   "../src/lib/lessonPlanDiversity.ts"
 );
 const { SUBJECT_OPTIONS } = await import("../src/config/subjectClassMap.ts");
-const { getTopicSuggestions } = await import("../src/config/topicSuggestions.ts");
+const { getTopicSuggestions, isCuratedTopicForAnotherGrade, sanitizeTopicForGrade } = await import(
+  "../src/config/topicSuggestions.ts"
+);
 const { resolveFrpKnowledgeContext, resolveFrpCanonicalSubject } = await import(
   "../src/lib/knowledge/frpResolve.ts"
 );
@@ -729,5 +731,11 @@ assert.ok(history8.includes("Пётр I"));
 assert.ok(history8.includes("Отечественная война 1812 года"));
 assert.ok(history9.includes("Реформы Александра II"));
 assert.ok(!history9.includes("Великая Отечественная война"));
+
+assert.equal(isCuratedTopicForAnotherGrade("Геометрия", "7", "Теорема Пифагора"), true);
+assert.equal(isCuratedTopicForAnotherGrade("Геометрия", "8", "Теорема Пифагора"), false);
+assert.equal(sanitizeTopicForGrade("Геометрия", "7", "Теорема Пифагора"), "");
+assert.equal(sanitizeTopicForGrade("Геометрия", "8", "Теорема Пифагора"), "Теорема Пифагора");
+assert.equal(sanitizeTopicForGrade("Геометрия", "7", "Мой авторский модуль"), "Мой авторский модуль");
 
 console.log("All fixture checks passed.");

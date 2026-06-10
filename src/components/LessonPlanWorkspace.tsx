@@ -7,7 +7,11 @@ import {
   getAvailableGrades,
   isSubjectGradeCompatible,
 } from "@/config/subjectClassMap";
-import { getTopicSuggestions } from "@/config/topicSuggestions";
+import {
+  getTopicSuggestions,
+  isCuratedTopicForAnotherGrade,
+  sanitizeTopicForGrade,
+} from "@/config/topicSuggestions";
 import { suggestLessonGoal } from "@/app/actions/suggestLessonGoal";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { estimateGenerationMs } from "@/lib/lessonTypes";
@@ -176,6 +180,10 @@ function saveRecentFingerprint(fp: LessonFingerprint): void {
   } catch {
     /* ignore */
   }
+}
+
+function lessonParamsKey(subject: string, grade: string, topic: string): string {
+  return `${subject}|${grade}|${topic.trim()}`;
 }
 
 function isResultDraft(value: unknown): value is ResultDraft {
@@ -450,6 +458,19 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     return stageFlags;
   }, [stageFlags, stages]);
 
+  const clearWorkspaceResult = useCallback(() => {
+    setPlanHtml("");
+    setStructuredLesson(null);
+    setConstructSessionId(null);
+    setGenerateSuccessInfo(null);
+    setContentKey((k) => k + 1);
+    try {
+      window.localStorage.removeItem(RESULT_DRAFT_STORAGE_KEY);
+    } catch {
+      /* ignore storage errors */
+    }
+  }, []);
+
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
@@ -460,12 +481,22 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         duration: number;
         topic: string;
       }>;
+      const nextSubject =
+        draft.subject && SUBJECT_OPTIONS.some((option) => option === draft.subject)
+          ? draft.subject
+          : subject;
+      const nextGrade = draft.grade ?? grade;
+      const nextTopic = sanitizeTopicForGrade(nextSubject, nextGrade, draft.topic ?? "");
+
       if (draft.subject && SUBJECT_OPTIONS.some((option) => option === draft.subject)) {
         setSubject(draft.subject);
       }
       if (draft.grade) setGrade(draft.grade);
       if (typeof draft.duration === "number") setDuration(draft.duration);
-      if (draft.topic) setTopic(draft.topic);
+      setTopic(nextTopic);
+      if (draft.topic && !nextTopic) {
+        setSelectedSuggestion(null);
+      }
     } catch {
       /* ignore broken draft */
     }
@@ -478,12 +509,39 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       const draft = JSON.parse(raw) as unknown;
       if (!isResultDraft(draft)) return;
 
+      const nextSubject = SUBJECT_OPTIONS.some((option) => option === draft.subject)
+        ? draft.subject
+        : subject;
+      const sanitizedTopic = sanitizeTopicForGrade(nextSubject, draft.grade, draft.topic);
+      const savedLesson = draft.structuredLesson;
+      const savedLessonKey = savedLesson
+        ? lessonParamsKey(savedLesson.subject, savedLesson.grade, savedLesson.topic)
+        : lessonParamsKey(draft.subject, draft.grade, sanitizedTopic);
+      const draftKey = lessonParamsKey(nextSubject, draft.grade, sanitizedTopic);
+
+      if (!sanitizedTopic && draft.topic.trim()) {
+        window.localStorage.removeItem(RESULT_DRAFT_STORAGE_KEY);
+        if (SUBJECT_OPTIONS.some((option) => option === draft.subject)) {
+          setSubject(draft.subject);
+        }
+        setGrade(draft.grade);
+        if (typeof draft.duration === "number") setDuration(draft.duration);
+        setTopic("");
+        setSelectedSuggestion(null);
+        return;
+      }
+
+      if (savedLessonKey !== draftKey) {
+        window.localStorage.removeItem(RESULT_DRAFT_STORAGE_KEY);
+        return;
+      }
+
       if (SUBJECT_OPTIONS.some((option) => option === draft.subject)) {
         setSubject(draft.subject);
       }
       setGrade(draft.grade);
       setDuration(draft.duration);
-      setTopic(draft.topic);
+      setTopic(sanitizedTopic);
       setGoal(draft.goal);
       setHomework(draft.homework);
       setLessonTypeId(draft.lessonTypeId);
@@ -586,6 +644,41 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setSelectedSuggestion(null);
     }
   }, [selectedSuggestion, topicSuggestions]);
+
+  useEffect(() => {
+    if (!topic.trim()) return;
+    if (!isCuratedTopicForAnotherGrade(subject, grade, topic)) return;
+    setTopic("");
+    setSelectedSuggestion(null);
+    clearWorkspaceResult();
+    setToast("Тема не соответствует выбранному классу. Выберите тему заново.");
+  }, [subject, grade, topic, clearWorkspaceResult]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const hasSavedResult =
+      Boolean(structuredLesson?.stages.length) ||
+      planHtml.replace(/<[^>]+>/g, "").trim().length > 0;
+    if (!hasSavedResult) return;
+
+    const savedKey = structuredLesson
+      ? lessonParamsKey(structuredLesson.subject, structuredLesson.grade, structuredLesson.topic)
+      : lessonParamsKey(subject, grade, topic);
+    const currentKey = lessonParamsKey(subject, grade, topic);
+
+    if (savedKey !== currentKey) {
+      clearWorkspaceResult();
+    }
+  }, [
+    clearWorkspaceResult,
+    grade,
+    loading,
+    planHtml,
+    structuredLesson,
+    subject,
+    topic,
+  ]);
 
   const handleTopicSuggestionClick = useCallback((suggestion: string) => {
     setTopic(suggestion);
