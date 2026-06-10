@@ -7,10 +7,7 @@ import {
   getAvailableGrades,
   isSubjectGradeCompatible,
 } from "@/config/subjectClassMap";
-import {
-  getTopicSuggestions,
-  isCuratedTopicForAnotherGrade,
-} from "@/config/topicSuggestions";
+import { getTopicSuggestions } from "@/config/topicSuggestions";
 import { suggestLessonGoal } from "@/app/actions/suggestLessonGoal";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { estimateGenerationMs } from "@/lib/lessonTypes";
@@ -469,15 +466,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setSelectedSuggestion(null);
     }
   }, [selectedSuggestion, topicSuggestions]);
-
-  useEffect(() => {
-    if (!topic.trim()) return;
-    if (!isCuratedTopicForAnotherGrade(subject, grade, topic)) return;
-    setTopic("");
-    setSelectedSuggestion(null);
-    clearWorkspaceResult();
-    setToast("Тема не соответствует выбранному классу. Выберите тему заново.");
-  }, [subject, grade, topic, clearWorkspaceResult]);
 
   useEffect(() => {
     if (loading) return;
