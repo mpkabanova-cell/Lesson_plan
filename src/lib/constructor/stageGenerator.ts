@@ -78,11 +78,17 @@ function buildTemplateStage(input: StageGenerationInput): string {
   const stageGoal = stage.goal;
 
   if (stage.id === "organizational_moment") {
+    const hook = buildMotivationHook({
+      subject,
+      topic,
+      techniqueName: requiredTechnique.name,
+    });
     const openingSpeech = motivationalStageOpeningSpeech({
       lessonType: input.lessonType,
       topic,
       subject,
       grade,
+      hook,
     });
     const studentAnswers =
       input.lessonType === "new_knowledge"
@@ -130,6 +136,53 @@ ${STAGE_BLOCK_LABELS.students} (шаблон)
 Ответ: (шаблон)
 ${STAGE_BLOCK_LABELS.expectedResult} (шаблон)
 ${STAGE_BLOCK_LABELS.comment} (шаблон)`;
+}
+
+function buildMotivationHook(input: {
+  subject: string;
+  topic: string;
+  techniqueName: string;
+}): string {
+  const subject = input.subject.toLowerCase();
+  const topic = input.topic;
+  const topicLower = topic.toLowerCase();
+  const technique = input.techniqueName.toLowerCase();
+
+  const baseQuestion = (() => {
+    if (subject.includes("геометр") && /признак.*равенств.*треугольник|равенств.*треугольник/.test(topicLower)) {
+      return "На рисунке два треугольника выглядят одинаковыми, но измерить все стороны и углы нельзя. Как доказать, что они равны, если известных данных меньше?";
+    }
+    if (subject.includes("геометр") && /пифагор/.test(topicLower)) {
+      return "Представьте лестницу у стены: высоту и расстояние от стены знаем, а длину лестницы измерить нельзя. Как найти её без прямого измерения?";
+    }
+    if (subject.includes("истор") && /древн.*инд/.test(topicLower)) {
+      return "В Древней Индии люди верили, что место человека в обществе определено с рождения. Справедливо ли это и мог ли человек изменить свою судьбу?";
+    }
+    if (subject.includes("истор") && /древн.*грец|эллинизм/.test(topicLower)) {
+      return "Как небольшие греческие полисы смогли оставить след, который мы видим в культуре, науке и политике до сих пор?";
+    }
+    if (subject.includes("истор")) {
+      return `Как один факт или событие по теме «${topic}» могло изменить жизнь людей своего времени?`;
+    }
+    if (subject.includes("алгебр") || subject.includes("математ")) {
+      return `Посмотрите на задачу по теме «${topic}»: какой привычный способ здесь уже не помогает и какой новый ход нужно найти?`;
+    }
+    return `Посмотрите на пример по теме «${topic}»: что в нём вызывает вопрос или противоречие?`;
+  })();
+
+  if (technique.includes("удивляй")) {
+    return `Начнём с неожиданного вопроса: ${baseQuestion}`;
+  }
+  if (technique.includes("отсроч")) {
+    return `${baseQuestion} Ответ пока не называем: вернёмся к нему после открытия нового знания.`;
+  }
+  if (technique.includes("корзин")) {
+    return `${baseQuestion} Назовите 2–3 первые версии, я запишу их в «корзину идей».`;
+  }
+  if (technique.includes("проблем")) {
+    return `Проблемный вопрос урока: ${baseQuestion}`;
+  }
+  return baseQuestion;
 }
 
 function buildStageUserPrompt(input: StageGenerationInput): string {

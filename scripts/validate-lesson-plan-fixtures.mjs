@@ -36,6 +36,7 @@ const { validateStageMarkdown, parseStageTasks, parseStageBlock } = await import
 const { pickTechniqueForStage, getTechniquesForStage } = await import(
   "../src/lib/constructor/stageTechniques.ts"
 );
+const { generateTemplateStage } = await import("../src/lib/constructor/stageGenerator.ts");
 const { isDuplicateTask } = await import("../src/lib/constructor/stageTaskDiversity.ts");
 const { resolveSubjectProfile } = await import("../src/lib/constructor/subjectProfiles.ts");
 const { validateAssembledLesson } = await import("../src/lib/lessonPlanValidator.ts");
@@ -267,6 +268,30 @@ if (frpCtx.available) {
 const profile = resolveSubjectProfile("Математика", "8");
 const activationStage = getStageDefinition("new_knowledge", "knowledge_activation");
 const activationTechnique = pickTechniqueForStage("knowledge_activation", 2, "Уравнения", []);
+const organizationalStage = getStageDefinition("new_knowledge", "organizational_moment");
+const organizationTemplate = generateTemplateStage({
+  stage: organizationalStage,
+  stageIndex: 0,
+  totalStages: 8,
+  lessonType: "new_knowledge",
+  subject: "Геометрия",
+  grade: "7",
+  topic: "Признаки равенства треугольников",
+  goal: "Открыть признаки равенства треугольников",
+  minutes: 3,
+  frpContext: frpCtx,
+  subjectProfile: profile,
+  previousSummaries: {},
+  requiredTechnique: {
+    id: "problem_question",
+    name: "Проблемный вопрос",
+    description: "Вопрос, ставящий ученика в ситуацию незнания или противоречия.",
+  },
+  previousTechniques: [],
+  previousTaskConditions: [],
+});
+assert.ok(organizationTemplate.markdown.includes("если известных данных меньше"));
+assert.ok(!organizationTemplate.markdown.includes("что главное нам нужно выяснить"));
 
 const badStage = `## Актуализация\nВремя: 5 мин\nУчитель: Обсудите.\nУченики: Думают.`;
 const badVal = validateStageMarkdown(badStage, activationStage, profile);
@@ -370,7 +395,8 @@ assert.equal(structured.passport?.lessonTypeLabel, "Усвоение новых 
 assert.ok(structured.plannedResults?.subject.some((item) => item.includes("Линейные уравнения")));
 assert.ok(structured.frpCoverage?.covered.some((item) => item.includes("Линейные уравнения")));
 assert.equal(structured.plannedResults?.subject.length, 3);
-assert.ok(structured.plannedResults.subject[2].startsWith("применять"));
+assert.ok(structured.plannedResults.subject.some((item) => item.includes("преобразовывать линейное уравнение")));
+assert.ok(structured.plannedResults.subject.some((item) => item.includes("находить корень линейного уравнения")));
 const structuredWithStalePlannedResults = {
   ...structured,
   plannedResults: {
@@ -384,9 +410,32 @@ const structuredWithStalePlannedResults = {
 };
 const structuredMarkdown = structuredLessonToMarkdown(structured);
 const stalePlannedResultsMarkdown = structuredLessonToMarkdown(structuredWithStalePlannedResults);
+const geometryResultsMarkdown = structuredLessonToMarkdown({
+  ...structured,
+  subject: "Геометрия",
+  grade: "7",
+  topic: "Признаки равенства треугольников",
+  frpCoverage: undefined,
+  plannedResults: undefined,
+});
+const longSpeechTail =
+  "Сравните два треугольника по рисунку, назовите равные стороны и углы, а затем сформулируйте, каких данных достаточно для вывода об их равенстве.";
+const longSpeechMarkdown = structuredLessonToMarkdown({
+  ...structured,
+  stages: [
+    {
+      ...structured.stages[0],
+      teacherSpeech: `«Откройте тетради и посмотрите на чертёж. ${longSpeechTail}»`,
+    },
+  ],
+});
 assert.ok(structuredMarkdown.includes("Технологическая карта урока"));
 assert.ok(structuredMarkdown.includes("Планируемые результаты"));
-assert.ok(stalePlannedResultsMarkdown.includes("применять новое знание"));
+assert.ok(geometryResultsMarkdown.includes("распознавать равные элементы треугольников"));
+assert.ok(geometryResultsMarkdown.includes("доказывать равенство треугольников"));
+assert.ok(!geometryResultsMarkdown.includes("с опорой на новый способ действия"));
+assert.ok(longSpeechMarkdown.includes(longSpeechTail));
+assert.ok(stalePlannedResultsMarkdown.includes("преобразовывать линейное уравнение"));
 assert.ok(!stalePlannedResultsMarkdown.includes("На уроке мы откроем теорему Пифагора"));
 assert.ok(structuredMarkdown.includes("Программное содержание"));
 assert.ok(structuredMarkdown.includes("Критерии оценивания"));

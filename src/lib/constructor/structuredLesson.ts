@@ -252,6 +252,62 @@ function buildMaterials(subject: string): string[] {
   ];
 }
 
+function subjectActionResults(input: { subject: string; topic: string; topicLabel: string }): string[] {
+  const subject = input.subject.toLowerCase();
+  const topic = input.topic;
+  const topicLower = `${input.topic} ${input.topicLabel}`.toLowerCase();
+
+  if (subject.includes("геометр")) {
+    if (/признак.*равенств.*треугольник|равенств.*треугольник/.test(topicLower)) {
+      return [
+        "распознавать равные элементы треугольников по условию задачи, чертежу и обозначениям",
+        "доказывать равенство треугольников по изученному признаку и обосновывать каждый шаг доказательства",
+      ];
+    }
+    if (/пифагор/.test(topicLower)) {
+      return [
+        "выделять катеты и гипотенузу прямоугольного треугольника по чертежу и условию задачи",
+        "вычислять неизвестную сторону прямоугольного треугольника с использованием теоремы Пифагора",
+      ];
+    }
+    return [
+      `строить и читать чертёж по теме «${topic}», выделяя данные и искомые элементы`,
+      `доказывать геометрические утверждения по теме «${topic}» с опорой на определения, свойства и признаки`,
+    ];
+  }
+
+  if (subject.includes("алгебр") || subject.includes("математ")) {
+    if (/линейн.*уравнен/.test(topicLower)) {
+      return [
+        "преобразовывать линейное уравнение к равносильному виду",
+        "находить корень линейного уравнения и проверять его подстановкой",
+      ];
+    }
+    if (/квадратн.*уравнен/.test(topicLower)) {
+      return [
+        "определять вид квадратного уравнения и выбирать способ решения",
+        "находить корни квадратного уравнения и проверять результат по условию",
+      ];
+    }
+    return [
+      `выбирать способ решения математической задачи по теме «${topic}»`,
+      `выполнять вычисления, преобразования или доказательство по теме «${topic}» с проверкой результата`,
+    ];
+  }
+
+  if (isHistorySubject(input.subject)) {
+    return [
+      `характеризовать ключевые события, явления, личности и понятия по теме «${input.topicLabel}»`,
+      `устанавливать причинно-следственные связи по теме «${topic}» с опорой на карту, источник или текст учебника`,
+    ];
+  }
+
+  return [
+    `выделять существенные признаки и понятия по теме «${input.topicLabel}»`,
+    `применять изученное содержание по теме «${topic}» в учебной задаче с проверкой результата`,
+  ];
+}
+
 function buildPlannedResults(input: {
   subject: string;
   topic: string;
@@ -260,11 +316,11 @@ function buildPlannedResults(input: {
 }): LessonPlannedResults {
   const matchedTopic = asString(input.frpMeta?.topic);
   const topicLabel = matchedTopic || input.topic;
+  const actionResults = subjectActionResults({ subject: input.subject, topic: input.topic, topicLabel });
   return {
     subject: [
       `объяснять ключевые понятия и факты по теме «${topicLabel}»`,
-      `выполнять предметные задания по теме «${input.topic}» с опорой на новый способ действия`,
-      `применять новое знание по теме «${input.topic}» для решения учебных задач и самопроверки по эталону`,
+      ...actionResults,
     ],
     meta: [
       "анализировать учебный материал, карту, схему, источник или задачу",
@@ -539,8 +595,8 @@ function stageToMarkdown(stage: StructuredLessonStage, index: number, lessonType
 
 function stageFlowRow(stage: StructuredLessonStage, index: number, lessonType: LessonTypeId): string {
   const title = getStageDefinition(lessonType, stage.id)?.title ?? stage.title;
-  const teacher = stage.teacherSpeech.replace(/\n+/g, " ").slice(0, 180);
-  const students = stage.studentActions.replace(/\n+/g, " ").slice(0, 160);
+  const teacher = stage.teacherSpeech.replace(/\n+/g, " ").trim();
+  const students = stage.studentActions.replace(/\n+/g, " ").trim();
   return [
     String(index + 1),
     title,
