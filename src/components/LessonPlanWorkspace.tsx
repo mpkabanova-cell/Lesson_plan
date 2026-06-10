@@ -355,7 +355,7 @@ type LessonPlanWorkspaceProps = {
 };
 
 export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: LessonPlanWorkspaceProps) {
-  const [subject, setSubject] = useState<string>(SUBJECT_OPTIONS[0] ?? "");
+  const [subject, setSubject] = useState<string>("Математика");
   const [grade, setGrade] = useState("5");
   const [duration, setDuration] = useState(45);
   const [topic, setTopic] = useState("");
