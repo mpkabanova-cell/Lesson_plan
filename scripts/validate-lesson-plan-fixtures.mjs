@@ -292,6 +292,12 @@ const structured = structuredLessonFromStageResults({
   goal: "Решать линейные уравнения",
   durationMinutes: 45,
   lessonType: "new_knowledge",
+  frpMeta: {
+    topic: "Линейные уравнения",
+    topicCode: "8.1",
+    section: "Алгебраические выражения и уравнения",
+    nextTopic: "Квадратные уравнения",
+  },
   selectedStageIds: ["knowledge_activation"],
   stageMinutes: { knowledge_activation: 10 },
   stageResults: [
@@ -308,7 +314,14 @@ assert.equal(structured.stages.length, 1);
 assert.equal(structured.stages[0].method?.name, activationTechnique.name);
 assert.ok(structured.stages[0].task.includes("Решите уравнение"));
 assert.ok(validateStructuredStage(structured.stages[0]).ok);
+assert.equal(structured.passport?.lessonTypeLabel, "Усвоение новых знаний");
+assert.ok(structured.plannedResults?.subject.some((item) => item.includes("Линейные уравнения")));
+assert.ok(structured.frpCoverage?.covered.some((item) => item.includes("Линейные уравнения")));
 const structuredMarkdown = structuredLessonToMarkdown(structured);
+assert.ok(structuredMarkdown.includes("Технологическая карта урока"));
+assert.ok(structuredMarkdown.includes("Планируемые результаты"));
+assert.ok(structuredMarkdown.includes("Программное содержание"));
+assert.ok(structuredMarkdown.includes("Критерии оценивания"));
 assert.ok(structuredMarkdown.includes("Задание 1.1"));
 assert.ok(structuredMarkdown.includes("Ответ: x = 3"));
 
@@ -317,6 +330,13 @@ const invalidStructuredVal = validateStructuredStage(invalidStructured);
 assert.equal(invalidStructuredVal.ok, false);
 assert.ok(invalidStructuredVal.issues.some((issue) => issue.field === "method"));
 assert.ok(invalidStructuredVal.issues.some((issue) => issue.field === "teacherSpeech"));
+
+const continuationStructuredVal = validateStructuredStage(
+  { ...structured.stages[0], teacherSpeech: "«Сегодня мы продолжим тему линейных уравнений и решим задания.»" },
+  "new_knowledge",
+);
+assert.equal(continuationStructuredVal.ok, false);
+assert.ok(continuationStructuredVal.issues.some((issue) => issue.field === "teacherSpeech"));
 
 const genericSpeechStage = `## Актуализация знаний
 Время: 10 мин

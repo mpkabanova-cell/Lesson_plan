@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   const inner = expandMathSpansForExport(sanitizeLessonHtml(innerRaw));
   const title = body.title?.trim() || "План урока";
-  const fragment = `<h1>${escapeHtml(title)}</h1>${inner}`;
+  const fragment = body.lesson ? inner : `<h1>${escapeHtml(title)}</h1>${inner}`;
 
   try {
     const buffer = await HTMLtoDOCX(fragment, null, {

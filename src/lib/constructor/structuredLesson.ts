@@ -8,7 +8,11 @@ import {
   type StageMethodologicalBlock,
 } from "./stageBlockSchema";
 import { hasNewKnowledgeContinuationWording } from "./lessonTypeContentRules";
-import { getStageDefinition, type LessonTypeId } from "./stageRegistry";
+import {
+  getStageDefinition,
+  LESSON_TYPE_LABELS,
+  type LessonTypeId,
+} from "./stageRegistry";
 import { parseStageBlock, parseStageTasks, type ParsedStageTask } from "./stageValidators";
 
 export type StageFieldKey =
@@ -43,6 +47,28 @@ export type StructuredLessonStage = {
   sourceMarkdown?: string;
 };
 
+export type LessonPassport = {
+  lessonTypeLabel: string;
+  duration: string;
+  kit?: string;
+  ktpPlace?: string;
+};
+
+export type LessonPlannedResults = {
+  subject: string[];
+  meta: string[];
+  personal: string[];
+};
+
+export type LessonFrpCoverage = {
+  matchedTopic?: string;
+  topicCode?: string;
+  section?: string;
+  covered: string[];
+  deferred: string[];
+  note: string;
+};
+
 export type StructuredLesson = {
   subject: string;
   grade: string;
@@ -51,6 +77,13 @@ export type StructuredLesson = {
   durationMinutes: number;
   lessonType: LessonTypeId;
   homework?: string;
+  passport?: LessonPassport;
+  plannedResults?: LessonPlannedResults;
+  frpCoverage?: LessonFrpCoverage;
+  materials?: string[];
+  crossCuttingQuestion?: string;
+  methodologyComment?: string[];
+  assessmentCriteria?: string[];
   stages: StructuredLessonStage[];
 };
 
@@ -121,6 +154,149 @@ function answerText(tasks: ParsedStageTask[]): string {
     .join("\n\n");
 }
 
+function asString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isHistorySubject(subject: string): boolean {
+  return subject.toLowerCase().includes("истор");
+}
+
+function isMathSubject(subject: string): boolean {
+  const lower = subject.toLowerCase();
+  return lower.includes("математ") || lower.includes("алгебр") || lower.includes("геометр");
+}
+
+function buildPassport(input: {
+  subject: string;
+  grade: string;
+  durationMinutes: number;
+  lessonType: LessonTypeId;
+  frpMeta?: Record<string, unknown> | null;
+}): LessonPassport {
+  const section = asString(input.frpMeta?.section);
+  return {
+    lessonTypeLabel: LESSON_TYPE_LABELS[input.lessonType] ?? input.lessonType,
+    duration: `${input.durationMinutes} минут`,
+    kit: "УМК и материалы учителя",
+    ktpPlace: section ? `Тематический блок ФРП: ${section}` : "Соответствует выбранной теме и классу",
+  };
+}
+
+function buildCrossCuttingQuestion(subject: string, topic: string, lessonType: LessonTypeId): string {
+  if (lessonType !== "new_knowledge") {
+    return `Как применить и проверить знания по теме «${topic}»?`;
+  }
+  if (isHistorySubject(subject)) {
+    return `Как тема «${topic}» помогает понять жизнь людей, устройство общества и причины исторических изменений?`;
+  }
+  if (isMathSubject(subject)) {
+    return `Какой новый способ действия по теме «${topic}» мы откроем и где сможем его применить?`;
+  }
+  return `Какое новое знание по теме «${topic}» мы откроем и как проверим, что поняли его?`;
+}
+
+function buildMaterials(subject: string): string[] {
+  if (isHistorySubject(subject)) {
+    return [
+      "учебник и параграф по теме урока",
+      "историческая карта или схема",
+      "иллюстрации, презентация или короткий видеофрагмент",
+      "рабочий лист / карточки для парной или групповой работы",
+      "исторический источник или фрагмент текста для анализа",
+    ];
+  }
+  if (isMathSubject(subject)) {
+    return [
+      "учебник и тетрадь",
+      "доска / презентация с примерами",
+      "карточки с заданиями разного уровня",
+      "эталон решения для самопроверки",
+    ];
+  }
+  return [
+    "учебник и тетрадь",
+    "презентация или наглядный материал",
+    "рабочий лист / карточки",
+    "материал для проверки и рефлексии",
+  ];
+}
+
+function buildPlannedResults(input: {
+  subject: string;
+  topic: string;
+  goal: string;
+  frpMeta?: Record<string, unknown> | null;
+}): LessonPlannedResults {
+  const matchedTopic = asString(input.frpMeta?.topic);
+  const topicLabel = matchedTopic || input.topic;
+  return {
+    subject: [
+      `объяснять ключевые понятия и факты по теме «${topicLabel}»`,
+      `выполнять предметные задания по теме «${input.topic}» с опорой на новый способ действия`,
+      input.goal.trim() || `формулировать учебный результат по теме «${input.topic}»`,
+    ],
+    meta: [
+      "анализировать учебный материал, карту, схему, источник или задачу",
+      "выделять причинно-следственные связи и аргументировать ответ",
+      "работать в паре или группе, фиксировать выводы и оценивать результат",
+    ],
+    personal: [
+      "проявлять познавательный интерес к изучаемой теме",
+      "осознавать ценность учебного сотрудничества и уважительного обсуждения",
+      "соотносить новое знание с личным учебным опытом",
+    ],
+  };
+}
+
+function buildFrpCoverage(
+  lessonType: LessonTypeId,
+  frpMeta?: Record<string, unknown> | null,
+): LessonFrpCoverage {
+  const topic = asString(frpMeta?.topic);
+  const section = asString(frpMeta?.section);
+  const topicCode = asString(frpMeta?.topicCode);
+  const nextTopic = asString(frpMeta?.nextTopic);
+  const covered = [
+    topic ? `тема ФРП: ${topic}` : "содержание урока соотнесено с выбранной темой",
+    section ? `раздел: ${section}` : "",
+    topicCode ? `код/позиция: ${topicCode}` : "",
+  ].filter(Boolean);
+  return {
+    matchedTopic: topic || undefined,
+    topicCode: topicCode || undefined,
+    section: section || undefined,
+    covered,
+    deferred: nextTopic ? [`следующая тема / расширение: ${nextTopic}`] : [],
+    note:
+      lessonType === "new_knowledge"
+        ? "Урок открывает новую тему; пройденный материал используется только как опора для актуализации."
+        : "Содержание урока соотнесено с выбранным типом урока и ФРП-контекстом.",
+  };
+}
+
+function buildMethodologyComment(stages: StructuredLessonStage[], question: string): string[] {
+  const techniques = Array.from(
+    new Set(stages.map((stage) => stage.method?.name).filter((name): name is string => Boolean(name))),
+  );
+  return [
+    `Сквозной вопрос урока: ${question}`,
+    techniques.length
+      ? `Используемые приёмы: ${techniques.join(", ")}.`
+      : "Методические приёмы подбираются под логику этапов.",
+    "Предметное содержание должно быть связано с учебником, ФРП и конкретными заданиями для учащихся.",
+    "Домашнее задание желательно давать в базовом и повышенном вариантах.",
+  ];
+}
+
+function buildAssessmentCriteria(): string[] {
+  return [
+    "«5» — активно участвует в обсуждении, даёт полные ответы, верно выполняет задания и аргументирует выводы.",
+    "«4» — работает активно, допускает 1–2 неточности, исправляет их после обсуждения или самопроверки.",
+    "«3» — выполняет базовые действия с помощью учителя, ответы неполные, есть затруднения в применении нового знания.",
+  ];
+}
+
 export function structuredStageFromStageResult(input: {
   result: StageResult;
   lessonType: LessonTypeId;
@@ -158,6 +334,7 @@ export function structuredLessonFromStageResults(input: {
   durationMinutes: number;
   lessonType: LessonTypeId;
   homework?: string;
+  frpMeta?: Record<string, unknown> | null;
   selectedStageIds: string[];
   stageMinutes: Record<string, number>;
   stageResults: StageResult[];
@@ -173,6 +350,7 @@ export function structuredLessonFromStageResults(input: {
         minutes: input.stageMinutes[result.stageId],
       }),
     );
+  const crossCuttingQuestion = buildCrossCuttingQuestion(input.subject, input.topic, input.lessonType);
 
   return {
     subject: input.subject,
@@ -182,6 +360,13 @@ export function structuredLessonFromStageResults(input: {
     durationMinutes: input.durationMinutes,
     lessonType: input.lessonType,
     homework: input.homework,
+    passport: buildPassport(input),
+    plannedResults: buildPlannedResults(input),
+    frpCoverage: buildFrpCoverage(input.lessonType, input.frpMeta),
+    materials: buildMaterials(input.subject),
+    crossCuttingQuestion,
+    methodologyComment: buildMethodologyComment(stages, crossCuttingQuestion),
+    assessmentCriteria: buildAssessmentCriteria(),
     stages,
   };
 }
@@ -260,6 +445,39 @@ export function validateStructuredStage(
   return { ok: issues.length === 0, issues };
 }
 
+function listToMarkdown(items: string[]): string {
+  return items.filter((item) => item.trim()).map((item) => `- ${item.trim()}`).join("\n");
+}
+
+function resolvePassport(lesson: StructuredLesson): LessonPassport {
+  return lesson.passport ?? buildPassport(lesson);
+}
+
+function resolvePlannedResults(lesson: StructuredLesson): LessonPlannedResults {
+  return lesson.plannedResults ?? buildPlannedResults(lesson);
+}
+
+function resolveFrpCoverage(lesson: StructuredLesson): LessonFrpCoverage {
+  return lesson.frpCoverage ?? buildFrpCoverage(lesson.lessonType);
+}
+
+function resolveCrossCuttingQuestion(lesson: StructuredLesson): string {
+  return lesson.crossCuttingQuestion ?? buildCrossCuttingQuestion(lesson.subject, lesson.topic, lesson.lessonType);
+}
+
+function resolveMethodologyComment(lesson: StructuredLesson): string[] {
+  const question = resolveCrossCuttingQuestion(lesson);
+  return lesson.methodologyComment ?? buildMethodologyComment(lesson.stages, question);
+}
+
+function resolveAssessmentCriteria(lesson: StructuredLesson): string[] {
+  return lesson.assessmentCriteria ?? buildAssessmentCriteria();
+}
+
+function resolveMaterials(lesson: StructuredLesson): string[] {
+  return lesson.materials ?? buildMaterials(lesson.subject);
+}
+
 function stageToMarkdown(stage: StructuredLessonStage, index: number, lessonType?: LessonTypeId): string {
   const title = lessonType
     ? (getStageDefinition(lessonType, stage.id)?.title ?? stage.title)
@@ -283,12 +501,77 @@ function stageToMarkdown(stage: StructuredLessonStage, index: number, lessonType
   return parts.join("\n");
 }
 
+function stageFlowRow(stage: StructuredLessonStage, index: number, lessonType: LessonTypeId): string {
+  const title = getStageDefinition(lessonType, stage.id)?.title ?? stage.title;
+  const teacher = stage.teacherSpeech.replace(/\n+/g, " ").slice(0, 180);
+  const students = stage.studentActions.replace(/\n+/g, " ").slice(0, 160);
+  return [
+    String(index + 1),
+    title,
+    teacher,
+    students,
+    stage.time,
+  ]
+    .map((cell) => cell.replace(/\|/g, "\\|"))
+    .join(" | ");
+}
+
 export function structuredLessonToMarkdown(lesson: StructuredLesson): string {
+  const passport = resolvePassport(lesson);
+  const plannedResults = resolvePlannedResults(lesson);
+  const frpCoverage = resolveFrpCoverage(lesson);
+  const materials = resolveMaterials(lesson);
+  const question = resolveCrossCuttingQuestion(lesson);
+  const methodologyComment = resolveMethodologyComment(lesson);
+  const assessmentCriteria = resolveAssessmentCriteria(lesson);
   const parts = [
-    `# План урока: ${lesson.subject}, ${lesson.grade} класс`,
-    `**Тема:** ${lesson.topic}`,
+    "# Технологическая карта урока",
+    "",
+    "## Паспорт урока",
+    `**Предмет:** ${lesson.subject}`,
+    `**Класс:** ${lesson.grade}`,
+    `**Тема урока:** ${lesson.topic}`,
+    `**Тип урока:** ${passport.lessonTypeLabel}`,
+    `**Продолжительность:** ${passport.duration}`,
+    passport.kit ? `**УМК / материалы:** ${passport.kit}` : "",
+    passport.ktpPlace ? `**Место в КТП:** ${passport.ktpPlace}` : "",
   ];
   if (lesson.goal.trim()) parts.push(`**Цель:** ${lesson.goal.trim()}`);
+  parts.push(
+    "",
+    "## 1. Планируемые результаты",
+    "",
+    "### Предметные",
+    listToMarkdown(plannedResults.subject),
+    "",
+    "### Метапредметные",
+    listToMarkdown(plannedResults.meta),
+    "",
+    "### Личностные",
+    listToMarkdown(plannedResults.personal),
+    "",
+    "## 2. Программное содержание (ФРП)",
+    frpCoverage.covered.length ? listToMarkdown(frpCoverage.covered) : "- Содержание соотнесено с темой урока.",
+  );
+  if (frpCoverage.deferred.length) {
+    parts.push("", "**Что выносится за пределы урока:**", listToMarkdown(frpCoverage.deferred));
+  }
+  parts.push(
+    "",
+    frpCoverage.note,
+    "",
+    "## 3. Оборудование и материалы",
+    listToMarkdown(materials),
+    "",
+    "## 4. Ход урока",
+    `**Сквозной проблемный вопрос:** ${question}`,
+    "",
+    "| № | Этап | Деятельность учителя | Деятельность учащихся | Время |",
+    "|---|---|---|---|---|",
+    ...lesson.stages.map((stage, index) => `| ${stageFlowRow(stage, index, lesson.lessonType)} |`),
+    "",
+    "## 5. Методические блоки этапов",
+  );
   parts.push("");
   lesson.stages.forEach((stage, index) => {
     parts.push(stageToMarkdown(stage, index, lesson.lessonType));
@@ -297,6 +580,14 @@ export function structuredLessonToMarkdown(lesson: StructuredLesson): string {
   if (lesson.homework?.trim()) {
     parts.push(`## Домашнее задание\n${lesson.homework.trim()}`);
   }
+  parts.push(
+    "",
+    "## Методический комментарий",
+    listToMarkdown(methodologyComment),
+    "",
+    "## Критерии оценивания работы на уроке",
+    listToMarkdown(assessmentCriteria),
+  );
   return embedAnswerKeysInStages(parts.join("\n").trim());
 }
 

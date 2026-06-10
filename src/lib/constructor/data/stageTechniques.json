@@ -13,6 +13,7 @@
       "label": "Актуализация знаний",
       "techniques": [
         { "id": "true_false", "name": "Верные и неверные утверждения", "description": "Серия утверждений: ученики отмечают верные/неверные и обосновывают.", "allowedStages": ["knowledge_activation", "problem_situation_goal"], "subjects": ["all"], "example": "Определите, какие утверждения по теме верны, а какие требуют исправления." },
+        { "id": "true_false_cards", "name": "Верно/неверно", "description": "Быстрая проверка понимания через карточки, знаки или устные ответы с исправлением неверных утверждений.", "allowedStages": ["knowledge_activation", "primary_comprehension_check", "comprehension_control"], "subjects": ["all"], "example": "Поднимите зелёную карточку, если утверждение верно, и красную, если неверно; исправьте ошибку." },
         { "id": "blitz_poll", "name": "Блиц-опрос", "description": "Короткие вопросы по опорным знаниям с быстрой фиксацией ответов.", "allowedStages": ["knowledge_activation", "homework_check"], "subjects": ["all"], "example": "Ответьте на 5 коротких вопросов по материалу прошлого урока." },
         { "id": "error_work", "name": "Работа с ошибкой", "description": "Готовый пример с типичной ошибкой; ученики находят и исправляют.", "allowedStages": ["knowledge_activation", "primary_comprehension_check"], "subjects": ["all"], "example": "Найдите ошибку в решении/рассуждении и объясните исправление." },
         { "id": "cluster", "name": "Кластер", "description": "Ключевое слово в центре; ученики дополняют ассоциациями и связями.", "allowedStages": ["knowledge_activation", "generalization_systematization"], "subjects": ["all"], "example": "Составьте кластер понятий, связанных с новой темой." }
@@ -33,6 +34,8 @@
         { "id": "research", "name": "Исследование", "description": "Самостоятельный поиск закономерности по примерам или опыту.", "allowedStages": ["primary_acquisition", "creative_application"], "subjects": ["all"], "example": "Исследуйте несколько примеров и найдите закономерность." },
         { "id": "example_analysis", "name": "Анализ примеров", "description": "Сравнение нескольких примеров с выводом общего правила.", "allowedStages": ["primary_acquisition", "primary_comprehension_check"], "subjects": ["all"], "example": "Сравните примеры и выделите общий признак." },
         { "id": "source_work", "name": "Работа с источником", "description": "Извлечение нового знания из текста, документа, схемы или данных.", "allowedStages": ["primary_acquisition", "generalization_systematization"], "subjects": ["all"], "example": "Найдите в источнике сведения, которые помогают открыть правило." },
+        { "id": "two_portraits", "name": "Два портрета", "description": "Сопоставление двух характеристик исторического лица, явления или способа через две колонки.", "allowedStages": ["primary_acquisition", "generalization_systematization"], "subjects": ["История", "Обществознание", "Литература"], "example": "Распределите факты по колонкам «Ашока Жестокий» и «Ашока Милостивый»." },
+        { "id": "living_scheme", "name": "Живая схема", "description": "Группы собирают схему из карточек, понятий, ролей или связей и представляют результат.", "allowedStages": ["primary_acquisition", "primary_consolidation", "generalization_systematization"], "subjects": ["all"], "example": "Соберите на парте схему из карточек и объясните связи между элементами." },
         { "id": "observation", "name": "Наблюдение", "description": "Фиксация признаков, закономерностей по наглядности или демонстрации.", "allowedStages": ["primary_acquisition"], "subjects": ["all"], "example": "Понаблюдайте за объектом/примером и запишите признаки." }
       ]
     },
@@ -50,7 +53,8 @@
         { "id": "traffic_light", "name": "Светофор", "description": "Самооценка: зелёный — понял, жёлтый — частично, красный — затруднение.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Оцените понимание темы цветом и объясните выбор." },
         { "id": "cinquain", "name": "Синквейн", "description": "Короткая рефлексия в форме синквейна по теме урока.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Составьте синквейн по ключевому понятию урока." },
         { "id": "backpack", "name": "Рюкзак", "description": "Что взял с урока, что оставил, что не хватило.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Назовите, что берёте с урока в свой учебный рюкзак." },
-        { "id": "pops", "name": "ПОПС", "description": "Понравилось — Оказалось — Понял — Сложилось.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Заполните четыре короткие фразы по итогам урока." }
+        { "id": "pops", "name": "ПОПС", "description": "Понравилось — Оказалось — Понял — Сложилось.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Заполните четыре короткие фразы по итогам урока." },
+        { "id": "three_m", "name": "Три М", "description": "Рефлексия через три фразы: мы запомнили, мы смогли, мы хотим узнать ещё.", "allowedStages": ["reflection"], "subjects": ["all"], "example": "Назовите три момента: что запомнили, что смогли сделать, какой вопрос остался." }
       ]
     },
     "general": {

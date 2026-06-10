@@ -62,6 +62,24 @@ type ConstructFinishResponse = {
   generationVersion?: number;
 };
 
+type LessonViewMode = "blocks" | "preview";
+
+type ResultDraft = {
+  v: 1;
+  savedAt: number;
+  subject: string;
+  grade: string;
+  duration: number;
+  topic: string;
+  goal: string;
+  homework: string;
+  lessonTypeId: LessonTypeId;
+  planHtml: string;
+  structuredLesson: StructuredLesson | null;
+  constructSessionId: string | null;
+  lessonViewMode: LessonViewMode;
+};
+
 function PanelIcon({ direction }: { direction: "left" | "right" }) {
   return (
     <svg
@@ -220,14 +238,8 @@ const TOPIC_SUGGESTIONS_BY_SUBJECT: Record<string, Partial<Record<string, string
   },
 };
 const DRAFT_STORAGE_KEY = "lesson-plan-wizard-draft";
+const RESULT_DRAFT_STORAGE_KEY = "lesson-plan-result-draft";
 const FINGERPRINTS_STORAGE_KEY = "lesson-plan-recent-fingerprints";
-
-/** Чистый URL без query-параметров (например ?debugMaterials=1). */
-function stripUrlSearchParams(): void {
-  if (typeof window === "undefined") return;
-  if (!window.location.search) return;
-  window.history.replaceState(null, "", window.location.pathname);
-}
 
 function loadRecentFingerprints(): LessonFingerprint[] {
   if (typeof window === "undefined") return [];
@@ -249,6 +261,25 @@ function saveRecentFingerprint(fp: LessonFingerprint): void {
   } catch {
     /* ignore */
   }
+}
+
+function isResultDraft(value: unknown): value is ResultDraft {
+  if (!value || typeof value !== "object") return false;
+  const draft = value as Partial<ResultDraft>;
+  return (
+    draft.v === 1 &&
+    typeof draft.subject === "string" &&
+    typeof draft.grade === "string" &&
+    typeof draft.duration === "number" &&
+    typeof draft.topic === "string" &&
+    typeof draft.goal === "string" &&
+    typeof draft.homework === "string" &&
+    typeof draft.planHtml === "string" &&
+    (draft.structuredLesson === null || typeof draft.structuredLesson === "object") &&
+    (draft.constructSessionId === null || typeof draft.constructSessionId === "string") &&
+    (draft.lessonViewMode === "blocks" || draft.lessonViewMode === "preview") &&
+    LESSON_TYPE_IDS.includes(draft.lessonTypeId as LessonTypeId)
+  );
 }
 
 type GenerateApiResponse = {
@@ -455,8 +486,6 @@ async function downloadBlob(path: string, body: unknown, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-type LessonViewMode = "blocks" | "preview";
-
 type LessonPlanWorkspaceProps = {
   /** cx для встроенного поиска Google (Programmable Search Element). Передаётся из page.tsx с сервера. */
   googleProgrammableSearchCx?: string;
@@ -504,6 +533,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [toast, setToast] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const generateActionRef = useRef<HTMLDivElement>(null);
+  const skipInitialResultAutosaveRef = useRef(true);
 
   const [lessonTypeId, setLessonTypeId] = useState<LessonTypeId>("new_knowledge");
   const stageDefs = useMemo(() => getLessonTypeStages(lessonTypeId), [lessonTypeId]);
@@ -520,36 +550,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   useEffect(() => {
     setStageFlags(stageDefs.map(() => true));
   }, [lessonTypeId, stageDefs]);
-
-  const resetWorkspaceResults = useCallback(() => {
-    stripUrlSearchParams();
-    setPlanHtml("");
-    setStructuredLesson(null);
-    setConstructSessionId(null);
-    setContentKey((k) => k + 1);
-    setGoal("");
-    setHomework("");
-    setGoalError(null);
-    setGenerateSuccessInfo(null);
-    setError(null);
-    setGenerateStep(null);
-    setGenerateStartedAt(null);
-    setLoading(false);
-    setActiveWorkspace("lesson");
-  }, []);
-
-  useLayoutEffect(() => {
-    resetWorkspaceResults();
-  }, [resetWorkspaceResults]);
-
-  useEffect(() => {
-    const onPageShow = (event: PageTransitionEvent) => {
-      if (!event.persisted) return;
-      resetWorkspaceResults();
-    };
-    window.addEventListener("pageshow", onPageShow);
-    return () => window.removeEventListener("pageshow", onPageShow);
-  }, [resetWorkspaceResults]);
 
   const effectiveStageFlags = useMemo(() => {
     if (stageFlags.length !== stages.length) return stages.map(() => true);
@@ -579,6 +579,33 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
   useEffect(() => {
     try {
+      const raw = window.localStorage.getItem(RESULT_DRAFT_STORAGE_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as unknown;
+      if (!isResultDraft(draft)) return;
+
+      if (SUBJECT_OPTIONS.some((option) => option === draft.subject)) {
+        setSubject(draft.subject);
+      }
+      setGrade(draft.grade);
+      setDuration(draft.duration);
+      setTopic(draft.topic);
+      setGoal(draft.goal);
+      setHomework(draft.homework);
+      setLessonTypeId(draft.lessonTypeId);
+      setPlanHtml(draft.planHtml);
+      setStructuredLesson(draft.structuredLesson);
+      setConstructSessionId(draft.constructSessionId);
+      setLessonViewMode(draft.lessonViewMode);
+      setActiveWorkspace("lesson");
+      setContentKey((k) => k + 1);
+    } catch {
+      /* ignore broken result draft */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
       window.localStorage.setItem(
         DRAFT_STORAGE_KEY,
         JSON.stringify({ subject, grade, duration, topic }),
@@ -587,6 +614,57 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       /* ignore storage errors */
     }
   }, [subject, grade, duration, topic]);
+
+  useEffect(() => {
+    if (skipInitialResultAutosaveRef.current) {
+      skipInitialResultAutosaveRef.current = false;
+      return;
+    }
+    if (loading) return;
+
+    const hasSavedResult =
+      Boolean(structuredLesson?.stages.length) ||
+      planHtml.replace(/<[^>]+>/g, "").trim().length > 0;
+
+    try {
+      if (!hasSavedResult) {
+        window.localStorage.removeItem(RESULT_DRAFT_STORAGE_KEY);
+        return;
+      }
+
+      const draft: ResultDraft = {
+        v: 1,
+        savedAt: Date.now(),
+        subject,
+        grade,
+        duration,
+        topic,
+        goal,
+        homework,
+        lessonTypeId,
+        planHtml,
+        structuredLesson,
+        constructSessionId,
+        lessonViewMode,
+      };
+      window.localStorage.setItem(RESULT_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [
+    constructSessionId,
+    duration,
+    goal,
+    grade,
+    homework,
+    lessonTypeId,
+    lessonViewMode,
+    loading,
+    planHtml,
+    structuredLesson,
+    subject,
+    topic,
+  ]);
 
   useEffect(() => {
     if (!toast) return;
@@ -715,6 +793,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             durationMinutes: duration,
             lessonType: lessonTypeId,
             homework: homework.trim() || undefined,
+            frpMeta: constructData.frp,
             selectedStageIds,
             stageMinutes: constructData.stageMinutes ?? {},
             stageResults: constructData.stageResults,
