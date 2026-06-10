@@ -1,3 +1,4 @@
+import { getLessonTypePromptRules } from "./lessonTypeContentRules";
 import { openRouterCompletion, openRouterHeaders } from "./openRouter";
 import type { LessonTypeId } from "./stageRegistry";
 import type {
@@ -95,28 +96,39 @@ function normalizePatch(value: unknown): StageFieldPatch {
   return out;
 }
 
+function appendLessonTypeRules(base: string, lessonType: LessonTypeId): string {
+  const rules = getLessonTypePromptRules(lessonType);
+  return rules ? `${base}\n\n${rules}` : base;
+}
+
 function buildSystemPrompt(input: StageFieldGenerationInput): string {
   if (input.mode === "improve" || input.mode === "regenerate") {
     const label = input.field ? FIELD_LABELS[input.field] : "поле";
-    return `Ты — опытный методист. Переписываешь только одно поле этапа урока: ${label}.
+    return appendLessonTypeRules(
+      `Ты — опытный методист. Переписываешь только одно поле этапа урока: ${label}.
 Верни строго JSON вида {"value":"..."}.
 Не возвращай весь этап, Markdown, пояснения или другие поля.
 Пиши конкретно, по-русски, без плейсхолдеров (..., TODO, TBD, null).
 Если это речь учителя — дай готовую речь в кавычках «...».
 Если это задание — дай предметное задание по теме.
-Если это ответ — дай ключ/эталон проверки.`;
+Если это ответ — дай ключ/эталон проверки.`,
+      input.lesson.lessonType,
+    );
   }
 
   const instructionHint = input.userInstructions?.trim()
     ? " Учти пожелания учителя из userInstructions."
     : "";
-  return `Ты — опытный методист. Перегенерируешь содержание текущего этапа урока под выбранный методический приём.${instructionHint}
+  return appendLessonTypeRules(
+    `Ты — опытный методист. Перегенерируешь содержание текущего этапа урока под выбранный методический приём.${instructionHint}
 Верни строго JSON вида {"fields":{"teacherSpeech":"...","studentActions":"...","expectedAnswers":"...","task":"...","answer":"...","result":"...","teacherComment":"..."}}.
 Не меняй название этапа, время, цель этапа и выбранный методический приём.
 Не возвращай другие этапы, Markdown или пояснения.
 Пиши конкретно, по-русски, без плейсхолдеров (..., TODO, TBD, null).
 Речь учителя должна быть готовой речью в кавычках «...».
-Задание и ответ должны соответствовать теме, предмету, классу и выбранному приёму.`;
+Задание и ответ должны соответствовать теме, предмету, классу и выбранному приёму.`,
+    input.lesson.lessonType,
+  );
 }
 
 function buildUserPayload(input: StageFieldGenerationInput): string {

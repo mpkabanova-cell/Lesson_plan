@@ -28,6 +28,7 @@ import {
   type StructuredLesson,
 } from "@/lib/constructor/structuredLesson";
 import { GenerationProgressPanel } from "./GenerationProgressPanel";
+import { LessonDocumentPreview } from "./lessonStageConstructor/LessonDocumentPreview";
 import { LessonStageConstructor } from "./lessonStageConstructor/LessonStageConstructor";
 import { MaterialsSearchTab } from "./materialsSearch/MaterialsSearchTab";
 import { PlanEditor, type PlanEditorLoadInfo } from "./PlanEditor";
@@ -454,6 +455,8 @@ async function downloadBlob(path: string, body: unknown, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+type LessonViewMode = "blocks" | "preview";
+
 type LessonPlanWorkspaceProps = {
   /** cx для встроенного поиска Google (Programmable Search Element). Передаётся из page.tsx с сервера. */
   googleProgrammableSearchCx?: string;
@@ -495,6 +498,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [exporting, setExporting] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<"lesson" | "materials">("lesson");
+  const [lessonViewMode, setLessonViewMode] = useState<LessonViewMode>("blocks");
   const [materialsWorkspaceMounted, setMaterialsWorkspaceMounted] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -794,6 +798,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setConstructSessionId(nextConstructSessionId);
       setContentKey((k) => k + 1);
       setActiveWorkspace("lesson");
+      setLessonViewMode("blocks");
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
@@ -1154,6 +1159,62 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                       </button>
                     ))}
                   </div>
+                  {structuredLesson ? (
+                    <div
+                      className="inline-flex rounded-2xl border border-slate-200 bg-slate-100/80 p-1"
+                      role="group"
+                      aria-label="Режим просмотра плана"
+                    >
+                      <button
+                        type="button"
+                        title="Блоки"
+                        aria-pressed={lessonViewMode === "blocks"}
+                        onClick={() => setLessonViewMode("blocks")}
+                        className={`rounded-xl px-3 py-2 transition ${
+                          lessonViewMode === "blocks"
+                            ? "bg-violet-600 text-white shadow-sm"
+                            : "text-slate-600 hover:bg-white hover:text-slate-950"
+                        }`}
+                      >
+                        <svg
+                          aria-hidden
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h6v6H4V5zm10 0h6v6h-6V5zM4 13h6v6H4v-6zm10 0h6v6h-6v-6z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        title="Как в документе"
+                        aria-pressed={lessonViewMode === "preview"}
+                        onClick={() => setLessonViewMode("preview")}
+                        className={`rounded-xl px-3 py-2 transition ${
+                          lessonViewMode === "preview"
+                            ? "bg-violet-600 text-white shadow-sm"
+                            : "text-slate-600 hover:bg-white hover:text-slate-950"
+                        }`}
+                      >
+                        <svg
+                          aria-hidden
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : null}
                   <button
                     type="button"
                     disabled={!hasPlan || exporting}
@@ -1197,13 +1258,17 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                       </div>
                       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         {structuredLesson ? (
-                          <LessonStageConstructor
-                            lesson={structuredLesson}
-                            sessionId={constructSessionId}
-                            onChange={(nextLesson) => setStructuredLesson(nextLesson)}
-                            onToast={setToast}
-                            onError={setError}
-                          />
+                          lessonViewMode === "preview" ? (
+                            <LessonDocumentPreview lesson={structuredLesson} />
+                          ) : (
+                            <LessonStageConstructor
+                              lesson={structuredLesson}
+                              sessionId={constructSessionId}
+                              onChange={(nextLesson) => setStructuredLesson(nextLesson)}
+                              onToast={setToast}
+                              onError={setError}
+                            />
+                          )
                         ) : (
                           <PlanEditor
                             content={planHtml}

@@ -1,0 +1,60 @@
+import type { LessonTypeId } from "./stageRegistry";
+
+/** Формулировки о продолжении/повторении уже изученной темы — недопустимы на уроке открытия новых знаний. */
+export const NEW_KNOWLEDGE_CONTINUATION_PHRASES = [
+  "продолжим",
+  "продолжаем",
+  "продолжение темы",
+  "продолжим изучать",
+  "продолжим тему",
+  "продолжим работу над темой",
+  "вернёмся к теме",
+  "вернемся к теме",
+  "на прошлом уроке",
+  "на предыдущем уроке",
+  "как мы уже",
+  "как вы уже",
+  "как вы помните",
+  "повторим пройденное",
+  "повторим изученное",
+  "изучали ранее",
+  "уже изучали",
+  "уже знакомы с темой",
+  "в прошлый раз",
+] as const;
+
+export function hasNewKnowledgeContinuationWording(text: string): boolean {
+  const lower = text.toLowerCase();
+  return NEW_KNOWLEDGE_CONTINUATION_PHRASES.some((phrase) => lower.includes(phrase));
+}
+
+export function getLessonTypePromptRules(lessonType: LessonTypeId): string {
+  if (lessonType === "new_knowledge") {
+    return `ТИП УРОКА: урок открытия новых знаний. Тема урока — НОВАЯ.
+Запрещены формулировки о продолжении, повторении или возврате к уже изученной теме (например: «продолжим тему», «как мы уже изучали», «на прошлом уроке»).
+Используй: «новая тема», «познакомимся», «откроем», «начнём изучать».`;
+  }
+  if (lessonType === "consolidation") {
+    return "ТИП УРОКА: урок закрепления. Уместны ссылки на уже изученный материал и его применение.";
+  }
+  if (lessonType === "review") {
+    return "ТИП УРОКА: урок повторения и актуализации. Уместны ссылки на пройденный материал.";
+  }
+  return "";
+}
+
+export function motivationalStageOpeningSpeech(input: {
+  lessonType: LessonTypeId;
+  topic: string;
+  subject: string;
+  grade: string;
+}): string {
+  const meta = `(${input.subject}, ${input.grade} класс)`;
+  if (input.lessonType === "new_knowledge") {
+    return `«Здравствуйте! Сегодня мы начнём изучать новую тему «${input.topic}» ${meta}. Проверьте, пожалуйста, готовность: учебник, тетрадь, ручка. Настройтесь на работу — впереди интересные задания.»`;
+  }
+  if (input.lessonType === "consolidation") {
+    return `«Здравствуйте! Сегодня мы закрепим изученный материал по теме «${input.topic}» ${meta}. Проверьте, пожалуйста, готовность: учебник, тетрадь, ручка. Настройтесь на работу.»`;
+  }
+  return `«Здравствуйте! Сегодня мы повторим и актуализируем знания по теме «${input.topic}» ${meta}. Проверьте, пожалуйста, готовность: учебник, тетрадь, ручка. Настройтесь на работу.»`;
+}

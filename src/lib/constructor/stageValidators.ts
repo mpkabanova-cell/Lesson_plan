@@ -7,8 +7,9 @@ import {
   STAGES_REQUIRING_STUDENT_ANSWERS,
   type StageMethodologicalBlock,
 } from "./stageBlockSchema";
+import { hasNewKnowledgeContinuationWording } from "./lessonTypeContentRules";
 import { getStageContentRule } from "./stageContentRules";
-import type { StageDefinition } from "./stageRegistry";
+import type { LessonTypeId, StageDefinition } from "./stageRegistry";
 import { normalizeTechniqueName, type StageTechnique } from "./stageTechniques";
 import { findDuplicateTasksInStage } from "./stageTaskDiversity";
 import type { SubjectProfile } from "./subjectProfiles";
@@ -33,6 +34,7 @@ export type StageValidationContext = {
   requiredTechnique?: StageTechnique;
   previousTaskConditions?: string[];
   topic?: string;
+  lessonType?: LessonTypeId;
   isTemplateStage?: boolean;
 };
 
@@ -291,6 +293,14 @@ function validateMethodologicalBlock(
         code: "generic_teacher_speech",
         message:
           "Замени шаблонные формулировки («организует обсуждение», «объясняет тему») на конкретную готовую речь с вопросами и инструкциями.",
+      });
+    }
+
+    if (context?.lessonType === "new_knowledge" && hasNewKnowledgeContinuationWording(block.teacherSpeech)) {
+      issues.push({
+        code: "new_knowledge_continuation_wording",
+        message:
+          "На уроке открытия новых знаний тема новая — убери формулировки о продолжении или повторении уже изученного.",
       });
     }
   }

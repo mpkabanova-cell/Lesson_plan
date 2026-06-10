@@ -75,6 +75,7 @@ export async function generateStageForSession(
     requiredTechnique,
     previousTaskConditions,
     topic: session.topic,
+    lessonType: session.lessonType,
     isTemplateStage: isTemplateStage(stage),
   };
 

@@ -1,4 +1,5 @@
 import { DEFAULT_GOAL_SYSTEM_PROMPT } from "@/lib/defaultGoalSystemPrompt";
+import { getLessonTypePromptRules } from "@/lib/constructor/lessonTypeContentRules";
 import { buildGoalSystemPromptForGeneration } from "@/lib/knowledge/lessonMethodology";
 import type { LessonTypeId } from "@/lib/lessonTypes";
 import { LESSON_TYPE_LABELS, lessonTypeForPrompt } from "@/lib/lessonTypes";
@@ -86,7 +87,10 @@ function buildUserMessage(input: GenerateLessonGoalInput): string {
     "Верни **одну** формулировку цели урока / ожидаемого результата для учеников.",
     "Формат ответа — только JSON-объект без пояснений до и после: {\"goal\": \"...\"}.",
     "Текст в goal: 2–4 предложения, связная формулировка, без HTML и без списков этапов урока.",
-  ].join("\n");
+    getLessonTypePromptRules(input.lessonType) || "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function validateGenerateLessonGoalInput(input: GenerateLessonGoalInput): string | null {

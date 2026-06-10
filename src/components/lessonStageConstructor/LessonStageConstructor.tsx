@@ -272,6 +272,10 @@ function StageCard({
     if (!templateOnly) return FIELD_META;
     return FIELD_META.filter((meta) => meta.key !== "task" && meta.key !== "answer");
   }, [lessonType, stage.id]);
+  const displayTitle = useMemo(
+    () => getStageDefinition(lessonType, stage.id)?.title ?? stage.title,
+    [lessonType, stage.id, stage.title],
+  );
   const issuesByField = useMemo(() => {
     const map = new Map<string, string[]>();
     validation.issues.forEach((issue) => {
@@ -286,7 +290,7 @@ function StageCard({
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">
           Этап {index + 1}
         </p>
-        <h3 className="mt-1 text-lg font-semibold text-slate-950">{stage.title}</h3>
+        <h3 className="mt-1 text-lg font-semibold text-slate-950">{displayTitle}</h3>
         <p className="mt-1 text-xs font-medium text-slate-500">Время: {stage.time}</p>
       </div>
 

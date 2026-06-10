@@ -7,6 +7,7 @@ import {
   STAGE_BLOCK_LABELS,
   type StageMethodologicalBlock,
 } from "./stageBlockSchema";
+import { hasNewKnowledgeContinuationWording } from "./lessonTypeContentRules";
 import { getStageDefinition, type LessonTypeId } from "./stageRegistry";
 import { parseStageBlock, parseStageTasks, type ParsedStageTask } from "./stageValidators";
 
@@ -238,20 +239,44 @@ export function validateStructuredStage(
     });
   }
 
+  if (lessonType === "new_knowledge") {
+    const fieldsToCheck: Array<{ field: StageFieldKey; value: string }> = [
+      { field: "teacherSpeech", value: stage.teacherSpeech },
+      { field: "goal", value: stage.goal },
+      { field: "result", value: stage.result },
+      { field: "teacherComment", value: stage.teacherComment },
+    ];
+    for (const item of fieldsToCheck) {
+      if (item.value.trim() && hasNewKnowledgeContinuationWording(item.value)) {
+        issues.push({
+          field: item.field,
+          message:
+            "На уроке открытия новых знаний тема новая — уберите формулировки о продолжении или повторении уже изученного.",
+        });
+      }
+    }
+  }
+
   return { ok: issues.length === 0, issues };
 }
 
-function stageToMarkdown(stage: StructuredLessonStage, index: number): string {
+function stageToMarkdown(stage: StructuredLessonStage, index: number, lessonType?: LessonTypeId): string {
+  const title = lessonType
+    ? (getStageDefinition(lessonType, stage.id)?.title ?? stage.title)
+    : stage.title;
+  const templateOnly =
+    lessonType !== undefined && getStageDefinition(lessonType, stage.id)?.templateOnly === true;
   const parts = [
-    `## ${stage.title}`,
+    `## ${title}`,
     `Время: ${stage.time}`,
     `${STAGE_BLOCK_LABELS.goal} ${stage.goal}`,
     `${STAGE_BLOCK_LABELS.technique} ${stage.method?.name ?? ""}`,
     `${STAGE_BLOCK_LABELS.teacherSpeech} ${stage.teacherSpeech}`,
     `${STAGE_BLOCK_LABELS.studentAnswers}\n${stage.expectedAnswers}`,
     `${STAGE_BLOCK_LABELS.students} ${stage.studentActions}`,
-    `Задание ${index + 1}.1: ${stage.task}`,
-    `Ответ: ${stage.answer}`,
+    ...(templateOnly
+      ? []
+      : [`Задание ${index + 1}.1: ${stage.task}`, `Ответ: ${stage.answer}`]),
     `${STAGE_BLOCK_LABELS.expectedResult} ${stage.result}`,
     `${STAGE_BLOCK_LABELS.comment} ${stage.teacherComment}`,
   ];
@@ -266,7 +291,7 @@ export function structuredLessonToMarkdown(lesson: StructuredLesson): string {
   if (lesson.goal.trim()) parts.push(`**Цель:** ${lesson.goal.trim()}`);
   parts.push("");
   lesson.stages.forEach((stage, index) => {
-    parts.push(stageToMarkdown(stage, index));
+    parts.push(stageToMarkdown(stage, index, lesson.lessonType));
     parts.push("");
   });
   if (lesson.homework?.trim()) {

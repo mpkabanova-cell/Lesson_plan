@@ -4,6 +4,7 @@ import { getStageFrpSlice } from "./frpContext";
 import type { SubjectProfile } from "./subjectProfiles";
 import { getStageSubjectHint } from "./subjectProfiles";
 import { STAGE_BLOCK_LABELS } from "./stageBlockSchema";
+import { getLessonTypePromptRules, motivationalStageOpeningSpeech } from "./lessonTypeContentRules";
 import { getStageLogicForPrompt } from "./stageContentRules";
 import type { StageTechnique } from "./stageTechniques";
 
@@ -70,18 +71,24 @@ function buildTemplateStage(input: StageGenerationInput): string {
   const stageGoal = stage.goal;
 
   if (stage.id === "organizational_moment") {
+    const openingSpeech = motivationalStageOpeningSpeech({
+      lessonType: input.lessonType,
+      topic,
+      subject,
+      grade,
+    });
     return `## ${stage.title}
 Время: ${minutes} мин
 ${STAGE_BLOCK_LABELS.goal} ${stageGoal}
 ${STAGE_BLOCK_LABELS.technique} ${requiredTechnique.name}
-${STAGE_BLOCK_LABELS.teacherSpeech} «Здравствуйте! Сегодня мы продолжим изучать тему «${topic}» (${subject}, ${grade} класс). Проверьте, пожалуйста, готовность: учебник, тетрадь, ручка. Настройтесь на работу — впереди интересные задания.»
+${STAGE_BLOCK_LABELS.teacherSpeech} ${openingSpeech}
 ${STAGE_BLOCK_LABELS.studentAnswers}
 - «Готовы к уроку»
 - «Нужно достать тетрадь»
 - Типичное затруднение: шум, задержка с подготовкой места
 ${STAGE_BLOCK_LABELS.students} Приветствуют учителя, проверяют рабочее место, достают учебные материалы, настраиваются на урок.
 ${STAGE_BLOCK_LABELS.expectedResult} Класс готов к работе, внимание сосредоточено на теме урока.
-${STAGE_BLOCK_LABELS.comment} ${requiredTechnique.description} Организационный момент — кратко, без объяснения нового материала.`;
+${STAGE_BLOCK_LABELS.comment} ${requiredTechnique.description} Мотивационный этап — кратко, без объяснения нового материала.`;
   }
 
   return `## ${stage.title}
@@ -160,8 +167,12 @@ function buildStageUserPrompt(input: StageGenerationInput): string {
 }
 
 export function buildStageMessages(input: StageGenerationInput): Array<{ role: string; content: string }> {
+  const lessonTypeRules = getLessonTypePromptRules(input.lessonType);
+  const systemContent = lessonTypeRules
+    ? `${STAGE_SYSTEM_PROMPT}\n\n${lessonTypeRules}`
+    : STAGE_SYSTEM_PROMPT;
   return [
-    { role: "system", content: STAGE_SYSTEM_PROMPT },
+    { role: "system", content: systemContent },
     { role: "user", content: buildStageUserPrompt(input) },
   ];
 }

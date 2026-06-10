@@ -460,8 +460,8 @@ const assembled = assembleLessonMarkdown({
   stageResults: [
     {
       stageId: "organizational_moment",
-      title: "Организационный момент",
-      markdown: `## Организационный момент
+      title: "Мотивационный этап",
+      markdown: `## Мотивационный этап
 Время: 2 мин
 Цель: Подготовить класс к уроку.
 Методический приём: Пробный вопрос
@@ -497,7 +497,7 @@ const assembledVal = validateAssembledLesson(assembled, {
   grade: "8",
   topic: "Уравнения",
   mode: "mathematics",
-  selectedStages: ["Организационный момент", "Актуализация знаний"],
+  selectedStages: ["Мотивационный этап", "Актуализация знаний"],
   lessonType: "new_knowledge",
   selectedStageIds: ["organizational_moment", "knowledge_activation"],
   frpContext: frpCtx,
