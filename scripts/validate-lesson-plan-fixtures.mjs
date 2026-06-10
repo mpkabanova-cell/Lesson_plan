@@ -53,6 +53,20 @@ assert.equal(resolveSubjectGenerationMode("Алгебра", "8"), "mathematics")
 assert.equal(resolveSubjectGenerationMode("Математика", "3"), "primary");
 assert.equal(resolveSubjectGenerationMode("Окружающий мир", "2"), "primary");
 
+const newKnowledgeStageIds = getLessonTypeStages("new_knowledge").map((stage) => stage.id);
+assert.deepEqual(newKnowledgeStageIds.slice(0, 5), [
+  "organizational_moment",
+  "knowledge_activation",
+  "problem_situation_goal",
+  "primary_acquisition",
+  "physical_break",
+]);
+assert.ok(newKnowledgeStageIds.indexOf("reflection") < newKnowledgeStageIds.indexOf("homework_info"));
+assert.equal(getStageDefinition("new_knowledge", "organizational_moment")?.title, "Организационно-мотивационный");
+assert.equal(getStageDefinition("new_knowledge", "problem_situation_goal")?.title, "Целеполагание");
+assert.equal(getStageDefinition("new_knowledge", "primary_acquisition")?.title, "Открытие нового знания");
+assert.ok(getTechniquesForStage("physical_break").some((technique) => technique.name === "Тематическая физкультминутка"));
+
 for (const subject of SUBJECT_OPTIONS) {
   const mode = resolveSubjectGenerationMode(subject, "5");
   assert.ok(mode, `mode for ${subject}`);
@@ -499,8 +513,8 @@ const assembled = assembleLessonMarkdown({
   stageResults: [
     {
       stageId: "organizational_moment",
-      title: "Мотивационный этап",
-      markdown: `## Мотивационный этап
+      title: "Организационно-мотивационный",
+      markdown: `## Организационно-мотивационный
 Время: 2 мин
 Цель: Подготовить класс к уроку.
 Методический приём: Пробный вопрос
@@ -536,7 +550,7 @@ const assembledVal = validateAssembledLesson(assembled, {
   grade: "8",
   topic: "Уравнения",
   mode: "mathematics",
-  selectedStages: ["Мотивационный этап", "Актуализация знаний"],
+  selectedStages: ["Организационно-мотивационный", "Актуализация знаний"],
   lessonType: "new_knowledge",
   selectedStageIds: ["organizational_moment", "knowledge_activation"],
   frpContext: frpCtx,

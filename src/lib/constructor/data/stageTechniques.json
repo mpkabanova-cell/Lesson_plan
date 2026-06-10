@@ -47,6 +47,13 @@
         { "id": "creative_apply", "name": "Творческое применение", "description": "Задание в нестандартной или жизненной ситуации.", "allowedStages": ["creative_application", "apply_new_situation"], "subjects": ["all"], "example": "Примените новый способ в практической ситуации." }
       ]
     },
+    "health_pause": {
+      "label": "Здоровьесберегающая пауза",
+      "techniques": [
+        { "id": "thematic_physical_minute", "name": "Тематическая физкультминутка", "description": "Короткая двигательная пауза, образно связанная с темой урока.", "allowedStages": ["physical_break"], "subjects": ["all"], "example": "Свяжите 3–4 простых движения с образами темы урока." },
+        { "id": "attention_reset", "name": "Переключение внимания", "description": "Короткое упражнение для снятия напряжения и возврата внимания к работе.", "allowedStages": ["physical_break"], "subjects": ["all"], "example": "Выполните дыхательное упражнение, потянитесь, смените позу и вернитесь к заданию." }
+      ]
+    },
     "reflection": {
       "label": "Рефлексия",
       "techniques": [
@@ -71,6 +78,7 @@
     "goal_setting_motivation": "motivation",
     "knowledge_activation": "activation",
     "primary_acquisition": "acquisition",
+    "physical_break": "health_pause",
     "primary_comprehension_check": "consolidation",
     "primary_consolidation": "consolidation",
     "creative_application": "consolidation",

@@ -80,6 +80,7 @@ export function allocateStageMinutes(
     problem_situation_goal: 8,
     knowledge_activation: 10,
     primary_acquisition: 12,
+    physical_break: 2,
     primary_comprehension_check: 8,
     primary_consolidation: 10,
     creative_application: 10,
