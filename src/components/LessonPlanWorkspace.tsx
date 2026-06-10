@@ -1008,36 +1008,6 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   </h2>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <div
-                    className="inline-flex rounded-2xl border border-slate-200 bg-slate-100/80 p-1"
-                    role="tablist"
-                    aria-label="Рабочая область"
-                  >
-                    {[
-                      { id: "lesson" as const, label: "✍ План урока" },
-                      { id: "materials" as const, label: "📚 Поиск материалов" },
-                    ].map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={activeWorkspace === tab.id}
-                        onClick={() => {
-                          setActiveWorkspace(tab.id);
-                          if (tab.id === "materials") {
-                            setMaterialsWorkspaceMounted(true);
-                          }
-                        }}
-                        className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                          activeWorkspace === tab.id
-                            ? "bg-violet-600 text-white shadow-lg shadow-violet-200"
-                            : "text-slate-600 hover:bg-white hover:text-slate-950"
-                        }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
                   {structuredLesson ? (
                     <div
                       className="inline-flex rounded-2xl border border-slate-200 bg-slate-100/80 p-1"
@@ -1094,6 +1064,36 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                       </button>
                     </div>
                   ) : null}
+                  <div
+                    className="inline-flex rounded-2xl border border-slate-200 bg-slate-100/80 p-1"
+                    role="tablist"
+                    aria-label="Рабочая область"
+                  >
+                    {[
+                      { id: "lesson" as const, label: "✍ План урока" },
+                      { id: "materials" as const, label: "📚 Поиск материалов" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeWorkspace === tab.id}
+                        onClick={() => {
+                          setActiveWorkspace(tab.id);
+                          if (tab.id === "materials") {
+                            setMaterialsWorkspaceMounted(true);
+                          }
+                        }}
+                        className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                          activeWorkspace === tab.id
+                            ? "bg-violet-600 text-white shadow-lg shadow-violet-200"
+                            : "text-slate-600 hover:bg-white hover:text-slate-950"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
                   <button
                     type="button"
                     disabled={!hasPlan || exporting}
