@@ -87,6 +87,36 @@ export type StructuredLesson = {
   stages: StructuredLessonStage[];
 };
 
+const REPEATED_NEW_TOPIC_OPENING_RE =
+  /^\s*«?\s*(?:здравствуйте[!.]?\s*)?(?:(?:сегодня|на\s+этом\s+уроке)\s+мы\s+)?(?:начн[её]м\s+изучать|будем\s+изучать|познакомимся\s+с|откроем|рассмотрим)\s+[^.!?]+[.!?]\s*/i;
+
+function removeRepeatedNewTopicOpening(text: string): string {
+  const original = text.trim();
+  if (!original) return text;
+  const hadOpeningQuote = original.startsWith("«");
+  const next = original.replace(REPEATED_NEW_TOPIC_OPENING_RE, "").trimStart();
+  if (next === original || !next) return text;
+  if (hadOpeningQuote && !next.startsWith("«") && next.includes("»")) {
+    return `«${next}`;
+  }
+  return next;
+}
+
+export function sanitizeStructuredLessonStageOpenings(lesson: StructuredLesson): StructuredLesson {
+  if (lesson.lessonType !== "new_knowledge") return lesson;
+
+  let changed = false;
+  const stages = lesson.stages.map((stage) => {
+    if (stage.id === "organizational_moment") return stage;
+    const teacherSpeech = removeRepeatedNewTopicOpening(stage.teacherSpeech);
+    if (teacherSpeech === stage.teacherSpeech) return stage;
+    changed = true;
+    return { ...stage, teacherSpeech };
+  });
+
+  return changed ? { ...lesson, stages } : lesson;
+}
+
 export type StructuredStageIssue = {
   field: StageFieldKey | "method";
   message: string;
@@ -352,7 +382,7 @@ export function structuredLessonFromStageResults(input: {
     );
   const crossCuttingQuestion = buildCrossCuttingQuestion(input.subject, input.topic, input.lessonType);
 
-  return {
+  return sanitizeStructuredLessonStageOpenings({
     subject: input.subject,
     grade: input.grade,
     topic: input.topic,
@@ -368,7 +398,7 @@ export function structuredLessonFromStageResults(input: {
     methodologyComment: buildMethodologyComment(stages, crossCuttingQuestion),
     assessmentCriteria: buildAssessmentCriteria(),
     stages,
-  };
+  });
 }
 
 function isInvalidValue(value: string): boolean {

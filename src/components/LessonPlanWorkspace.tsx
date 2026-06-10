@@ -29,6 +29,7 @@ import {
 } from "@/lib/lessonPlanDiversity";
 import { prepareLessonPlanHtmlForEditor } from "@/lib/prepareEditorHtml";
 import {
+  sanitizeStructuredLessonStageOpenings,
   structuredLessonFromStageResults,
   type StructuredLesson,
 } from "@/lib/constructor/structuredLesson";
@@ -513,7 +514,9 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         ? draft.subject
         : subject;
       const sanitizedTopic = sanitizeTopicForGrade(nextSubject, draft.grade, draft.topic);
-      const savedLesson = draft.structuredLesson;
+      const savedLesson = draft.structuredLesson
+        ? sanitizeStructuredLessonStageOpenings(draft.structuredLesson)
+        : null;
       const savedLessonKey = savedLesson
         ? lessonParamsKey(savedLesson.subject, savedLesson.grade, savedLesson.topic)
         : lessonParamsKey(draft.subject, draft.grade, sanitizedTopic);
@@ -546,7 +549,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setHomework(draft.homework);
       setLessonTypeId(draft.lessonTypeId);
       setPlanHtml(draft.planHtml);
-      setStructuredLesson(draft.structuredLesson);
+      setStructuredLesson(savedLesson);
       setConstructSessionId(draft.constructSessionId);
       setLessonViewMode(draft.lessonViewMode);
       setActiveWorkspace("lesson");

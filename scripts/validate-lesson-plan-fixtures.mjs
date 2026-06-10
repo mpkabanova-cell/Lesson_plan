@@ -40,6 +40,7 @@ const { isDuplicateTask } = await import("../src/lib/constructor/stageTaskDivers
 const { resolveSubjectProfile } = await import("../src/lib/constructor/subjectProfiles.ts");
 const { validateAssembledLesson } = await import("../src/lib/lessonPlanValidator.ts");
 const {
+  sanitizeStructuredLessonStageOpenings,
   structuredLessonFromStageResults,
   structuredLessonToMarkdown,
   validateStructuredStage,
@@ -288,8 +289,21 @@ const goodStage = `## Актуализация знаний
 const goodVal = validateStageMarkdown(goodStage, activationStage, profile, {
   requiredTechnique: activationTechnique,
   topic: "Уравнения",
+  lessonType: "new_knowledge",
 });
 assert.equal(goodVal.ok, true);
+
+const repeatedOpeningStage = goodStage.replace(
+  "Речь учителя: «Откройте тетради.",
+  "Речь учителя: «Сегодня мы начнём изучать линейные уравнения. Откройте тетради.",
+);
+const repeatedOpeningVal = validateStageMarkdown(repeatedOpeningStage, activationStage, profile, {
+  requiredTechnique: activationTechnique,
+  topic: "Уравнения",
+  lessonType: "new_knowledge",
+});
+assert.equal(repeatedOpeningVal.ok, false);
+assert.ok(repeatedOpeningVal.issues.some((issue) => issue.code === "repeated_topic_opening"));
 
 const parsedBlock = parseStageBlock(goodStage);
 assert.ok(parsedBlock.goal?.includes("Актуализировать"));
@@ -331,6 +345,27 @@ assert.equal(structured.stages.length, 1);
 assert.equal(structured.stages[0].method?.name, activationTechnique.name);
 assert.ok(structured.stages[0].task.includes("Решите уравнение"));
 assert.ok(validateStructuredStage(structured.stages[0]).ok);
+const repeatedOpeningLesson = sanitizeStructuredLessonStageOpenings({
+  ...structured,
+  stages: [
+    {
+      ...structured.stages[0],
+      id: "organizational_moment",
+      title: "Организационно-мотивационный",
+      teacherSpeech: "«Сегодня мы начнём изучать уравнения. Запишите вопрос урока.»",
+    },
+    {
+      ...structured.stages[0],
+      id: "knowledge_activation",
+      title: "Актуализация знаний",
+      teacherSpeech:
+        "«Сегодня мы начнём изучать признаки равенства треугольников. Для этого давайте вспомним, что вы знаете о треугольниках.»",
+    },
+  ],
+});
+assert.ok(repeatedOpeningLesson.stages[0].teacherSpeech.includes("Сегодня мы начнём"));
+assert.ok(!repeatedOpeningLesson.stages[1].teacherSpeech.includes("Сегодня мы начнём"));
+assert.ok(repeatedOpeningLesson.stages[1].teacherSpeech.includes("Для этого давайте вспомним"));
 assert.equal(structured.passport?.lessonTypeLabel, "Усвоение новых знаний");
 assert.ok(structured.plannedResults?.subject.some((item) => item.includes("Линейные уравнения")));
 assert.ok(structured.frpCoverage?.covered.some((item) => item.includes("Линейные уравнения")));

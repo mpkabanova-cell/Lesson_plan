@@ -102,6 +102,11 @@ function appendLessonTypeRules(base: string, lessonType: LessonTypeId): string {
 }
 
 function buildSystemPrompt(input: StageFieldGenerationInput): string {
+  const repeatedOpeningRule =
+    input.lesson.lessonType === "new_knowledge" && input.stage.id !== "organizational_moment"
+      ? "\nНе начинай речь учителя с повторного объявления темы («Сегодня мы начнём/будем изучать…», «Познакомимся с темой…»). Это допустимо только в организационно-мотивационном блоке."
+      : "";
+
   if (input.mode === "improve" || input.mode === "regenerate") {
     const label = input.field ? FIELD_LABELS[input.field] : "поле";
     return appendLessonTypeRules(
@@ -112,7 +117,7 @@ function buildSystemPrompt(input: StageFieldGenerationInput): string {
 Если это речь учителя — дай готовую речь в кавычках «...».
 Если это задание — дай предметное задание по теме.
 Если это ответ — дай ключ/эталон проверки.
-Сохраняй качество технологической карты: конкретный учебный материал, действия учеников, вопросы учителя и проверяемый продукт этапа.`,
+Сохраняй качество технологической карты: конкретный учебный материал, действия учеников, вопросы учителя и проверяемый продукт этапа.${repeatedOpeningRule}`,
       input.lesson.lessonType,
     );
   }
@@ -128,7 +133,7 @@ function buildSystemPrompt(input: StageFieldGenerationInput): string {
 Пиши конкретно, по-русски, без плейсхолдеров (..., TODO, TBD, null).
 Речь учителя должна быть готовой речью в кавычках «...».
 Задание и ответ должны соответствовать теме, предмету, классу и выбранному приёму.
-Усиль этап как технологическую карту: добавь конкретные материалы (карта, источник, текст, схема, задача), деятельность учащихся и проверяемый результат. Если есть проблемный вопрос урока, свяжи этап с ним.`,
+Усиль этап как технологическую карту: добавь конкретные материалы (карта, источник, текст, схема, задача), деятельность учащихся и проверяемый результат. Если есть проблемный вопрос урока, свяжи этап с ним.${repeatedOpeningRule}`,
     input.lesson.lessonType,
   );
 }

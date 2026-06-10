@@ -75,6 +75,8 @@ const PLACEHOLDER_VALUES = new Set([
 const PLACEHOLDER_INLINE_RE = /(?:^|\s)(\.\.\.|…|\bTBD\b|\bTODO\b|\bnull\b)(?:\s|$)/i;
 
 const MIN_CONDITION_CHARS = 12;
+const REPEATED_NEW_TOPIC_OPENING_RE =
+  /^\s*«?\s*(?:здравствуйте[!.]?\s*)?(?:(?:сегодня|на\s+этом\s+уроке)\s+мы\s+)?(?:начн[её]м\s+изучать|будем\s+изучать|познакомимся\s+с|откроем|рассмотрим)\s+/i;
 
 function normalize(text: string): string {
   return text.replace(/\s+/g, " ").trim().toLowerCase();
@@ -301,6 +303,18 @@ function validateMethodologicalBlock(
         code: "new_knowledge_continuation_wording",
         message:
           "На уроке открытия новых знаний тема новая — убери формулировки о продолжении или повторении уже изученного.",
+      });
+    }
+
+    if (
+      context?.lessonType === "new_knowledge" &&
+      stage.id !== "organizational_moment" &&
+      REPEATED_NEW_TOPIC_OPENING_RE.test(block.teacherSpeech)
+    ) {
+      issues.push({
+        code: "repeated_topic_opening",
+        message:
+          "Повторное объявление темы допустимо только в организационно-мотивационном блоке. Начни речь сразу с действия этого этапа.",
       });
     }
   }

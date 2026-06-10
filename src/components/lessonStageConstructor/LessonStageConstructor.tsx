@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { getStageDefinition } from "@/lib/constructor/stageRegistry";
 import {
   getTechniquePickerOptions,
@@ -40,6 +40,35 @@ type Props = {
   onToast?: (message: string) => void;
   onError?: (message: string | null) => void;
 };
+
+function AutoResizeTextarea({
+  value,
+  onChange,
+  minRows,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  minRows: number;
+}) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  useLayoutEffect(() => {
+    const textarea = ref.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [value, minRows]);
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      rows={minRows}
+      className="max-h-[32rem] w-full resize-y overflow-y-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 shadow-inner outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+    />
+  );
+}
 
 const FIELD_META: Array<{ key: StageFieldKey; label: string; minRows?: number }> = [
   { key: "goal", label: "Цель этапа", minRows: 2 },
@@ -449,12 +478,7 @@ function StageEditableField({
           </button>
         </div>
       </div>
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        rows={minRows}
-        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 shadow-inner outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
-      />
+      <AutoResizeTextarea value={value} onChange={onChange} minRows={minRows} />
       {issueMessages.length > 0 ? (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {issueMessages.map((message) => (
