@@ -10,6 +10,7 @@ const { compareFingerprints, extractLessonFingerprint } = await import(
   "../src/lib/lessonPlanDiversity.ts"
 );
 const { SUBJECT_OPTIONS } = await import("../src/config/subjectClassMap.ts");
+const { getTopicSuggestions } = await import("../src/config/topicSuggestions.ts");
 const { resolveFrpKnowledgeContext, resolveFrpCanonicalSubject } = await import(
   "../src/lib/knowledge/frpResolve.ts"
 );
@@ -317,9 +318,25 @@ assert.ok(validateStructuredStage(structured.stages[0]).ok);
 assert.equal(structured.passport?.lessonTypeLabel, "Усвоение новых знаний");
 assert.ok(structured.plannedResults?.subject.some((item) => item.includes("Линейные уравнения")));
 assert.ok(structured.frpCoverage?.covered.some((item) => item.includes("Линейные уравнения")));
+assert.equal(structured.plannedResults?.subject.length, 3);
+assert.ok(structured.plannedResults.subject[2].startsWith("применять"));
+const structuredWithStalePlannedResults = {
+  ...structured,
+  plannedResults: {
+    ...structured.plannedResults,
+    subject: [
+      structured.plannedResults.subject[0],
+      structured.plannedResults.subject[1],
+      "На уроке мы откроем теорему Пифагора и узнаем, как она связывает стороны прямоугольного треугольника.",
+    ],
+  },
+};
 const structuredMarkdown = structuredLessonToMarkdown(structured);
+const stalePlannedResultsMarkdown = structuredLessonToMarkdown(structuredWithStalePlannedResults);
 assert.ok(structuredMarkdown.includes("Технологическая карта урока"));
 assert.ok(structuredMarkdown.includes("Планируемые результаты"));
+assert.ok(stalePlannedResultsMarkdown.includes("применять новое знание"));
+assert.ok(!stalePlannedResultsMarkdown.includes("На уроке мы откроем теорему Пифагора"));
 assert.ok(structuredMarkdown.includes("Программное содержание"));
 assert.ok(structuredMarkdown.includes("Критерии оценивания"));
 assert.ok(structuredMarkdown.includes("Задание 1.1"));
@@ -690,5 +707,27 @@ const relaxedRanked = rankAndLimitMaterials(sparseCandidates, 10, rankCtx, {
 assert.ok(relaxedRanked.length >= 3);
 
 assert.ok(rankAndLimitMaterials([konspekt], 1, rankCtx)[0].meta?.materialType);
+
+const geometry7 = getTopicSuggestions("Геометрия", "7");
+const geometry8 = getTopicSuggestions("Геометрия", "8");
+assert.ok(geometry7.includes("Треугольники"));
+assert.ok(!geometry7.includes("Теорема Пифагора"));
+assert.ok(geometry8.includes("Теорема Пифагора"));
+
+const algebra7 = getTopicSuggestions("Алгебра", "7");
+const algebra8 = getTopicSuggestions("Алгебра", "8");
+assert.ok(algebra7.includes("Линейные уравнения"));
+assert.ok(!algebra7.includes("Квадратные уравнения"));
+assert.ok(algebra8.includes("Квадратные уравнения"));
+
+const history7 = getTopicSuggestions("История", "7");
+const history8 = getTopicSuggestions("История", "8");
+const history9 = getTopicSuggestions("История", "9");
+assert.ok(history7.includes("Великие географические открытия"));
+assert.ok(!history7.includes("Пётр I"));
+assert.ok(history8.includes("Пётр I"));
+assert.ok(history8.includes("Отечественная война 1812 года"));
+assert.ok(history9.includes("Реформы Александра II"));
+assert.ok(!history9.includes("Великая Отечественная война"));
 
 console.log("All fixture checks passed.");

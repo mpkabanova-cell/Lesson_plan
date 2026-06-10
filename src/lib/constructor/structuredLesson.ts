@@ -234,7 +234,7 @@ function buildPlannedResults(input: {
     subject: [
       `объяснять ключевые понятия и факты по теме «${topicLabel}»`,
       `выполнять предметные задания по теме «${input.topic}» с опорой на новый способ действия`,
-      input.goal.trim() || `формулировать учебный результат по теме «${input.topic}»`,
+      `применять новое знание по теме «${input.topic}» для решения учебных задач и самопроверки по эталону`,
     ],
     meta: [
       "анализировать учебный материал, карту, схему, источник или задачу",
@@ -454,7 +454,13 @@ function resolvePassport(lesson: StructuredLesson): LessonPassport {
 }
 
 function resolvePlannedResults(lesson: StructuredLesson): LessonPlannedResults {
-  return lesson.plannedResults ?? buildPlannedResults(lesson);
+  const matchedTopic = lesson.frpCoverage?.matchedTopic;
+  return buildPlannedResults({
+    subject: lesson.subject,
+    topic: lesson.topic,
+    goal: lesson.goal,
+    frpMeta: matchedTopic ? { topic: matchedTopic } : null,
+  });
 }
 
 function resolveFrpCoverage(lesson: StructuredLesson): LessonFrpCoverage {
