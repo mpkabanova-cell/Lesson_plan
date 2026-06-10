@@ -77,6 +77,8 @@ const PLACEHOLDER_INLINE_RE = /(?:^|\s)(\.\.\.|…|\bTBD\b|\bTODO\b|\bnull\b)(?:
 const MIN_CONDITION_CHARS = 12;
 const REPEATED_NEW_TOPIC_OPENING_RE =
   /^\s*«?\s*(?:здравствуйте[!.]?\s*)?(?:(?:сегодня|на\s+этом\s+уроке)\s+мы\s+)?(?:начн[её]м\s+изучать|будем\s+изучать|познакомимся\s+с|откроем|рассмотрим)\s+/i;
+const HOMEWORK_META_INSTRUCTION_RE =
+  /запиш(?:ите|ем|ут|и|у|ите)?\s+в\s+дневник[^.!?\n]*(?:базов|повышенн|задани)|(?:базов|повышенн)[^.!?\n]*(?:задани)[^.!?\n]*запиш(?:ите|ем|ут|и|у|ите)?\s+в\s+дневник/i;
 
 function normalize(text: string): string {
   return text.replace(/\s+/g, " ").trim().toLowerCase();
@@ -85,6 +87,10 @@ function normalize(text: string): string {
 function hasAny(text: string, patterns: string[]): boolean {
   const t = normalize(text);
   return patterns.some((p) => t.includes(p.toLowerCase()));
+}
+
+function hasHomeworkMetaInstruction(text: string): boolean {
+  return HOMEWORK_META_INSTRUCTION_RE.test(text);
 }
 
 function isPlaceholderText(text: string): boolean {
@@ -563,6 +569,13 @@ export function validateStageMarkdown(
     issues.push({
       code: "missing_homework",
       message: "Укажи конкретные задания домашней работы.",
+    });
+  }
+  if (needsHomework && hasHomeworkMetaInstruction(text)) {
+    issues.push({
+      code: "homework_meta_instruction",
+      message:
+        "В домашнем задании нельзя ограничиваться фразой про запись базового/повышенного задания в дневник. Укажи сами практические задания по теме и разобранному материалу.",
     });
   }
 
