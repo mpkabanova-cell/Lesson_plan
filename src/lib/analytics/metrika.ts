@@ -5,12 +5,27 @@ export const METRIKA_COUNTER_ID = 108472990;
 export type AnalyticsPayloadValue = string | number | boolean;
 export type AnalyticsPayload = Record<string, AnalyticsPayloadValue>;
 
+type YmFn = ((...args: unknown[]) => void) & { a?: unknown[][]; l?: number };
+
 declare global {
   interface Window {
     dataLayer?: Array<Record<string, unknown>>;
-    ym?: (counterId: number, method: string, goalSlug: string, payload?: Record<string, unknown>) => void;
+    ym?: YmFn;
     __lpcTrackTest?: () => void;
   }
+}
+
+/** Yandex Metrika queue stub — must exist before tag.js so early reachGoal calls are not lost. */
+export function ensureYmStub(): void {
+  if (typeof window === "undefined") return;
+  if (typeof window.ym === "function") return;
+
+  const ymFn: YmFn = (...args: unknown[]) => {
+    ymFn.a = ymFn.a || [];
+    ymFn.a.push(args);
+  };
+  ymFn.l = Date.now();
+  window.ym = ymFn;
 }
 
 function isAnalyticsEnabled(): boolean {
@@ -61,17 +76,16 @@ export function pushDataLayerEvent(event: string, payload: AnalyticsPayload): vo
 
 export function reachGoal(goalSlug: string, payload: AnalyticsPayload): void {
   if (typeof window === "undefined" || !isAnalyticsEnabled()) return;
+  ensureYmStub();
   const counterId = getCounterId();
   const nestedPayload = sanitizePayload(payload);
   const ymPayload =
     Object.keys(nestedPayload).length > 0 ? { [goalSlug]: nestedPayload } : undefined;
 
-  if (typeof window.ym === "function") {
-    if (ymPayload) {
-      window.ym(counterId, "reachGoal", goalSlug, ymPayload);
-    } else {
-      window.ym(counterId, "reachGoal", goalSlug);
-    }
+  if (ymPayload) {
+    window.ym!(counterId, "reachGoal", goalSlug, ymPayload);
+  } else {
+    window.ym!(counterId, "reachGoal", goalSlug);
   }
 }
 
@@ -89,6 +103,9 @@ export function initAnalyticsClient(): void {
   if (typeof window === "undefined") return;
   persistClientIdFromUrl();
   ensureDataLayer();
+  if (isAnalyticsEnabled()) {
+    ensureYmStub();
+  }
   if (process.env.NODE_ENV === "development") {
     window.__lpcTrackTest = () => {
       trackEvent("lpc_lesson_plan_constructor_init", {

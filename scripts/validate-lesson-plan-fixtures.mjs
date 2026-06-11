@@ -46,7 +46,7 @@ const {
   structuredLessonToMarkdown,
   validateStructuredStage,
 } = await import("../src/lib/constructor/structuredLesson.ts");
-const { sanitizePayload, withClientId, METRIKA_COUNTER_ID } = await import("../src/lib/analytics/metrika.ts");
+const { sanitizePayload, withClientId, METRIKA_COUNTER_ID, ensureYmStub } = await import("../src/lib/analytics/metrika.ts");
 const { appendClientId } = await import("../src/lib/analytics/clientId.ts");
 
 // --- subject mode ---
@@ -902,5 +902,16 @@ assert.equal(
   appendClientId("https://example.com/path?q=1", "1775758694749392519"),
   "https://example.com/path?q=1&client_id=1775758694749392519",
 );
+
+// ym stub queues reachGoal before tag.js loads
+globalThis.window = { ym: undefined, dataLayer: [] };
+ensureYmStub();
+assert.equal(typeof globalThis.window.ym, "function");
+globalThis.window.ym(108472990, "reachGoal", "lpc_lesson_plan_constructor_init", {
+  lpc_lesson_plan_constructor_init: { scenario_slug: "lpc_lesson_plan_constructor" },
+});
+assert.equal(globalThis.window.ym.a?.length, 1);
+assert.equal(globalThis.window.ym.a[0][2], "lpc_lesson_plan_constructor_init");
+delete globalThis.window;
 
 console.log("All fixture checks passed.");
