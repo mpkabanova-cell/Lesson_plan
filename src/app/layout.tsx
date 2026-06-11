@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { UxFeedback } from "@/components/analytics/UxFeedback";
+import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import "./globals.css";
 
 const inter = Inter({
@@ -26,6 +28,8 @@ export default function RootLayout({
     <html lang="ru">
       <body className={`${inter.variable} ${jetbrains.variable} font-sans antialiased`}>
         {children}
+        <YandexMetrika />
+        <UxFeedback />
       </body>
     </html>
   );

@@ -46,6 +46,8 @@ const {
   structuredLessonToMarkdown,
   validateStructuredStage,
 } = await import("../src/lib/constructor/structuredLesson.ts");
+const { sanitizePayload, withClientId, METRIKA_COUNTER_ID } = await import("../src/lib/analytics/metrika.ts");
+const { appendClientId } = await import("../src/lib/analytics/clientId.ts");
 
 // --- subject mode ---
 assert.equal(resolveSubjectGenerationMode("История", "8"), "humanities");
@@ -884,5 +886,21 @@ assert.equal(isCuratedTopicForAnotherGrade("Геометрия", "8", "Теор�
 assert.equal(sanitizeTopicForGrade("Геометрия", "7", "Теорема Пифагора"), "");
 assert.equal(sanitizeTopicForGrade("Геометрия", "8", "Теорема Пифагора"), "Теорема Пифагора");
 assert.equal(sanitizeTopicForGrade("Геометрия", "7", "Мой авторский модуль"), "Мой авторский модуль");
+
+// --- analytics: metrika helpers ---
+assert.equal(METRIKA_COUNTER_ID, 108472990);
+assert.deepEqual(sanitizePayload({ a: 1, b: "", c: null, d: undefined }), { a: 1 });
+assert.deepEqual(withClientId({ subject: "Математика" }), {
+  subject: "Математика",
+  has_client_id: false,
+});
+assert.equal(
+  appendClientId("https://example.com/path", "1775758694749392519"),
+  "https://example.com/path?client_id=1775758694749392519",
+);
+assert.equal(
+  appendClientId("https://example.com/path?q=1", "1775758694749392519"),
+  "https://example.com/path?q=1&client_id=1775758694749392519",
+);
 
 console.log("All fixture checks passed.");

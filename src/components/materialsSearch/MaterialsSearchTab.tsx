@@ -2,6 +2,13 @@
 
 import { useMemo, useRef, useState } from "react";
 import { firstAvailableGrade, isSubjectGradeCompatible } from "@/config/subjectClassMap";
+import { appendClientId } from "@/lib/analytics/clientId";
+import {
+  trackLpcMaterialsFallbackGoogle,
+  trackLpcMaterialsPortalClick,
+  trackLpcMaterialsResultClick,
+  trackLpcMaterialsSearch,
+} from "@/lib/analytics/lpcEvents";
 import { buildGoogleFallbackSearchUrl } from "@/lib/buildGoogleFallbackSearchUrl";
 import { build1septSearchQuery } from "@/lib/build1septSearchQuery";
 import { rankAndLimitMaterials, type MaterialSearchResult } from "@/lib/materialsSearchRanking";
@@ -171,9 +178,10 @@ export function MaterialsSearchTab({
   const searchGenerationRef = useRef(0);
 
   const fallbackUrl = useMemo(
-    () => buildGoogleFallbackSearchUrl(query, { subject, grade }),
+    () => appendClientId(buildGoogleFallbackSearchUrl(query, { subject, grade })),
     [query, subject, grade],
   );
+  const portalUrl = useMemo(() => appendClientId(PUBLICATIONS_PORTAL_URL), []);
   const canUseProgrammableSearch = Boolean(
     programmableSearchCx?.trim() || process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_ENGINE_ID?.trim(),
   );
@@ -264,6 +272,12 @@ export function MaterialsSearchTab({
       if (searchGenerationRef.current !== generation) return;
       setResults(found);
       setError(null);
+      trackLpcMaterialsSearch({
+        queryLength: q.length,
+        subject,
+        grade,
+        resultsCount: found.length,
+      });
     } catch (e) {
       if (searchGenerationRef.current !== generation) return;
       setResults([]);
@@ -327,6 +341,7 @@ export function MaterialsSearchTab({
             href={fallbackUrl}
             target="_blank"
             rel="noreferrer"
+            onClick={() => trackLpcMaterialsFallbackGoogle(query.trim().length)}
             className="mt-2 inline-flex text-xs font-medium text-teal-800 underline decoration-teal-300 underline-offset-2 hover:text-teal-950"
           >
             Открыть этот поиск в Google
@@ -380,14 +395,16 @@ export function MaterialsSearchTab({
                   href={fallbackUrl}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => trackLpcMaterialsFallbackGoogle(query.trim().length)}
                   className="inline-flex rounded-full bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-800 ring-1 ring-teal-100 hover:bg-teal-100"
                 >
                   Открыть поиск в Google
                 </a>
                 <a
-                  href={PUBLICATIONS_PORTAL_URL}
+                  href={portalUrl}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => trackLpcMaterialsPortalClick()}
                   className="inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
                 >
                   Перейти на портал
@@ -404,9 +421,17 @@ export function MaterialsSearchTab({
               return (
                 <li key={`${item.url}-${index}`}>
                   <a
-                    href={item.url}
+                    href={appendClientId(item.url)}
                     target="_blank"
                     rel="noreferrer"
+                    onClick={() =>
+                      trackLpcMaterialsResultClick({
+                        urlHost: host || hostnameFromUrl(item.url),
+                        resultIndex: index,
+                        subject,
+                        grade,
+                      })
+                    }
                     className="group block rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
                   >
                     <div className="flex items-start gap-3">
@@ -476,14 +501,16 @@ export function MaterialsSearchTab({
                 href={fallbackUrl}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => trackLpcMaterialsFallbackGoogle(query.trim().length)}
                 className="inline-flex rounded-full bg-teal-50 px-3 py-1.5 font-medium text-teal-800 ring-1 ring-teal-100 hover:bg-teal-100"
               >
                 Открыть этот поиск в Google
               </a>
               <a
-                href={PUBLICATIONS_PORTAL_URL}
+                href={portalUrl}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => trackLpcMaterialsPortalClick()}
                 className="inline-flex rounded-full bg-slate-50 px-3 py-1.5 font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
               >
                 Перейти на портал

@@ -9,6 +9,23 @@ import {
 } from "@/config/subjectClassMap";
 import { getTopicSuggestions } from "@/config/topicSuggestions";
 import { suggestLessonGoal } from "@/app/actions/suggestLessonGoal";
+import { initAnalyticsClient } from "@/lib/analytics/metrika";
+import {
+  trackLpcExportDocxClick,
+  trackLpcExportDocxSuccess,
+  trackLpcGenerateClick,
+  trackLpcGenerationError,
+  trackLpcGenerationSuccess,
+  trackLpcGoalSuggestClick,
+  trackLpcGoalSuggestSuccess,
+  trackLpcParamsPanelToggle,
+  trackLpcScenarioInit,
+  trackLpcScenarioInputStart,
+  trackLpcStageToggle,
+  trackLpcTopicSuggestionClick,
+  trackLpcViewModeSelect,
+  trackLpcWorkspaceTabSelect,
+} from "@/lib/analytics/lpcEvents";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/defaultSystemPrompt";
 import { estimateGenerationMs } from "@/lib/lessonTypes";
 import {
@@ -396,6 +413,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const [toast, setToast] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const generateActionRef = useRef<HTMLDivElement>(null);
+  const topicInputStartedRef = useRef(false);
 
   const [lessonTypeId, setLessonTypeId] = useState<LessonTypeId>("new_knowledge");
   const stageDefs = useMemo(() => getLessonTypeStages(lessonTypeId), [lessonTypeId]);
@@ -438,6 +456,11 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
     } catch {
       /* ignore storage errors */
     }
+  }, []);
+
+  useEffect(() => {
+    initAnalyticsClient();
+    trackLpcScenarioInit();
   }, []);
 
   useEffect(() => {
@@ -496,10 +519,19 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
   const handleTopicSuggestionClick = useCallback((suggestion: string) => {
     setTopic(suggestion);
     setSelectedSuggestion(suggestion);
+    trackLpcTopicSuggestionClick({ topic: suggestion, subject, grade });
+    trackLpcScenarioInputStart({
+      inputSource: "suggestion",
+      topicLength: suggestion.length,
+      subject,
+      grade,
+      lessonType: lessonTypeId,
+    });
+    topicInputStartedRef.current = true;
     window.setTimeout(() => {
       generateActionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 80);
-  }, []);
+  }, [grade, lessonTypeId, subject]);
 
   const handlePlanEditorLoad = useCallback((info: PlanEditorLoadInfo) => {
     if (info.contentKey === 0 && info.approxPlainFromHtml === 0 && info.textLength === 0) {
@@ -541,8 +573,18 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setGenerateStep(null);
       return;
     }
+    trackLpcGenerateClick({
+      subject,
+      grade,
+      lessonType: lessonTypeId,
+      duration,
+      topicLength: topic.trim().length,
+      goalLength: goal.trim().length,
+      selectedStagesCount: selectedStageIds.length,
+    });
     setLoading(true);
-    setGenerateStartedAt(Date.now());
+    const generationStartedAt = Date.now();
+    setGenerateStartedAt(generationStartedAt);
     setConstructEstimateMs(estimateGenerationMs(lessonTypeId, selectedStageIds));
     setGenerateStep("Отправка запроса на сервер…");
     try {
@@ -668,6 +710,14 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         setError(null);
         setGenerateSuccessInfo(successInfo);
         setToast(`План урока готов (v${usedVersion})`);
+        trackLpcGenerationSuccess({
+          subject,
+          grade,
+          lessonType: lessonTypeId,
+          generationVersion: usedVersion,
+          stagesCount: nextStructuredLesson?.stages.length ?? selectedStageIds.length,
+          durationMs: Date.now() - generationStartedAt,
+        });
         if (raw.trim()) {
           saveRecentFingerprint(extractLessonFingerprint(raw, subject, topic));
         }
@@ -688,6 +738,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
           : `Неизвестная ошибка: ${String(e)}`;
       setError(msg);
       setGenerateSuccessInfo(null);
+      trackLpcGenerationError({ subject, grade, errorMessage: msg });
     } finally {
       setLoading(false);
       setGenerateStep(null);
@@ -701,6 +752,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
       setGoalError("Укажите тему урока.");
       return;
     }
+    trackLpcGoalSuggestClick({ subject, grade, lesson_type: lessonTypeId });
     setGoalSuggesting(true);
     try {
       const result = await suggestLessonGoal({
@@ -713,6 +765,11 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
         throw new Error(result.detail ? `${result.error} — ${result.detail}` : result.error);
       }
       setGoal(result.goal);
+      trackLpcGoalSuggestSuccess({
+        subject,
+        grade,
+        goalLength: result.goal.length,
+      });
       setToast("Формулировка добавлена");
     } catch (e) {
       const msg =
@@ -729,6 +786,8 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
 
   const handleExportDocx = async () => {
     setError(null);
+    const exportSource = structuredLesson ? "structured" : "html";
+    trackLpcExportDocxClick({ exportSource, subject, grade });
     setExporting(true);
     try {
       await downloadBlob(
@@ -738,6 +797,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
           : { html: planHtml, title: exportTitle },
         "plan.docx",
       );
+      trackLpcExportDocxSuccess({ exportSource, titleLength: exportTitle.length });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка экспорта Word");
     } finally {
@@ -783,7 +843,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
             <aside className="order-1 flex min-h-0 items-center rounded-xl border border-slate-200 bg-white p-2 shadow-sm xl:flex-col">
               <button
                 type="button"
-                onClick={() => setLeftPanelCollapsed(false)}
+                onClick={() => {
+                  setLeftPanelCollapsed(false);
+                  trackLpcParamsPanelToggle(false);
+                }}
                 aria-label="Показать параметры"
                 title="Показать параметры"
                 className="flex size-8 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 hover:text-teal-800"
@@ -803,7 +866,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
               </div>
               <button
                 type="button"
-                onClick={() => setLeftPanelCollapsed(true)}
+                onClick={() => {
+                  setLeftPanelCollapsed(true);
+                  trackLpcParamsPanelToggle(true);
+                }}
                 aria-label="Скрыть параметры"
                 title="Скрыть параметры"
                 className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-teal-800"
@@ -854,6 +920,18 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                   onChange={(e) => {
                     setTopic(e.target.value);
                     setSelectedSuggestion(null);
+                  }}
+                  onBlur={(e) => {
+                    const trimmed = e.target.value.trim();
+                    if (!trimmed || topicInputStartedRef.current) return;
+                    topicInputStartedRef.current = true;
+                    trackLpcScenarioInputStart({
+                      inputSource: "keyboard",
+                      topicLength: trimmed.length,
+                      subject,
+                      grade,
+                      lessonType: lessonTypeId,
+                    });
                   }}
                   placeholder="Например: Дробные числа"
                 />
@@ -925,6 +1003,11 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                               const base =
                                 prev.length === stages.length ? [...prev] : stages.map(() => true);
                               base[i] = !base[i];
+                              trackLpcStageToggle({
+                                stageId: def.id,
+                                enabled: base[i],
+                                selectedStagesCount: base.filter(Boolean).length,
+                              });
                               return base;
                             });
                           }}
@@ -1018,7 +1101,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                         type="button"
                         title="Блоки"
                         aria-pressed={lessonViewMode === "blocks"}
-                        onClick={() => setLessonViewMode("blocks")}
+                        onClick={() => {
+                          setLessonViewMode("blocks");
+                          trackLpcViewModeSelect("blocks");
+                        }}
                         className={`rounded-xl px-3 py-2 transition ${
                           lessonViewMode === "blocks"
                             ? "bg-violet-600 text-white shadow-sm"
@@ -1040,7 +1126,10 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                         type="button"
                         title="Как в документе"
                         aria-pressed={lessonViewMode === "preview"}
-                        onClick={() => setLessonViewMode("preview")}
+                        onClick={() => {
+                          setLessonViewMode("preview");
+                          trackLpcViewModeSelect("preview");
+                        }}
                         className={`rounded-xl px-3 py-2 transition ${
                           lessonViewMode === "preview"
                             ? "bg-violet-600 text-white shadow-sm"
@@ -1080,6 +1169,7 @@ export default function LessonPlanWorkspace({ googleProgrammableSearchCx }: Less
                         aria-selected={activeWorkspace === tab.id}
                         onClick={() => {
                           setActiveWorkspace(tab.id);
+                          trackLpcWorkspaceTabSelect(tab.id);
                           if (tab.id === "materials") {
                             setMaterialsWorkspaceMounted(true);
                           }

@@ -1,6 +1,11 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  trackLpcStageFieldRegenerate,
+  trackLpcStageRegenerate,
+  trackLpcTechniqueApply,
+} from "@/lib/analytics/lpcEvents";
 import { getStageDefinition } from "@/lib/constructor/stageRegistry";
 import {
   getTechniquePickerOptions,
@@ -173,6 +178,11 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
       });
       const currentValue = lesson.stages[stageIndex]?.[field] ?? "";
       updateStage(stageIndex, (stage) => updateStructuredStageField(stage, field, data.value));
+      trackLpcStageFieldRegenerate({
+        stageId: lesson.stages[stageIndex]?.id ?? `stage_${stageIndex}`,
+        field,
+        mode,
+      });
       setRegenerateFieldTarget(null);
       if (data.value.trim() === currentValue.trim()) {
         onToast?.("Модель вернула тот же текст. Уточните пожелание к изменению.");
@@ -201,6 +211,10 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
         userInstructions: userInstructions.trim() || undefined,
       });
       updateStage(stageIndex, (current) => stageWithPatch(current, data.fields ?? {}));
+      trackLpcStageRegenerate({
+        stageId: stage.id,
+        stageIndex,
+      });
       setRegenerateStageIndex(null);
       onToast?.("Этап перегенерирован");
     } catch (e) {
@@ -234,6 +248,11 @@ export function LessonStageConstructor({ lesson, sessionId, onChange, onToast, o
         method,
       });
       updateStage(stageIndex, (stage) => stageWithPatch({ ...stage, method }, data.fields ?? {}));
+      trackLpcTechniqueApply({
+        stageId: lesson.stages[stageIndex]?.id ?? `stage_${stageIndex}`,
+        techniqueId: technique.id,
+        techniqueName: technique.name,
+      });
       onToast?.("Приём применён к этапу");
     } catch (e) {
       onError?.(e instanceof Error ? e.message : String(e));
