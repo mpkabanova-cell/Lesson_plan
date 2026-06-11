@@ -1,5 +1,14 @@
 import { trackEvent, trackUxfbTrigger } from "./metrika";
 
+const LPC_SCENARIO = {
+  lessonPlanConstructor: "lpc_lesson_plan_constructor",
+  goalSuggestion: "lpc_goal_suggestion",
+  resultEditing: "lpc_result_editing",
+  workspaceNavigation: "lpc_workspace_navigation",
+  materialsSearch: "lpc_materials_search",
+  uxFeedback: "lpc_ux_feedback",
+} as const;
+
 type LessonContext = {
   subject?: string;
   grade?: string;
@@ -7,7 +16,9 @@ type LessonContext = {
 };
 
 export function trackLpcScenarioInit(): void {
-  trackEvent("lpc_scenario_init", { scenario: "lesson_plan_constructor" });
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_init`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
+  });
 }
 
 export function trackLpcScenarioInputStart(input: {
@@ -17,7 +28,8 @@ export function trackLpcScenarioInputStart(input: {
   grade: string;
   lessonType: string;
 }): void {
-  trackEvent("lpc_scenario_input_start", {
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_input_start`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
     input_source: input.inputSource,
     topic_length: input.topicLength,
     subject: input.subject,
@@ -31,7 +43,8 @@ export function trackLpcTopicSuggestionClick(input: {
   subject: string;
   grade: string;
 }): void {
-  trackEvent("lpc_topic_suggestion_click", {
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_topic_suggestion_click`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
     topic: input.topic,
     subject: input.subject,
     grade: input.grade,
@@ -39,7 +52,8 @@ export function trackLpcTopicSuggestionClick(input: {
 }
 
 export function trackLpcGoalSuggestClick(ctx: LessonContext): void {
-  trackEvent("lpc_goal_suggest_click", {
+  trackEvent(`${LPC_SCENARIO.goalSuggestion}_click`, {
+    scenario_slug: LPC_SCENARIO.goalSuggestion,
     subject: ctx.subject ?? "",
     grade: ctx.grade ?? "",
     lesson_type: ctx.lesson_type ?? "",
@@ -51,7 +65,8 @@ export function trackLpcGoalSuggestSuccess(input: {
   grade: string;
   goalLength: number;
 }): void {
-  trackEvent("lpc_goal_suggest_success", {
+  trackEvent(`${LPC_SCENARIO.goalSuggestion}_success`, {
+    scenario_slug: LPC_SCENARIO.goalSuggestion,
     subject: input.subject,
     grade: input.grade,
     goal_length: input.goalLength,
@@ -63,7 +78,8 @@ export function trackLpcStageToggle(input: {
   enabled: boolean;
   selectedStagesCount: number;
 }): void {
-  trackEvent("lpc_stage_toggle", {
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_stage_toggle`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
     stage_id: input.stageId,
     enabled: input.enabled,
     selected_stages_count: input.selectedStagesCount,
@@ -79,7 +95,8 @@ export function trackLpcGenerateClick(input: {
   goalLength: number;
   selectedStagesCount: number;
 }): void {
-  trackEvent("lpc_generate_click", {
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_generate_click`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
     subject: input.subject,
     grade: input.grade,
     lesson_type: input.lessonType,
@@ -98,7 +115,8 @@ export function trackLpcGenerationSuccess(input: {
   stagesCount: number;
   durationMs: number;
 }): void {
-  trackEvent("lpc_generation_success", {
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_generation_success`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
     subject: input.subject,
     grade: input.grade,
     lesson_type: input.lessonType,
@@ -106,7 +124,8 @@ export function trackLpcGenerationSuccess(input: {
     stages_count: input.stagesCount,
     duration_ms: input.durationMs,
   });
-  trackUxfbTrigger("uxfb_trigger_generation_success", {
+  trackUxfbTrigger(`${LPC_SCENARIO.uxFeedback}_generation_success`, {
+    scenario_slug: LPC_SCENARIO.uxFeedback,
     subject: input.subject,
     grade: input.grade,
     generation_version: input.generationVersion,
@@ -118,7 +137,8 @@ export function trackLpcGenerationError(input: {
   grade: string;
   errorMessage: string;
 }): void {
-  trackEvent("lpc_generation_error", {
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_generation_error`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
     subject: input.subject,
     grade: input.grade,
     error_message: input.errorMessage.slice(0, 200),
@@ -126,15 +146,24 @@ export function trackLpcGenerationError(input: {
 }
 
 export function trackLpcViewModeSelect(viewMode: "blocks" | "preview"): void {
-  trackEvent("lpc_view_mode_select", { view_mode: viewMode });
+  trackEvent(`${LPC_SCENARIO.resultEditing}_view_mode_select`, {
+    scenario_slug: LPC_SCENARIO.resultEditing,
+    view_mode: viewMode,
+  });
 }
 
 export function trackLpcWorkspaceTabSelect(tab: "lesson" | "materials"): void {
-  trackEvent("lpc_workspace_tab_select", { tab });
+  trackEvent(`${LPC_SCENARIO.workspaceNavigation}_tab_select`, {
+    scenario_slug: LPC_SCENARIO.workspaceNavigation,
+    tab,
+  });
 }
 
 export function trackLpcParamsPanelToggle(collapsed: boolean): void {
-  trackEvent("lpc_params_panel_toggle", { collapsed });
+  trackEvent(`${LPC_SCENARIO.workspaceNavigation}_params_panel_toggle`, {
+    scenario_slug: LPC_SCENARIO.workspaceNavigation,
+    collapsed,
+  });
 }
 
 export function trackLpcExportDocxClick(input: {
@@ -142,7 +171,8 @@ export function trackLpcExportDocxClick(input: {
   subject: string;
   grade: string;
 }): void {
-  trackEvent("lpc_export_docx_click", {
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_export_docx_click`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
     export_source: input.exportSource,
     subject: input.subject,
     grade: input.grade,
@@ -153,17 +183,20 @@ export function trackLpcExportDocxSuccess(input: {
   exportSource: "structured" | "html";
   titleLength: number;
 }): void {
-  trackEvent("lpc_export_docx_success", {
+  trackEvent(`${LPC_SCENARIO.lessonPlanConstructor}_export_docx_success`, {
+    scenario_slug: LPC_SCENARIO.lessonPlanConstructor,
     export_source: input.exportSource,
     title_length: input.titleLength,
   });
-  trackUxfbTrigger("uxfb_trigger_export_success", {
+  trackUxfbTrigger(`${LPC_SCENARIO.uxFeedback}_export_success`, {
+    scenario_slug: LPC_SCENARIO.uxFeedback,
     export_source: input.exportSource,
   });
 }
 
 export function trackLpcStageRegenerate(input: { stageId: string; stageIndex: number }): void {
-  trackEvent("lpc_stage_regenerate", {
+  trackEvent(`${LPC_SCENARIO.resultEditing}_stage_regenerate`, {
+    scenario_slug: LPC_SCENARIO.resultEditing,
     stage_id: input.stageId,
     stage_index: input.stageIndex,
   });
@@ -174,7 +207,8 @@ export function trackLpcStageFieldRegenerate(input: {
   field: string;
   mode: "regenerate" | "improve";
 }): void {
-  trackEvent("lpc_stage_field_regenerate", {
+  trackEvent(`${LPC_SCENARIO.resultEditing}_stage_field_regenerate`, {
+    scenario_slug: LPC_SCENARIO.resultEditing,
     stage_id: input.stageId,
     field: input.field,
     mode: input.mode,
@@ -186,7 +220,8 @@ export function trackLpcTechniqueApply(input: {
   techniqueId: string;
   techniqueName: string;
 }): void {
-  trackEvent("lpc_technique_apply", {
+  trackEvent(`${LPC_SCENARIO.resultEditing}_technique_apply`, {
+    scenario_slug: LPC_SCENARIO.resultEditing,
     stage_id: input.stageId,
     technique_id: input.techniqueId,
     technique_name: input.techniqueName,
@@ -199,7 +234,8 @@ export function trackLpcMaterialsSearch(input: {
   grade: string;
   resultsCount: number;
 }): void {
-  trackEvent("lpc_materials_search", {
+  trackEvent(`${LPC_SCENARIO.materialsSearch}_submit`, {
+    scenario_slug: LPC_SCENARIO.materialsSearch,
     query_length: input.queryLength,
     subject: input.subject,
     grade: input.grade,
@@ -213,7 +249,8 @@ export function trackLpcMaterialsResultClick(input: {
   subject: string;
   grade: string;
 }): void {
-  trackEvent("lpc_materials_result_click", {
+  trackEvent(`${LPC_SCENARIO.materialsSearch}_result_click`, {
+    scenario_slug: LPC_SCENARIO.materialsSearch,
     url_host: input.urlHost,
     result_index: input.resultIndex,
     subject: input.subject,
@@ -222,9 +259,14 @@ export function trackLpcMaterialsResultClick(input: {
 }
 
 export function trackLpcMaterialsFallbackGoogle(queryLength: number): void {
-  trackEvent("lpc_materials_fallback_google", { query_length: queryLength });
+  trackEvent(`${LPC_SCENARIO.materialsSearch}_fallback_google_click`, {
+    scenario_slug: LPC_SCENARIO.materialsSearch,
+    query_length: queryLength,
+  });
 }
 
 export function trackLpcMaterialsPortalClick(): void {
-  trackEvent("lpc_materials_portal_click", {});
+  trackEvent(`${LPC_SCENARIO.materialsSearch}_portal_click`, {
+    scenario_slug: LPC_SCENARIO.materialsSearch,
+  });
 }

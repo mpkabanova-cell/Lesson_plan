@@ -91,7 +91,9 @@ export function initAnalyticsClient(): void {
   ensureDataLayer();
   if (process.env.NODE_ENV === "development") {
     window.__lpcTrackTest = () => {
-      trackEvent("lpc_scenario_init", { scenario: "lesson_plan_constructor" });
+      trackEvent("lpc_lesson_plan_constructor_init", {
+        scenario_slug: "lpc_lesson_plan_constructor",
+      });
     };
   }
 }
